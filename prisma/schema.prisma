@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LabRole {
+  PI
+  POSTDOC
+  PHD_STUDENT
+  RA
+  VISITING_SCHOLAR
+  COLLABORATOR
+}
+
+enum AcademicStage {
+  IDEATION
+  DATA_EXP
+  DRAFTING
+  PI_REVIEW
+  REVISION
+  ACCEPTED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum BlockerCategory {
+  DATA_DEFICIT
+  ALGO_CONVERGENCE
+  MATH_DERIVATION
+  COMPUTE_SHORTAGE
+  WAITING_REVIEW
+  REPLICATION_GAP
+  OTHER
+}
+
+enum ResourceType {
+  GPU
+  SERVER
+  CLUSTER
+  EQUIPMENT
+}
+
+enum ResourceStatus {
+  IDLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+model Lab {
+  id          String         @id @default(uuid())
+  name        String
+  institution String
+  department  String?
+  slug        String         @unique
+  piName      String
+  memberships Membership[]
+  projects    Project[]
+  resources   ResourceSlot[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  name              String
+  avatar            String?
+  role              LabRole      @default(PHD_STUDENT)
+  affiliation       String?
+  memberships       Membership[]
+  ledProjects       Project[]    @relation("ProjectLead")
+  piProjects        Project[]    @relation("ProjectPI")
+  assignedTasks     Task[]       @relation("TaskAssignee")
+  escalatedBlockers Task[]       @relation("BlockerEscalation")
+  blockerLogs       Blocker[]    @relation("BlockerEscalatedTo")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  labId     String
+  userId    String
+  role      LabRole
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime @default(now())
+
+  @@unique([labId, userId])
+}
+
+model Project {
+  id                 String        @id @default(uuid())
+  title              String
+  abstract           String?
+  targetVenue        String        // e.g. "AAAI 2027", "AEPP", "Management Science"
+  tag                String        // Short badge tag, e.g. "AAAI '27"
+  submissionDeadline DateTime?
+  status             AcademicStage @default(IDEATION)
+  overleafUrl        String?
+  githubUrl          String?
+  datasetUrl         String?
+  zoteroUrl          String?
+  labId              String
+  leadAuthorId       String
+  piId               String
+  lab                Lab           @relation(fields: [labId], references: [id], onDelete: Cascade)
+  leadAuthor         User          @relation("ProjectLead", fields: [leadAuthorId], references: [id])
+  pi                 User          @relation("ProjectPI", fields: [piId], references: [id])
+  tasks              Task[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model Task {
+  id                  String           @id @default(uuid())
+  title               String
+  description         String?
+  stage               AcademicStage    @default(IDEATION)
+  priority            Priority         @default(MEDIUM)
+  deadline            DateTime?
+  order               Int              @default(0)
+  projectId           String
+  assigneeId          String?
+  
+  // Blocker Status & Escalation fields
+  isBlocked           Boolean          @default(false)
+  blockerCategory     BlockerCategory?
+  blockerReason       String?
+  blockerTried        String?
+  blockerEscalatedToId String?
+  blockedAt           DateTime?
+  
+  // Relations
+  project             Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee            User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  escalatedTo         User?            @relation("BlockerEscalation", fields: [blockerEscalatedToId], references: [id])
+  blockerHistory      Blocker[]
+  
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  completedAt         DateTime?
+}
+
+model Blocker {
+  id              String          @id @default(uuid())
+  taskId          String
+  category        BlockerCategory
+  description     String
+  triedSolutions  String
+  escalatedToId   String
+  reportedAt      DateTime        @default(now())
+  resolvedAt      DateTime?
+  resolutionNotes String?
+  
+  task            Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  escalatedTo     User            @relation("BlockerEscalatedTo", fields: [escalatedToId], references: [id])
+}
+
+model ResourceSlot {
+  id               String         @id @default(uuid())
+  labId            String
+  name             String         // e.g. "GPU Node-01 (4x A100-80G)"
+  type             ResourceType   @default(GPU)
+  specs            String?        // "4x NVIDIA A100 SXM4 80GB, NVLink 600GB/s"
+  status           ResourceStatus @default(IDLE)
+  currentUserId    String?
+  currentUser      String?        // Username or handle
+  currentJob       String?        // "ADMM Multi-Agent Training"
+  vramUtilPercent  Int            @default(0)
+  expiresAt        DateTime?
+  
+  lab              Lab            @relation(fields: [labId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}

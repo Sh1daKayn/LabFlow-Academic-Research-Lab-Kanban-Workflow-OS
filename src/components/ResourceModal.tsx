@@ -1,0 +1,280 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useLabFlow } from '@/context/LabFlowContext';
+import {
+  Server,
+  X,
+  Cpu,
+  Clock,
+  User,
+  CheckCircle2,
+} from 'lucide-react';
+
+export const ResourceModal: React.FC = () => {
+  const {
+    isResourceModalOpen,
+    setIsResourceModalOpen,
+    resources,
+    claimResource,
+    releaseResource,
+    members,
+  } = useLabFlow();
+
+  const [selectedResourceId, setSelectedResourceId] = useState<string>(resources[1]?.id || '');
+  const [claimUser, setClaimUser] = useState<string>('Alex Rivera');
+  const [jobName, setJobName] = useState<string>('Hyperparameter Sweep & Ablation Study');
+  const [hours, setHours] = useState<number>(8);
+
+  if (!isResourceModalOpen) return null;
+
+  const handleClaim = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedResourceId || !claimUser.trim()) return;
+    claimResource(selectedResourceId, claimUser, jobName.trim() || 'Research Training Run', hours);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-slate-100 max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={() => setIsResourceModalOpen(false)}
+          className="absolute right-4 top-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+            <Server className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                HPC & Lab Infrastructure
+              </span>
+              <span className="text-xs text-slate-400">Shared GPU / Server Nodes</span>
+            </div>
+            <h2 className="text-lg font-bold text-slate-100 mt-0.5 leading-snug">
+              Compute & Lab Shared Resource Allocation
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Live status, VRAM telemetry, and reservation scheduler for lab clusters.
+            </p>
+          </div>
+        </div>
+
+        {/* Resource Cards List */}
+        <div className="space-y-3 mb-6">
+          {resources.map((res) => {
+            const isOccupied = res.status === 'OCCUPIED';
+            const isIdle = res.status === 'IDLE';
+            const isReserved = res.status === 'RESERVED';
+
+            return (
+              <div
+                key={res.id}
+                className={`p-4 rounded-xl border transition-all ${
+                  isOccupied
+                    ? 'bg-slate-950/70 border-cyan-500/30'
+                    : isIdle
+                    ? 'bg-slate-950/70 border-emerald-500/30'
+                    : 'bg-slate-950/70 border-purple-500/30'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {/* Left: Specs & Name */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-100">{res.name}</span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                          isOccupied
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                            : isIdle
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        }`}
+                      >
+                        {res.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 font-mono">{res.specs}</p>
+
+                    {/* Telemetry / occupancy details */}
+                    <div className="flex items-center gap-3 text-xs text-slate-300 pt-1">
+                      {isOccupied && (
+                        <>
+                          <span className="flex items-center gap-1 text-cyan-300 font-medium">
+                            <User className="w-3.5 h-3.5 text-cyan-400" />
+                            Occupied by @{res.currentUser}
+                          </span>
+                          <span>·</span>
+                          <span className="text-slate-400 truncate max-w-xs">{res.currentJob}</span>
+                          {res.remainingHours && (
+                            <>
+                              <span>·</span>
+                              <span className="text-amber-400 font-mono flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {res.remainingHours}h remaining
+                              </span>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {isIdle && (
+                        <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Node is available. Zero active queue.
+                        </span>
+                      )}
+
+                      {isReserved && (
+                        <span className="text-purple-300 flex items-center gap-1 font-medium">
+                          <Clock className="w-3.5 h-3.5" />
+                          {res.currentUser ? `Reserved by @${res.currentUser}: ${res.currentJob}` : 'Reserved'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isOccupied && (
+                      <button
+                        onClick={() => releaseResource(res.id)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 hover:text-rose-200 text-xs font-semibold border border-slate-700 transition-colors"
+                      >
+                        Release Node
+                      </button>
+                    )}
+
+                    {isIdle && (
+                      <button
+                        onClick={() => {
+                          setSelectedResourceId(res.id);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedResourceId === res.id
+                            ? 'bg-cyan-600 text-white shadow'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        }`}
+                      >
+                        {selectedResourceId === res.id ? 'Selected' : 'Claim Node'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* VRAM / Utilization bar */}
+                {res.vramUtilPercent !== undefined && res.vramUtilPercent > 0 && (
+                  <div className="mt-3 pt-2 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                      <span>VRAM Allocation</span>
+                      <span className="font-mono text-cyan-400">{res.vramUtilPercent}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-cyan-500 h-full rounded-full transition-all"
+                        style={{ width: `${res.vramUtilPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Claim Form */}
+        <form
+          onSubmit={handleClaim}
+          className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              Claim Node / Schedule Training Job
+            </h3>
+            <span className="text-[11px] text-slate-500">Auto-expires when duration finishes</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                Select Compute Node
+              </label>
+              <select
+                value={selectedResourceId}
+                onChange={(e) => setSelectedResourceId(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60"
+              >
+                {resources.map((r) => (
+                  <option key={r.id} value={r.id} className="bg-slate-900 text-slate-200">
+                    {r.name.split('(')[0]} ({r.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                Lab Member
+              </label>
+              <select
+                value={claimUser}
+                onChange={(e) => setClaimUser(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60"
+              >
+                {members.map((m) => (
+                  <option key={m.id} value={m.name} className="bg-slate-900 text-slate-200">
+                    {m.name} ({m.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                Estimated Duration (Hours)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={168}
+                value={hours}
+                onChange={(e) => setHours(parseInt(e.target.value) || 1)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-slate-400 mb-1">
+              Job Description / Experiment Title
+            </label>
+            <input
+              type="text"
+              required
+              value={jobName}
+              onChange={(e) => setJobName(e.target.value)}
+              placeholder="e.g. ADMM Consensus Training with 10k Graph Perturbations"
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+            />
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-600/30 transition-all"
+            >
+              Confirm Claim Node
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
