@@ -71,6 +71,8 @@ export const DEFAULT_STAGES: StageConfig[] = [
   },
 ];
 
+export const STAGES = DEFAULT_STAGES;
+
 export const BLOCKER_CATEGORIES: Record<BlockerCategory, BlockerCategoryMeta> = {
   DATA_DEFICIT: {
     id: 'DATA_DEFICIT',
