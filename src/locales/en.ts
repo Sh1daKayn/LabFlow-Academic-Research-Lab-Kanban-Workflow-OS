@@ -1,0 +1,112 @@
+export const en = {
+  brand: 'LabFlow',
+  academicOS: 'Academic OS',
+  labTitle: 'Computational Systems & Decision Lab',
+  labSub: 'Research Group',
+
+  // View modes
+  kanban: 'Kanban',
+  gantt: 'Gantt Chart',
+  meeting: 'Group Standup',
+  pipelineSettings: 'Settings',
+
+  // Top action buttons
+  onlyBlockers: 'Only Blockers',
+  reverseDDL: 'Reverse DDL',
+  newTask: 'New Task',
+  resetDemo: 'Reset Demo',
+  toggleTheme: 'Toggle Theme',
+  switchLang: '中文',
+
+  // Search & Filters
+  searchPlaceholder: 'Search paper title, venue, or author...',
+  allMembers: 'All Lab Members',
+  activeFilters: 'Active Filters',
+  showingTasks: 'Showing matching tasks across pipeline',
+  noTasksInStage: 'No tasks in this stage',
+  dragHint: 'Drag a card here or click +',
+
+  // Resource Strip
+  computeTitle: 'Shared Compute & Infrastructure',
+  busyNodes: 'busy',
+  idleNodes: 'idle',
+  claimManage: 'Claim / Manage Nodes',
+  readyForRuns: 'Ready for batch runs',
+  reservedFor: 'Reserved',
+  hoursRemaining: 'h remaining',
+
+  // Blocker Modal
+  reportBlocker: 'Report Technical Blocker',
+  activeBlockerAlert: 'Active Technical Blocker',
+  whereStuck: 'Where is it stuck? (Technical Bottleneck)',
+  whatTried: 'What has been tried so far?',
+  escalateTo: 'Escalate to / Decision Needed from',
+  resolveBlocker: 'Resolve Blocker (Resume Pipeline)',
+  updateBlocker: 'Update Blocker',
+  escalateBlockerBtn: 'Escalate Blocker to Lab',
+  blockerCategory: 'Blocker Category',
+
+  // Reverse DDL Modal
+  reverseDDLTitle: 'Reverse Submission DDL Scheduler',
+  reverseDDLDesc: 'Input target submission date to automatically generate 4 synchronized milestone tasks.',
+  paperTitle: 'Paper / Project Title',
+  targetVenue: 'Target Venue / Conference',
+  submissionDDL: 'Submission Deadline (T-Day)',
+  leadAuthor: 'Lead Author / Assignee',
+  badgeTag: 'Short Badge Tag',
+  generatePipelineBtn: 'Generate Milestone Pipeline',
+  milestoneSchedule: 'Calculated Milestone Schedule',
+
+  // Group Meeting Standup
+  standupTitle: 'Group Meeting Standup Presenter',
+  standupDesc: 'Projection mode for weekly sync, peer unblocking, and advisor decisions.',
+  timerLabel: 'Meeting Timer',
+  exportMinutes: 'Export Markdown Minutes',
+  downloadMinutes: 'Download .md',
+  colCompleted: '1. Completed Recently',
+  colCompletedSub: 'Archived publications & completed milestones',
+  colActive: '2. Active & In Progress',
+  colActiveSub: 'Ongoing models, experiments & drafts',
+  colBlockers: '3. Critical Blockers (PI Decision)',
+  colBlockersSub: 'Roadblocks requiring lab decision',
+  noBlockers: 'No active blockers reported. Pipeline is clear!',
+
+  // Gantt Chart View
+  ganttTitle: 'Academic Pipeline Gantt Chart',
+  ganttDesc: 'Interactive timeline mapping paper milestones, experimental cycles, and deadlines.',
+  timeScale: 'Timeline Scale',
+  weekly: 'Weekly Scale',
+  monthly: 'Monthly Scale',
+  progress: 'Progress',
+  editDates: 'Adjust Dates',
+  startDate: 'Start Date',
+  endDate: 'End Date / DDL',
+  saveTimeline: 'Save Timeline Adjustments',
+
+  // Stage Customization Settings
+  settingsTitle: 'Custom Academic Stages',
+  settingsDesc: 'Customize pipeline stage names, reorder them, or add specific workflow stages.',
+  stageName: 'Stage Name',
+  stageSubtitle: 'Description',
+  addNewStage: 'Add New Custom Stage',
+  deleteStageConfirm: 'Delete this stage? Existing tasks will be moved to the first stage.',
+  defaultStagesRestored: 'Restored default academic stages',
+  restoreDefaults: 'Restore Default Stages',
+
+  // Card & Drawer details
+  inspector: 'Card Inspector',
+  priority: 'Priority',
+  academicStage: 'Academic Stage',
+  methodologyDesc: 'Methodology / Task Description',
+  checklist: 'Milestones & Verification Checklist',
+  addSubtask: 'Add checklist subtask...',
+  assets: 'Direct Asset Quick-Links',
+  resolveAction: 'Resolve',
+  editAction: 'Edit',
+  cancel: 'Cancel',
+  save: 'Save Changes',
+  delete: 'Delete Task',
+  confirmDelete: 'Are you sure you want to delete this task?',
+};
+
+export type LocaleTranslations = typeof en;

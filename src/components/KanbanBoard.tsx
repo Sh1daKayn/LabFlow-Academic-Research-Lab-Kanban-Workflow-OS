@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { STAGES } from '@/data/mockData';
 import { AcademicStage, TaskItem } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
 import { Plus, FilterX } from 'lucide-react';
@@ -11,6 +10,9 @@ import { Plus, FilterX } from 'lucide-react';
 export const KanbanBoard: React.FC = () => {
   const {
     tasks,
+    stages,
+    language,
+    t,
     filterOnlyBlockers,
     searchQuery,
     filterMemberId,
@@ -19,7 +21,6 @@ export const KanbanBoard: React.FC = () => {
     setIsNewTaskOpen,
   } = useLabFlow();
 
-  // Prevent SSR hydration mismatch with dnd
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -46,7 +47,6 @@ export const KanbanBoard: React.FC = () => {
     }
   };
 
-  // Filter tasks based on search, member, and blocker toggle
   const getFilteredTasksForStage = (stageId: AcademicStage): TaskItem[] => {
     return tasks
       .filter((task) => task.stage === stageId)
@@ -57,10 +57,8 @@ export const KanbanBoard: React.FC = () => {
           const q = searchQuery.toLowerCase();
           const matchTitle = task.title.toLowerCase().includes(q);
           const matchTag = task.projectTag.toLowerCase().includes(q);
-          const matchAuthor = task.leadAuthor.name.toLowerCase().includes(q);
           const matchVenue = task.targetVenue.toLowerCase().includes(q);
-          const matchDesc = (task.description || '').toLowerCase().includes(q);
-          if (!matchTitle && !matchTag && !matchAuthor && !matchVenue && !matchDesc) return false;
+          if (!matchTitle && !matchTag && !matchVenue) return false;
         }
         return true;
       })
@@ -70,7 +68,7 @@ export const KanbanBoard: React.FC = () => {
   if (!mounted) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-slate-500 text-sm">
-        Initializing Academic Pipeline...
+        {language === 'zh' ? '正在载入科研流水线...' : 'Initializing Academic Pipeline...'}
       </div>
     );
   }
@@ -81,15 +79,10 @@ export const KanbanBoard: React.FC = () => {
       {(filterOnlyBlockers || filterMemberId !== 'all' || searchQuery) && (
         <div className="mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-cyan-400">Active Board Filters:</span>
+            <span className="font-semibold text-cyan-400">{t.activeFilters}:</span>
             {filterOnlyBlockers && (
               <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-medium">
-                🔥 Only Blockers
-              </span>
-            )}
-            {filterMemberId !== 'all' && (
-              <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-medium">
-                👤 Filtered Member
+                {t.onlyBlockers}
               </span>
             )}
             {searchQuery && (
@@ -98,18 +91,18 @@ export const KanbanBoard: React.FC = () => {
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-400">
-            Showing matching tasks across 6 pipeline stages
-          </span>
+          <span className="text-[11px] text-slate-400">{t.showingTasks}</span>
         </div>
       )}
 
       {/* DND Context */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 items-start min-w-[1550px] pb-8">
-          {STAGES.map((stage) => {
+          {stages.map((stage) => {
             const stageTasks = getFilteredTasksForStage(stage.id);
             const blockedInStage = stageTasks.filter((t) => t.isBlocked).length;
+            const stageName = language === 'zh' ? stage.labelZh : stage.labelEn;
+            const stageSub = language === 'zh' ? stage.subTitleZh : stage.subTitleEn;
 
             return (
               <div
@@ -117,33 +110,19 @@ export const KanbanBoard: React.FC = () => {
                 className="w-72 shrink-0 flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 shadow-sm"
               >
                 {/* Stage Header */}
-                <div className="p-3.5 border-b border-slate-800/80">
+                <div className="p-3 border-b border-slate-800/80">
                   <div className="flex items-center justify-between gap-1 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          stage.id === 'IDEATION'
-                            ? 'bg-purple-400'
-                            : stage.id === 'DATA_EXP'
-                            ? 'bg-cyan-400'
-                            : stage.id === 'DRAFTING'
-                            ? 'bg-amber-400'
-                            : stage.id === 'PI_REVIEW'
-                            ? 'bg-blue-400'
-                            : stage.id === 'REVISION'
-                            ? 'bg-rose-400'
-                            : 'bg-emerald-400'
-                        }`}
-                      />
+                      <div className={`w-2.5 h-2.5 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
                       <h2 className="text-xs font-bold text-slate-200 tracking-tight truncate">
-                        {stage.labelEn}
+                        {stageName}
                       </h2>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {blockedInStage > 0 && (
                         <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300 animate-pulse">
-                          {blockedInStage} blocked
+                          {blockedInStage} {language === 'zh' ? '卡点' : 'blocked'}
                         </span>
                       )}
                       <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-900 border border-slate-800 text-slate-400">
@@ -152,20 +131,19 @@ export const KanbanBoard: React.FC = () => {
                       <button
                         onClick={() => setIsNewTaskOpen(true)}
                         className="p-1 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-                        title={`Add task to ${stage.labelEn}`}
+                        title={language === 'zh' ? '添加任务' : 'Add task'}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Subtitle / Chinese label */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
-                    <span>{stage.labelZh}</span>
-                    <span className="text-[10px] text-slate-400 truncate max-w-[140px]">
-                      {stage.id === 'ACCEPTED' ? 'DOI & Replication' : stage.id === 'PI_REVIEW' ? 'Advisor Sign-off' : ''}
-                    </span>
-                  </div>
+                  {/* Subtitle */}
+                  {stageSub && (
+                    <div className="text-[10px] text-slate-500 truncate">
+                      {stageSub}
+                    </div>
+                  )}
                 </div>
 
                 {/* Droppable Area */}
@@ -190,10 +168,8 @@ export const KanbanBoard: React.FC = () => {
                       {stageTasks.length === 0 && (
                         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center border border-dashed border-slate-800/80 rounded-xl my-2">
                           <FilterX className="w-5 h-5 text-slate-600 mb-1" />
-                          <p className="text-xs text-slate-500 font-medium">No tasks in stage</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
-                            Drag a card here or click +
-                          </p>
+                          <p className="text-xs text-slate-500 font-medium">{t.noTasksInStage}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{t.dragHint}</p>
                         </div>
                       )}
                     </div>

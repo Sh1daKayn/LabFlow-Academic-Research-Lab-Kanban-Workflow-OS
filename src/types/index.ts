@@ -1,20 +1,16 @@
-export type AcademicStage =
-  | 'IDEATION'
-  | 'DATA_EXP'
-  | 'DRAFTING'
-  | 'PI_REVIEW'
-  | 'REVISION'
-  | 'ACCEPTED';
+export type Language = 'zh' | 'en';
+
+export type AcademicStage = string;
 
 export interface StageConfig {
-  id: AcademicStage;
+  id: string;
   labelEn: string;
   labelZh: string;
-  subTitle: string;
+  subTitleEn: string;
+  subTitleZh: string;
   color: string;
   badgeBg: string;
   borderColor: string;
-  glowColor: string;
 }
 
 export type BlockerCategory =
@@ -32,16 +28,19 @@ export interface BlockerCategoryMeta {
   labelZh: string;
   color: string;
   bgColor: string;
-  description: string;
+  descriptionEn: string;
+  descriptionZh: string;
 }
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface LabMember {
   id: string;
-  name: string;
+  nameEn: string;
+  nameZh: string;
   role: 'PI' | 'POSTDOC' | 'SENIOR_PHD' | 'PHD_CANDIDATE' | 'RA' | 'VISITING_SCHOLAR';
-  title: string;
+  titleEn: string;
+  titleZh: string;
   avatar: string;
   email: string;
 }
@@ -69,7 +68,9 @@ export interface TaskItem {
   projectId: string;
   projectTag: string; // e.g. "AAAI 2027", "AEPP"
   targetVenue: string;
-  deadline: string; // ISO date string e.g. "2027-01-15"
+  startDate?: string; // ISO date string e.g. "2026-10-01"
+  deadline: string; // ISO date string e.g. "2026-12-15"
+  progress?: number; // 0 - 100%
   leadAuthor: LabMember;
   pi: LabMember;
   priority: Priority;
@@ -102,7 +103,8 @@ export type ResourceStatus = 'IDLE' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE';
 
 export interface LabResource {
   id: string;
-  name: string;
+  nameEn: string;
+  nameZh: string;
   type: ResourceType;
   specs: string;
   status: ResourceStatus;

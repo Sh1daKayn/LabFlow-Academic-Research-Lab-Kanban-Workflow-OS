@@ -3,21 +3,28 @@
 import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, Priority } from '@/types';
-import { STAGES } from '@/data/mockData';
 import { Plus, X } from 'lucide-react';
 
 export const NewTaskModal: React.FC = () => {
-  const { isNewTaskOpen, setIsNewTaskOpen, addTask, members, projects } = useLabFlow();
+  const {
+    isNewTaskOpen,
+    setIsNewTaskOpen,
+    addTask,
+    members,
+    projects,
+    stages,
+    language,
+    t,
+  } = useLabFlow();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [stage, setStage] = useState<AcademicStage>('DATA_EXP');
+  const [stage, setStage] = useState<AcademicStage>(stages[1]?.id || 'DATA_EXP');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
   const [projectId, setProjectId] = useState(projects[0]?.id || 'proj-1');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [deadline, setDeadline] = useState(new Date().toISOString().split('T')[0]);
-  const [leadAuthorId, setLeadAuthorId] = useState(members[2]?.id || 'member-kayn');
-  const [overleaf, setOverleaf] = useState('');
-  const [github, setGithub] = useState('');
+  const [leadAuthorId, setLeadAuthorId] = useState(members[2]?.id || 'member-student1');
 
   if (!isNewTaskOpen) return null;
 
@@ -28,7 +35,7 @@ export const NewTaskModal: React.FC = () => {
     if (!title.trim()) return;
 
     const lead = members.find((m) => m.id === leadAuthorId) || members[2];
-    const pi = members[0]; // Prof. Malone
+    const pi = members[0]; // Professor 1
 
     addTask({
       title,
@@ -38,18 +45,20 @@ export const NewTaskModal: React.FC = () => {
       projectId: currentProject.id,
       projectTag: currentProject.tag,
       targetVenue: currentProject.targetVenue,
+      startDate,
       deadline,
+      progress: 0,
       leadAuthor: lead,
       pi,
       assets: {
-        overleaf: overleaf.trim() || currentProject.assets.overleaf,
-        github: github.trim() || currentProject.assets.github,
+        overleaf: currentProject.assets.overleaf,
+        github: currentProject.assets.github,
         dataset: currentProject.assets.dataset,
         zotero: currentProject.assets.zotero,
       },
       isBlocked: false,
       order: 0,
-      tags: [currentProject.tag, 'Research'],
+      tags: [currentProject.tag],
     });
 
     setIsNewTaskOpen(false);
@@ -71,10 +80,10 @@ export const NewTaskModal: React.FC = () => {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-100 leading-snug">
-              Create New Academic Milestone / Task
+              {t.newTask}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Add a paper sprint item, experiment batch, or manuscript section to the board.
+              {language === 'zh' ? '添加一个学术论文研发任务、实验批次或撰写章节。' : 'Add a research task, experiment batch, or manuscript section.'}
             </p>
           </div>
         </div>
@@ -83,7 +92,7 @@ export const NewTaskModal: React.FC = () => {
           {/* Title */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Task Title *
+              {t.paperTitle} *
             </label>
             <input
               type="text"
@@ -99,7 +108,7 @@ export const NewTaskModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Parent Project / Paper *
+                {language === 'zh' ? '归属课题 / 论文 *' : 'Parent Project *'}
               </label>
               <select
                 value={projectId}
@@ -116,26 +125,51 @@ export const NewTaskModal: React.FC = () => {
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Initial Pipeline Stage *
+                {t.academicStage} *
               </label>
               <select
                 value={stage}
                 onChange={(e) => setStage(e.target.value as AcademicStage)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
               >
-                {STAGES.map((s) => (
+                {stages.map((s) => (
                   <option key={s.id} value={s.id} className="bg-slate-900 text-slate-200">
-                    {s.labelEn} ({s.labelZh})
+                    {language === 'zh' ? s.labelZh : s.labelEn}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Priority & Deadline */}
+          {/* Dates */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Priority</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1">{t.startDate}</label>
+              <input
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">{t.endDate}</label>
+              <input
+                type="date"
+                required
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
+              />
+            </div>
+          </div>
+
+          {/* Priority & Lead */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">{t.priority}</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
@@ -149,39 +183,25 @@ export const NewTaskModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Deadline Date</label>
-              <input
-                type="date"
-                required
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+              <label className="block text-xs font-medium text-slate-300 mb-1">{t.leadAuthor} *</label>
+              <select
+                value={leadAuthorId}
+                onChange={(e) => setLeadAuthorId(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
-              />
+              >
+                {members.map((m) => (
+                  <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
+                    {language === 'zh' ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
-
-          {/* Lead Author */}
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Lead Author / Assignee *
-            </label>
-            <select
-              value={leadAuthorId}
-              onChange={(e) => setLeadAuthorId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
-            >
-              {members.map((m) => (
-                <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
-                  {m.name} ({m.role})
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Description / Notes
+              {t.methodologyDesc}
             </label>
             <textarea
               rows={2}
@@ -192,47 +212,19 @@ export const NewTaskModal: React.FC = () => {
             />
           </div>
 
-          {/* Asset overrides */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                Overleaf URL (optional)
-              </label>
-              <input
-                type="url"
-                value={overleaf}
-                onChange={(e) => setOverleaf(e.target.value)}
-                placeholder="https://overleaf.com/..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                GitHub URL (optional)
-              </label>
-              <input
-                type="url"
-                value={github}
-                onChange={(e) => setGithub(e.target.value)}
-                placeholder="https://github.com/..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
-              />
-            </div>
-          </div>
-
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
             <button
               type="button"
               onClick={() => setIsNewTaskOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
             >
-              Cancel
+              {t.cancel}
             </button>
             <button
               type="submit"
               className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all"
             >
-              Add to Board
+              {t.save}
             </button>
           </div>
         </form>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, Priority } from '@/types';
-import { STAGES, BLOCKER_CATEGORIES } from '@/data/mockData';
+import { BLOCKER_CATEGORIES } from '@/data/mockData';
 import {
   X,
   Flame,
@@ -23,7 +23,9 @@ export const TaskDetailDrawer: React.FC = () => {
     updateTask,
     deleteTask,
     members,
-    setActiveBlockerTask,
+    stages,
+    language,
+    t,
     resolveBlocker,
   } = useLabFlow();
 
@@ -31,7 +33,9 @@ export const TaskDetailDrawer: React.FC = () => {
   const [description, setDescription] = useState('');
   const [stage, setStage] = useState<AcademicStage>('DATA_EXP');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
+  const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [progress, setProgress] = useState(0);
   const [targetVenue, setTargetVenue] = useState('');
   const [projectTag, setProjectTag] = useState('');
   const [leadAuthorId, setLeadAuthorId] = useState('');
@@ -49,7 +53,9 @@ export const TaskDetailDrawer: React.FC = () => {
       setDescription(selectedTask.description || '');
       setStage(selectedTask.stage);
       setPriority(selectedTask.priority);
+      setStartDate(selectedTask.startDate || '');
       setDeadline(selectedTask.deadline ? selectedTask.deadline.split('T')[0] : '');
+      setProgress(selectedTask.progress || 0);
       setTargetVenue(selectedTask.targetVenue);
       setProjectTag(selectedTask.projectTag);
       setLeadAuthorId(selectedTask.leadAuthor.id);
@@ -74,7 +80,9 @@ export const TaskDetailDrawer: React.FC = () => {
       description,
       stage,
       priority,
+      startDate: startDate || undefined,
       deadline,
+      progress,
       targetVenue,
       projectTag,
       leadAuthor: lead,
@@ -91,7 +99,7 @@ export const TaskDetailDrawer: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to remove this academic task?')) {
+    if (confirm(t.confirmDelete)) {
       deleteTask(selectedTask.id);
     }
   };
@@ -120,9 +128,9 @@ export const TaskDetailDrawer: React.FC = () => {
         <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3 bg-slate-950/60">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              {projectTag || 'Project Task'}
+              {projectTag || 'Project'}
             </span>
-            <span className="text-xs text-slate-400">Card Inspector</span>
+            <span className="text-xs text-slate-400">{t.inspector}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -130,7 +138,7 @@ export const TaskDetailDrawer: React.FC = () => {
               type="button"
               onClick={handleDelete}
               className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-              title="Delete task"
+              title={t.delete}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -145,14 +153,14 @@ export const TaskDetailDrawer: React.FC = () => {
         </div>
 
         {/* Drawer Body Form */}
-        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5">
+        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Blocker Alert Box if Blocked */}
           {selectedTask.isBlocked && selectedTask.blocker && (
             <div className="p-4 rounded-xl bg-red-950/30 border border-red-500/40 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-red-400 flex items-center gap-1.5 uppercase">
                   <Flame className="w-4 h-4 text-red-400 animate-pulse" />
-                  Active Technical Blocker
+                  {t.activeBlockerAlert}
                 </span>
                 <button
                   type="button"
@@ -160,28 +168,22 @@ export const TaskDetailDrawer: React.FC = () => {
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Resolve Blocker</span>
+                  <span>{t.resolveAction}</span>
                 </button>
               </div>
 
-              <div className="text-xs text-slate-200 bg-slate-900/80 p-3 rounded-lg border border-slate-800 space-y-1.5">
+              <div className="text-xs text-slate-200 bg-slate-900/80 p-3 rounded-lg border border-slate-800 space-y-1">
                 <div>
-                  <span className="text-slate-400 font-semibold">Category: </span>
+                  <span className="text-slate-400 font-semibold">{t.blockerCategory}: </span>
                   <span className="text-red-300 font-medium">
-                    {BLOCKER_CATEGORIES[selectedTask.blocker.category]?.labelZh || selectedTask.blocker.category}
+                    {language === 'zh'
+                      ? BLOCKER_CATEGORIES[selectedTask.blocker.category]?.labelZh
+                      : BLOCKER_CATEGORIES[selectedTask.blocker.category]?.labelEn}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-semibold">Where stuck: </span>
+                  <span className="text-slate-400 font-semibold">{t.whereStuck}: </span>
                   <span className="text-slate-200">{selectedTask.blocker.details}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold">Tried: </span>
-                  <span className="text-slate-300">{selectedTask.blocker.tried}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold">Escalated to: </span>
-                  <span className="text-cyan-300 font-bold">{selectedTask.blocker.escalatedTo}</span>
                 </div>
               </div>
             </div>
@@ -189,7 +191,7 @@ export const TaskDetailDrawer: React.FC = () => {
 
           {/* Title input */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Task Title *</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1">{t.paperTitle} *</label>
             <input
               type="text"
               required
@@ -203,23 +205,23 @@ export const TaskDetailDrawer: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Academic Stage *
+                {t.academicStage} *
               </label>
               <select
                 value={stage}
                 onChange={(e) => setStage(e.target.value as AcademicStage)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60"
               >
-                {STAGES.map((s) => (
+                {stages.map((s) => (
                   <option key={s.id} value={s.id} className="bg-slate-900 text-slate-200">
-                    {s.labelEn} ({s.labelZh})
+                    {language === 'zh' ? s.labelZh : s.labelEn}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Priority</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1">{t.priority}</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
@@ -233,22 +235,20 @@ export const TaskDetailDrawer: React.FC = () => {
             </div>
           </div>
 
-          {/* Target Venue & DDL */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Dates & Progress */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Target Venue</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1">{t.startDate}</label>
               <input
-                type="text"
-                value={targetVenue}
-                onChange={(e) => setTargetVenue(e.target.value)}
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">
-                Deadline Date
-              </label>
+              <label className="block text-xs font-medium text-slate-400 mb-1">{t.endDate}</label>
               <input
                 type="date"
                 value={deadline}
@@ -256,12 +256,26 @@ export const TaskDetailDrawer: React.FC = () => {
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">
+                {t.progress} ({progress}%)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={progress}
+                onChange={(e) => setProgress(parseInt(e.target.value) || 0)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/60 font-mono"
+              />
+            </div>
           </div>
 
-          {/* Lead Author & PI */}
+          {/* Authors */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Lead Author</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1">{t.leadAuthor}</label>
               <select
                 value={leadAuthorId}
                 onChange={(e) => setLeadAuthorId(e.target.value)}
@@ -269,14 +283,14 @@ export const TaskDetailDrawer: React.FC = () => {
               >
                 {members.map((m) => (
                   <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
-                    {m.name} ({m.role})
+                    {language === 'zh' ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Principal Investigator (PI)</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1">PI</label>
               <select
                 value={piId}
                 onChange={(e) => setPiId(e.target.value)}
@@ -284,7 +298,7 @@ export const TaskDetailDrawer: React.FC = () => {
               >
                 {members.map((m) => (
                   <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
-                    {m.name} ({m.role})
+                    {language === 'zh' ? m.nameZh : m.nameEn}
                   </option>
                 ))}
               </select>
@@ -294,7 +308,7 @@ export const TaskDetailDrawer: React.FC = () => {
           {/* Description */}
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">
-              Methodology / Task Description
+              {t.methodologyDesc}
             </label>
             <textarea
               rows={3}
@@ -304,12 +318,12 @@ export const TaskDetailDrawer: React.FC = () => {
             />
           </div>
 
-          {/* Checklist of subtasks */}
+          {/* Checklist */}
           <div className="border-t border-slate-800 pt-3">
             <label className="block text-xs font-medium text-slate-400 mb-2">
-              Milestone Subtasks & Verification Checklist
+              {t.checklist}
             </label>
-            <div className="space-y-2 mb-2">
+            <div className="space-y-1.5 mb-2">
               {checklist.map((c) => (
                 <div
                   key={c.id}
@@ -355,7 +369,7 @@ export const TaskDetailDrawer: React.FC = () => {
                     handleAddSubtask();
                   }
                 }}
-                placeholder="Add checklist subtask..."
+                placeholder={t.addSubtask}
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
               />
               <button
@@ -363,15 +377,15 @@ export const TaskDetailDrawer: React.FC = () => {
                 onClick={handleAddSubtask}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
               >
-                Add
+                +
               </button>
             </div>
           </div>
 
-          {/* Asset Quick-Links inputs */}
+          {/* Asset Links */}
           <div className="border-t border-slate-800 pt-3 space-y-2">
             <label className="block text-xs font-medium text-slate-400">
-              Direct Asset Quick-Links
+              {t.assets}
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
@@ -391,7 +405,7 @@ export const TaskDetailDrawer: React.FC = () => {
                   type="url"
                   value={github}
                   onChange={(e) => setGithub(e.target.value)}
-                  placeholder="GitHub Repo URL"
+                  placeholder="GitHub URL"
                   className="bg-transparent text-slate-200 focus:outline-none w-full text-xs placeholder-slate-600"
                 />
               </div>
@@ -420,23 +434,6 @@ export const TaskDetailDrawer: React.FC = () => {
             </div>
           </div>
 
-          {/* Blocker Action button if not blocked */}
-          {!selectedTask.isBlocked && (
-            <div className="border-t border-slate-800 pt-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedTask(null);
-                  setActiveBlockerTask(selectedTask);
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all"
-              >
-                <Flame className="w-4 h-4 text-rose-400" />
-                <span>Report Blocker for this Card (标记卡点)</span>
-              </button>
-            </div>
-          )}
-
           {/* Drawer Bottom Bar */}
           <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-2">
             <button
@@ -444,14 +441,14 @@ export const TaskDetailDrawer: React.FC = () => {
               onClick={() => setSelectedTask(null)}
               className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
             >
-              Cancel
+              {t.cancel}
             </button>
             <button
               type="submit"
               className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all"
             >
               <Save className="w-4 h-4" />
-              <span>Save Changes</span>
+              <span>{t.save}</span>
             </button>
           </div>
         </form>

@@ -15,6 +15,9 @@ import {
   Presentation,
   FlaskConical,
   ChevronDown,
+  BarChart2,
+  Settings,
+  Globe,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -30,9 +33,13 @@ export const Header: React.FC = () => {
     setViewMode,
     theme,
     setTheme,
+    language,
+    setLanguage,
+    t,
     members,
     setIsReverseDDLOpen,
     setIsNewTaskOpen,
+    setIsStageSettingsOpen,
     resetToMockData,
   } = useLabFlow();
 
@@ -54,17 +61,15 @@ export const Header: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+                  <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1">
                     Lab<span className="text-cyan-400 font-extrabold">Flow</span>
                   </span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
-                    Academic OS
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+                    {t.academicOS}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 flex items-center gap-1.5 -mt-0.5">
-                  <span className="font-medium text-slate-300">SCAEL Lab</span>
-                  <span className="text-slate-600">/</span>
-                  <span className="text-slate-400 truncate max-w-[140px]">Prof. Malone Group</span>
+                <div className="text-[11px] text-slate-400 truncate max-w-[170px] -mt-0.5">
+                  {t.labTitle}
                 </div>
               </div>
             </div>
@@ -72,34 +77,42 @@ export const Header: React.FC = () => {
             {/* Separator */}
             <div className="hidden lg:block h-6 w-px bg-slate-800" />
 
-            {/* View Mode Switcher */}
+            {/* View Mode Switcher (Kanban | Gantt | Meeting) */}
             <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800/90 text-xs">
               <button
                 onClick={() => setViewMode('kanban')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all duration-150 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                   viewMode === 'kanban'
                     ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
-                title="Paper-First Academic Pipeline Board"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>Kanban Board</span>
-                <span className="hidden xl:inline text-[10px] text-indigo-200/80">(看板)</span>
+                <span>{t.kanban}</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('gantt')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+                  viewMode === 'gantt'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <BarChart2 className="w-3.5 h-3.5" />
+                <span>{t.gantt}</span>
               </button>
 
               <button
                 onClick={() => setViewMode('meeting')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all duration-150 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                   viewMode === 'meeting'
                     ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
-                title="Group Meeting Standup Mode (Presenter Dashboard)"
               >
                 <Presentation className="w-3.5 h-3.5" />
-                <span>Group Meeting</span>
-                <span className="hidden xl:inline text-[10px] text-cyan-200/80">(组会投屏)</span>
+                <span>{t.meeting}</span>
               </button>
             </div>
           </div>
@@ -110,10 +123,10 @@ export const Header: React.FC = () => {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search paper title, tag (e.g. AAAI), or lead author... (/)"
+                placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+                className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 transition-all"
               />
               {searchQuery && (
                 <button
@@ -135,11 +148,11 @@ export const Header: React.FC = () => {
                   className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer appearance-none pr-4"
                 >
                   <option value="all" className="bg-slate-900 text-slate-200">
-                    All Members (全员)
+                    {t.allMembers}
                   </option>
                   {members.map((m) => (
                     <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
-                      {m.name} ({m.role})
+                      {language === 'zh' ? m.nameZh : m.nameEn}
                     </option>
                   ))}
                 </select>
@@ -148,27 +161,25 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Feature Toggles & Actions */}
+          {/* Right: Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Feature B: Only Show Blockers Toggle */}
+            {/* Only Blockers Toggle */}
             <button
               onClick={() => setFilterOnlyBlockers(!filterOnlyBlockers)}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
                 filterOnlyBlockers
-                  ? 'bg-rose-500/20 border-rose-500/70 text-rose-300 shadow-lg shadow-rose-500/20 ring-1 ring-rose-500/50'
+                  ? 'bg-rose-500/20 border-rose-500/70 text-rose-300 shadow-md ring-1 ring-rose-500/50'
                   : totalBlockers > 0
-                  ? 'bg-slate-900 border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/60'
+                  ? 'bg-slate-900 border-rose-500/40 text-rose-400 hover:bg-rose-500/10'
                   : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
               }`}
-              title="Toggle to view only blocked tasks requiring intervention"
             >
               <Flame
                 className={`w-3.5 h-3.5 ${
                   totalBlockers > 0 ? 'text-rose-400 animate-pulse' : 'text-slate-500'
                 }`}
               />
-              <span className="hidden sm:inline">Only Blockers</span>
-              <span className="text-[10px] text-rose-300 sm:hidden">Blockers</span>
+              <span className="hidden sm:inline">{t.onlyBlockers}</span>
               <span
                 className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
                   filterOnlyBlockers
@@ -182,32 +193,48 @@ export const Header: React.FC = () => {
               </span>
             </button>
 
-            {/* Feature C: Reverse DDL Planner Launch Button */}
+            {/* Reverse DDL Planner Launch Button */}
             <button
               onClick={() => setIsReverseDDLOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 hover:border-amber-500/70 text-xs font-semibold transition-all duration-150 shadow-sm shadow-amber-500/10"
-              title="Launch Reverse DDL Scheduler (T-45, T-30, T-14, T-3 automatic milestones)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 text-xs font-semibold transition-all shadow-sm"
             >
               <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
-              <span className="hidden sm:inline">Reverse DDL</span>
-              <span className="text-[10px] text-amber-400 sm:hidden">DDL</span>
+              <span className="hidden sm:inline">{t.reverseDDL}</span>
             </button>
 
             {/* Quick New Task Button */}
             <button
               onClick={() => setIsNewTaskOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-all duration-150 shadow-md shadow-indigo-600/30"
-              title="Create new paper task or milestone"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-all shadow-md shadow-indigo-600/30"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">New Task</span>
+              <span className="hidden sm:inline">{t.newTask}</span>
+            </button>
+
+            {/* Stage Settings Button */}
+            <button
+              onClick={() => setIsStageSettingsOpen(true)}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
+              title={t.pipelineSettings}
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Language Switcher Button (中文 / EN) */}
+            <button
+              onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-slate-800/60 transition-colors"
+              title={language === 'zh' ? 'Switch to English' : '切换为中文'}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{t.switchLang}</span>
             </button>
 
             {/* Demo Reset Button */}
             <button
               onClick={resetToMockData}
               className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
-              title="Reset to pristine academic demo state"
+              title={t.resetDemo}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -216,7 +243,7 @@ export const Header: React.FC = () => {
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+              title={t.toggleTheme}
             >
               {theme === 'dark' ? (
                 <Sun className="w-3.5 h-3.5 text-amber-400" />

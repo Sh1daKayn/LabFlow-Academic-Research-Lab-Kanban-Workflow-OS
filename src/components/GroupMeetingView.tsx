@@ -22,12 +22,15 @@ export const GroupMeetingView: React.FC = () => {
     projects,
     members,
     resources,
+    stages,
     filterMemberId,
     setFilterMemberId,
     setActiveBlockerTask,
     resolveBlocker,
     setSelectedTask,
     addToast,
+    language,
+    t,
   } = useLabFlow();
 
   const [selectedMember, setSelectedMember] = useState<string>('all');
@@ -35,14 +38,12 @@ export const GroupMeetingView: React.FC = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(true);
   const [minutesPreview, setMinutesPreview] = useState<string | null>(null);
 
-  // Sync with global filter member if needed
   useEffect(() => {
     if (filterMemberId !== 'all') {
       setSelectedMember(filterMemberId);
     }
   }, [filterMemberId]);
 
-  // Meeting timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isTimerRunning) {
@@ -59,60 +60,58 @@ export const GroupMeetingView: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Filter tasks based on selected presenter
   const filteredTasks = selectedMember === 'all'
     ? tasks
     : tasks.filter((t) => t.leadAuthor.id === selectedMember);
 
-  // 3 Columns:
-  // 1. Completed Recently
   const completedTasks = filteredTasks.filter(
     (t) => t.stage === 'ACCEPTED' || !!t.completedAt
   );
 
-  // 2. Active & In Progress
   const activeTasks = filteredTasks.filter(
     (t) => !t.isBlocked && t.stage !== 'ACCEPTED' && !t.completedAt
   );
 
-  // 3. Critical Blockers Requiring PI Decision
   const blockedTasks = filteredTasks.filter((t) => t.isBlocked);
 
   const handleExportMinutes = () => {
     const md = generateMeetingMinutesMarkdown({
-      labName: 'Sloan Computational & Applied Economics Lab (SCAEL)',
-      piName: 'Prof. Malone',
+      labName: t.labTitle,
+      piName: language === 'zh' ? '教授 1' : 'Professor 1',
       members,
       tasks,
       projects,
       resources,
+      stages,
       selectedMemberId: selectedMember,
+      lang: language,
     });
 
     navigator.clipboard
       .writeText(md)
       .then(() => {
         addToast(
-          '📋 Meeting Minutes Copied!',
-          'Markdown minutes copied to clipboard. Ready to paste into Slack, Notion, or Email.',
+          language === 'zh' ? '📋 组会纪要已复制到剪贴板！' : '📋 Meeting Minutes Copied!',
+          language === 'zh' ? '已生成结构化 Markdown 纪要，可直接粘贴。' : 'Markdown minutes copied to clipboard.',
           'success'
         );
       })
       .catch(() => {
-        // Fallback
         setMinutesPreview(md);
       });
   };
 
   const handleDownloadMinutes = () => {
     const md = generateMeetingMinutesMarkdown({
-      labName: 'Sloan Computational & Applied Economics Lab (SCAEL)',
-      piName: 'Prof. Malone',
+      labName: t.labTitle,
+      piName: language === 'zh' ? '教授 1' : 'Professor 1',
       members,
       tasks,
       projects,
       resources,
+      stages,
       selectedMemberId: selectedMember,
+      lang: language,
     });
     const blob = new Blob([md], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -121,7 +120,7 @@ export const GroupMeetingView: React.FC = () => {
     a.download = `LabFlow_Meeting_Minutes_${new Date().toISOString().split('T')[0]}.md`;
     a.click();
     URL.revokeObjectURL(url);
-    addToast('File Downloaded', 'Exported Meeting Minutes Markdown file.', 'info');
+    addToast(language === 'zh' ? '已下载纪要文档' : 'Minutes Downloaded', '', 'info');
   };
 
   return (
@@ -137,35 +136,28 @@ export const GroupMeetingView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                  Presenter Dashboard
+                  {t.meeting}
                 </span>
                 <span className="text-xs text-slate-400 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                  {new Date().toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
+                  {formatDate(new Date().toISOString(), language)}
                 </span>
               </div>
               <h1 className="text-lg font-bold text-slate-100 mt-0.5">
-                Lab Group Meeting Standup (无PPT组会投屏模式)
+                {t.standupTitle}
               </h1>
-              <p className="text-xs text-slate-400">
-                Live board projection for sprint review, peer unblocking, and advisor decisions.
-              </p>
+              <p className="text-xs text-slate-400">{t.standupDesc}</p>
             </div>
           </div>
 
-          {/* Right actions: Meeting Timer + Export Button */}
+          {/* Right actions */}
           <div className="flex items-center gap-3 shrink-0">
             {/* Live Standup Timer */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
               <Timer className="w-4 h-4 text-cyan-400 animate-spin-slow" />
               <div className="flex flex-col">
                 <span className="text-[9px] uppercase font-semibold text-slate-500">
-                  Meeting Timer
+                  {t.timerLabel}
                 </span>
                 <span className="font-mono text-xs font-bold text-cyan-300">
                   {formatTimer(meetingSeconds)}
@@ -175,7 +167,7 @@ export const GroupMeetingView: React.FC = () => {
                 onClick={() => setIsTimerRunning(!isTimerRunning)}
                 className="ml-1 text-[10px] text-slate-400 hover:text-white"
               >
-                {isTimerRunning ? 'Pause' : 'Resume'}
+                {isTimerRunning ? (language === 'zh' ? '暂停' : 'Pause') : (language === 'zh' ? '继续' : 'Resume')}
               </button>
             </div>
 
@@ -183,28 +175,27 @@ export const GroupMeetingView: React.FC = () => {
             <button
               onClick={handleExportMinutes}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all"
-              title="Generate structured Markdown meeting minutes & copy to clipboard"
             >
               <Copy className="w-4 h-4" />
-              <span>Export Markdown Minutes (导出组会纪要)</span>
+              <span>{t.exportMinutes}</span>
             </button>
 
             {/* Download .md */}
             <button
               onClick={handleDownloadMinutes}
               className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-              title="Download minutes as .md file"
+              title={t.downloadMinutes}
             >
               <Download className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Presenter / Member Selector Pills */}
+        {/* Presenter Selector Pills */}
         <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <span className="text-xs font-semibold text-slate-400 shrink-0 mr-1 flex items-center gap-1">
             <Users className="w-3.5 h-3.5" />
-            Presenter:
+            {language === 'zh' ? '汇报人:' : 'Presenter:'}
           </span>
 
           <button
@@ -218,7 +209,7 @@ export const GroupMeetingView: React.FC = () => {
                 : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
             }`}
           >
-            <span>All Lab Members (全员)</span>
+            <span>{t.allMembers}</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400">
               {tasks.length}
             </span>
@@ -228,6 +219,7 @@ export const GroupMeetingView: React.FC = () => {
             const memberTaskCount = tasks.filter((t) => t.leadAuthor.id === m.id).length;
             const hasBlockers = tasks.some((t) => t.leadAuthor.id === m.id && t.isBlocked);
             const isSelected = selectedMember === m.id;
+            const mName = language === 'zh' ? m.nameZh : m.nameEn;
 
             return (
               <button
@@ -242,10 +234,10 @@ export const GroupMeetingView: React.FC = () => {
                     : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
                 }`}
               >
-                <span>{m.name}</span>
+                <span>{mName}</span>
                 <span className="text-[10px] text-slate-400">[{m.role}]</span>
                 {hasBlockers && (
-                  <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" title="Has active blocker" />
+                  <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
                 )}
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400">
                   {memberTaskCount}
@@ -258,7 +250,7 @@ export const GroupMeetingView: React.FC = () => {
 
       {/* 3-Column Executive Summary Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 items-start pb-8">
-        {/* Column 1: Completed Recently (近期进展) */}
+        {/* Column 1: Completed Recently */}
         <div className="flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 p-4 shadow-sm">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
             <div className="flex items-center gap-2">
@@ -267,9 +259,11 @@ export const GroupMeetingView: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  1. Completed Recently
+                  {t.colCompleted}
                 </h2>
-                <span className="text-[11px] text-emerald-400 font-medium">近期进展与录用</span>
+                <span className="text-[11px] text-emerald-400 font-medium">
+                  {t.colCompletedSub}
+                </span>
               </div>
             </div>
             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -289,28 +283,28 @@ export const GroupMeetingView: React.FC = () => {
                     {t.projectTag}
                   </span>
                   <span className="text-[11px] text-slate-400 font-mono">
-                    {formatDate(t.completedAt || t.deadline)}
+                    {formatDate(t.completedAt || t.deadline, language)}
                   </span>
                 </div>
                 <h3 className="text-xs font-semibold text-slate-100 group-hover:text-emerald-300 transition-colors leading-snug">
                   {t.title}
                 </h3>
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
-                  <span>Lead: {t.leadAuthor.name}</span>
-                  <span className="text-emerald-400/90 font-medium">Stage: Accepted / Archived</span>
+                  <span>{language === 'zh' ? t.leadAuthor.nameZh : t.leadAuthor.nameEn}</span>
+                  <span className="text-emerald-400 font-mono">{t.progress || 100}%</span>
                 </div>
               </div>
             ))}
 
             {completedTasks.length === 0 && (
               <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
-                No archived milestones under current presenter filter.
+                {language === 'zh' ? '暂无归档成果' : 'No archived items'}
               </div>
             )}
           </div>
         </div>
 
-        {/* Column 2: Active & In Progress (当前推进) */}
+        {/* Column 2: Active & In Progress */}
         <div className="flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 p-4 shadow-sm">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
             <div className="flex items-center gap-2">
@@ -319,9 +313,11 @@ export const GroupMeetingView: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  2. Active & In Progress
+                  {t.colActive}
                 </h2>
-                <span className="text-[11px] text-cyan-400 font-medium">当前实验、建模与撰写</span>
+                <span className="text-[11px] text-cyan-400 font-medium">
+                  {t.colActiveSub}
+                </span>
               </div>
             </div>
             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
@@ -331,7 +327,7 @@ export const GroupMeetingView: React.FC = () => {
 
           <div className="space-y-3">
             {activeTasks.map((t) => {
-              const ddl = formatCountdownBadge(t.deadline);
+              const ddl = formatCountdownBadge(t.deadline, language);
               return (
                 <div
                   key={t.id}
@@ -350,8 +346,8 @@ export const GroupMeetingView: React.FC = () => {
                     {t.title}
                   </h3>
                   <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
-                    <span>Lead: {t.leadAuthor.name}</span>
-                    <span className="text-cyan-400/90 font-medium">[{t.stage}]</span>
+                    <span>{language === 'zh' ? t.leadAuthor.nameZh : t.leadAuthor.nameEn}</span>
+                    <span className="text-cyan-400 font-mono">{t.progress || 0}%</span>
                   </div>
                 </div>
               );
@@ -359,13 +355,13 @@ export const GroupMeetingView: React.FC = () => {
 
             {activeTasks.length === 0 && (
               <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
-                No active in-progress tasks found.
+                {language === 'zh' ? '暂无进行中课题' : 'No active tasks'}
               </div>
             )}
           </div>
         </div>
 
-        {/* Column 3: Critical Blockers Requiring PI Decision (核心卡点与求助) */}
+        {/* Column 3: Critical Blockers Requiring PI Decision */}
         <div className="flex flex-col rounded-2xl bg-red-950/20 border-2 border-red-500/50 p-4 shadow-xl shadow-red-950/20">
           <div className="flex items-center justify-between pb-3 border-b border-red-500/30 mb-3">
             <div className="flex items-center gap-2">
@@ -374,13 +370,15 @@ export const GroupMeetingView: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-xs font-bold text-red-200 uppercase tracking-wider">
-                  3. Critical Blockers (PI Decision)
+                  {t.colBlockers}
                 </h2>
-                <span className="text-[11px] text-red-300 font-medium">核心卡点与求助对象</span>
+                <span className="text-[11px] text-red-300 font-medium">
+                  {t.colBlockersSub}
+                </span>
               </div>
             </div>
             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse">
-              {blockedTasks.length} Active
+              {blockedTasks.length}
             </span>
           </div>
 
@@ -389,6 +387,7 @@ export const GroupMeetingView: React.FC = () => {
               const catMeta = t.blocker
                 ? BLOCKER_CATEGORIES[t.blocker.category] || BLOCKER_CATEGORIES.OTHER
                 : null;
+              const catLabel = language === 'zh' ? catMeta?.labelZh : catMeta?.labelEn;
 
               return (
                 <div
@@ -400,7 +399,7 @@ export const GroupMeetingView: React.FC = () => {
                       {t.projectTag}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-red-500/20 text-red-300 border border-red-500/40">
-                      {catMeta?.labelZh || '卡点'}
+                      {catLabel || '卡点'}
                     </span>
                   </div>
 
@@ -413,32 +412,17 @@ export const GroupMeetingView: React.FC = () => {
 
                   {/* Where stuck */}
                   <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-500/30 text-xs">
-                    <div className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-0.5">
-                      Technical Bottleneck:
-                    </div>
                     <p className="text-slate-200 leading-relaxed text-[11px]">
                       {t.blocker?.details}
                     </p>
                   </div>
 
-                  {/* What tried */}
-                  {t.blocker?.tried && (
-                    <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                        What Has Been Tried:
-                      </div>
-                      <p className="text-slate-300 leading-relaxed text-[11px]">
-                        {t.blocker.tried}
-                      </p>
-                    </div>
-                  )}
-
                   {/* Decision Needed from PI & Quick Unblock button */}
                   <div className="pt-1 flex items-center justify-between gap-2">
                     <div className="text-[11px] text-slate-300">
-                      <span className="text-slate-500">Escalated to: </span>
+                      <span className="text-slate-500">{language === 'zh' ? '决断对象: ' : 'Escalated to: '}</span>
                       <span className="font-bold text-cyan-300">
-                        {t.blocker?.escalatedTo || t.pi.name}
+                        {t.blocker?.escalatedTo || (language === 'zh' ? t.pi.nameZh : t.pi.nameEn)}
                       </span>
                     </div>
 
@@ -447,14 +431,14 @@ export const GroupMeetingView: React.FC = () => {
                         onClick={() => setActiveBlockerTask(t)}
                         className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition-colors"
                       >
-                        Edit
+                        {language === 'zh' ? '编辑' : 'Edit'}
                       </button>
                       <button
                         onClick={() => resolveBlocker(t.id)}
                         className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow transition-colors"
                       >
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Resolve</span>
+                        <span>{language === 'zh' ? '解除' : 'Resolve'}</span>
                       </button>
                     </div>
                   </div>
@@ -464,7 +448,7 @@ export const GroupMeetingView: React.FC = () => {
 
             {blockedTasks.length === 0 && (
               <div className="p-8 text-center text-emerald-400 text-xs border border-dashed border-emerald-500/30 rounded-xl bg-emerald-950/10">
-                🎉 No active blockers reported. Pipeline is clear!
+                🎉 {t.noBlockers}
               </div>
             )}
           </div>
@@ -475,7 +459,9 @@ export const GroupMeetingView: React.FC = () => {
       {minutesPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="relative w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-800 p-6 text-slate-100 max-h-[85vh] flex flex-col">
-            <h3 className="text-sm font-bold text-slate-100 mb-2">Meeting Minutes Markdown</h3>
+            <h3 className="text-sm font-bold text-slate-100 mb-2">
+              {language === 'zh' ? '会议纪要文档预览' : 'Meeting Minutes Markdown Preview'}
+            </h3>
             <textarea
               readOnly
               value={minutesPreview}
@@ -487,7 +473,7 @@ export const GroupMeetingView: React.FC = () => {
                 onClick={() => setMinutesPreview(null)}
                 className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-200 font-medium"
               >
-                Close
+                {t.cancel}
               </button>
             </div>
           </div>

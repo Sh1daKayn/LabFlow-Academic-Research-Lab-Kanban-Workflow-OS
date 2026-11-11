@@ -6,16 +6,21 @@ import {
   BlockerInfo,
   LabMember,
   LabResource,
+  Language,
   ProjectItem,
   ReverseDDLForm,
+  StageConfig,
   TaskItem,
 } from '@/types';
 import {
+  DEFAULT_STAGES,
   INITIAL_PROJECTS,
   INITIAL_RESOURCES,
   INITIAL_TASKS,
   LAB_MEMBERS,
 } from '@/data/mockData';
+import { en, LocaleTranslations } from '@/locales/en';
+import { zh } from '@/locales/zh';
 import { subtractDays } from '@/utils/date';
 import { triggerConfetti } from '@/utils/confetti';
 
@@ -27,15 +32,34 @@ export interface ToastItem {
 }
 
 interface LabFlowContextType {
+  // Locale & Translation
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: LocaleTranslations;
+
+  // Stages
+  stages: StageConfig[];
+  addStage: (stage: StageConfig) => void;
+  updateStage: (stageId: string, updates: Partial<StageConfig>) => void;
+  deleteStage: (stageId: string) => void;
+  restoreDefaultStages: () => void;
+  isStageSettingsOpen: boolean;
+  setIsStageSettingsOpen: (open: boolean) => void;
+
+  // Core Data
   tasks: TaskItem[];
   projects: ProjectItem[];
   members: LabMember[];
   resources: LabResource[];
+
+  // View & Filters
   filterOnlyBlockers: boolean;
   searchQuery: string;
   filterMemberId: string;
-  viewMode: 'kanban' | 'meeting';
+  viewMode: 'kanban' | 'gantt' | 'meeting';
   theme: 'dark' | 'light';
+
+  // Modals
   activeBlockerTask: TaskItem | null;
   isReverseDDLOpen: boolean;
   isNewTaskOpen: boolean;
@@ -47,7 +71,7 @@ interface LabFlowContextType {
   setFilterOnlyBlockers: (val: boolean) => void;
   setSearchQuery: (val: string) => void;
   setFilterMemberId: (val: string) => void;
-  setViewMode: (val: 'kanban' | 'meeting') => void;
+  setViewMode: (val: 'kanban' | 'gantt' | 'meeting') => void;
   setTheme: (val: 'dark' | 'light') => void;
   setActiveBlockerTask: (task: TaskItem | null) => void;
   setIsReverseDDLOpen: (open: boolean) => void;
@@ -62,6 +86,8 @@ interface LabFlowContextType {
   resolveBlocker: (taskId: string) => void;
   addTask: (task: Omit<TaskItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
+  updateTaskProgress: (taskId: string, progress: number) => void;
+  updateTaskDates: (taskId: string, startDate?: string, deadline?: string) => void;
   deleteTask: (taskId: string) => void;
   generateReverseDDLPipeline: (plan: ReverseDDLForm) => void;
   claimResource: (resourceId: string, currentUser: string, currentJob: string, hours: number) => void;
@@ -74,13 +100,17 @@ interface LabFlowContextType {
 const LabFlowContext = createContext<LabFlowContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  TASKS: 'labflow_tasks_v1',
-  PROJECTS: 'labflow_projects_v1',
-  RESOURCES: 'labflow_resources_v1',
-  THEME: 'labflow_theme_v1',
+  LANG: 'labflow_lang_v2',
+  STAGES: 'labflow_stages_v2',
+  TASKS: 'labflow_tasks_v2',
+  PROJECTS: 'labflow_projects_v2',
+  RESOURCES: 'labflow_resources_v2',
+  THEME: 'labflow_theme_v2',
 };
 
 export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>('zh');
+  const [stages, setStages] = useState<StageConfig[]>(DEFAULT_STAGES);
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
   const [members] = useState<LabMember[]>(LAB_MEMBERS);
@@ -89,26 +119,34 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [filterOnlyBlockers, setFilterOnlyBlockers] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'kanban' | 'meeting'>('kanban');
+  const [viewMode, setViewMode] = useState<'kanban' | 'gantt' | 'meeting'>('kanban');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const [activeBlockerTask, setActiveBlockerTask] = useState<TaskItem | null>(null);
   const [isReverseDDLOpen, setIsReverseDDLOpen] = useState<boolean>(false);
   const [isNewTaskOpen, setIsNewTaskOpen] = useState<boolean>(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
+  const [isStageSettingsOpen, setIsStageSettingsOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // Load from localStorage on client mount
+  // Active translation dictionary
+  const t = language === 'zh' ? zh : en;
+
+  // Load from localStorage
   useEffect(() => {
     try {
+      const savedLang = localStorage.getItem(STORAGE_KEYS.LANG) as Language;
+      const savedStages = localStorage.getItem(STORAGE_KEYS.STAGES);
       const savedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
       const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
       const savedResources = localStorage.getItem(STORAGE_KEYS.RESOURCES);
       const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light';
 
+      if (savedLang) setLanguage(savedLang);
+      if (savedStages) setStages(JSON.parse(savedStages));
       if (savedTasks) setTasks(JSON.parse(savedTasks));
       if (savedProjects) setProjects(JSON.parse(savedProjects));
       if (savedResources) setResources(JSON.parse(savedResources));
@@ -120,10 +158,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  // Save changes to localStorage
+  // Save to localStorage
   useEffect(() => {
     if (!isInitialized) return;
     try {
+      localStorage.setItem(STORAGE_KEYS.LANG, language);
+      localStorage.setItem(STORAGE_KEYS.STAGES, JSON.stringify(stages));
       localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
       localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(resources));
@@ -131,9 +171,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (e) {
       console.warn('Could not write to localStorage', e);
     }
-  }, [tasks, projects, resources, theme, isInitialized]);
+  }, [language, stages, tasks, projects, resources, theme, isInitialized]);
 
-  // Apply dark mode class to <html>
+  // Apply dark mode class
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -150,12 +190,48 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
     setToasts((prev) => [...prev, { id, title, description, type }]);
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      setToasts((prev) => prev.filter((item) => item.id !== id));
     }, 4500);
   };
 
   const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Stage customization handlers
+  const addStage = (stage: StageConfig) => {
+    setStages((prev) => [...prev, stage]);
+    addToast(language === 'zh' ? '阶段已添加' : 'Stage Added', stage.labelZh || stage.labelEn, 'success');
+  };
+
+  const updateStage = (stageId: string, updates: Partial<StageConfig>) => {
+    setStages((prev) =>
+      prev.map((s) => (s.id === stageId ? { ...s, ...updates } : s))
+    );
+    addToast(language === 'zh' ? '阶段已更新' : 'Stage Updated', '', 'info');
+  };
+
+  const deleteStage = (stageId: string) => {
+    if (stages.length <= 1) {
+      addToast(language === 'zh' ? '无法删除' : 'Cannot delete', language === 'zh' ? '至少保留一个阶段' : 'Must keep at least 1 stage', 'error');
+      return;
+    }
+    const remainingStages = stages.filter((s) => s.id !== stageId);
+    const fallbackStageId = remainingStages[0].id;
+
+    // Migrate any tasks in the deleted stage to the fallback stage
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.stage === stageId ? { ...task, stage: fallbackStageId } : task
+      )
+    );
+    setStages(remainingStages);
+    addToast(language === 'zh' ? '阶段已移除' : 'Stage Removed', language === 'zh' ? '任务已自动移至第一阶段' : 'Tasks migrated to first stage', 'info');
+  };
+
+  const restoreDefaultStages = () => {
+    setStages(DEFAULT_STAGES);
+    addToast(language === 'zh' ? '已重置默认阶段' : 'Default Stages Restored', '', 'success');
   };
 
   const moveTask = (taskId: string, targetStage: AcademicStage, newOrder?: number) => {
@@ -165,8 +241,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (targetStage === 'ACCEPTED' && targetTask.stage !== 'ACCEPTED') {
       triggerConfetti();
       addToast(
-        '🎉 Milestone Accepted & Archived!',
-        `"${targetTask.title.slice(0, 40)}..." is now marked as Accepted!`,
+        language === 'zh' ? '🎉 成果录用归档！' : '🎉 Milestone Accepted & Archived!',
+        `"${targetTask.title.slice(0, 36)}..."`,
         'success'
       );
     }
@@ -179,6 +255,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
             stage: targetStage,
             order: newOrder !== undefined ? newOrder : t.order,
             completedAt: targetStage === 'ACCEPTED' ? new Date().toISOString() : t.completedAt,
+            progress: targetStage === 'ACCEPTED' ? 100 : t.progress,
             updatedAt: new Date().toISOString(),
           };
         }
@@ -220,8 +297,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
     );
     addToast(
-      '🚨 Blocker Logged & Escalated',
-      `Card escalated to ${blocker.escalatedTo} (${blocker.category})`,
+      language === 'zh' ? '🚨 技术卡点已标记' : '🚨 Blocker Logged & Escalated',
+      `${blocker.escalatedTo} (${blocker.category})`,
       'warning'
     );
   };
@@ -242,8 +319,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
     triggerConfetti();
     addToast(
-      '✨ Blocker Resolved',
-      'The blocker has been marked as resolved and task is unblocked.',
+      language === 'zh' ? '✨ 卡点已解除' : '✨ Blocker Resolved',
+      language === 'zh' ? '该任务已恢复推进状态' : 'Task unblocked and resumed',
       'success'
     );
   };
@@ -256,7 +333,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       updatedAt: new Date().toISOString(),
     };
     setTasks((prev) => [newTask, ...prev]);
-    addToast('Task Created', `Added "${newTask.title.slice(0, 30)}..." to ${newTask.stage}`, 'success');
+    addToast(language === 'zh' ? '任务已创建' : 'Task Created', newTask.title.slice(0, 30), 'success');
   };
 
   const updateTask = (taskId: string, updates: Partial<TaskItem>) => {
@@ -275,7 +352,30 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (selectedTask?.id === taskId) {
       setSelectedTask((prev) => (prev ? { ...prev, ...updates } : null));
     }
-    addToast('Task Updated', 'Card details updated successfully', 'info');
+    addToast(language === 'zh' ? '修改已保存' : 'Task Updated', '', 'info');
+  };
+
+  const updateTaskProgress = (taskId: string, progress: number) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, progress, updatedAt: new Date().toISOString() } : t))
+    );
+  };
+
+  const updateTaskDates = (taskId: string, startDate?: string, deadline?: string) => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            startDate: startDate || t.startDate,
+            deadline: deadline || t.deadline,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return t;
+      })
+    );
+    addToast(language === 'zh' ? '排期已调整' : 'Schedule Adjusted', '', 'info');
   };
 
   const deleteTask = (taskId: string) => {
@@ -283,12 +383,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (selectedTask?.id === taskId) {
       setSelectedTask(null);
     }
-    addToast('Task Deleted', 'Card removed from pipeline', 'info');
+    addToast(language === 'zh' ? '任务已删除' : 'Task Deleted', '', 'info');
   };
 
   const generateReverseDDLPipeline = (plan: ReverseDDLForm) => {
-    const lead = members.find((m) => m.id === plan.leadAuthorId) || members[2]; // Default to Kayn
-    const pi = members[0]; // Prof. Malone
+    const lead = members.find((m) => m.id === plan.leadAuthorId) || members[2];
+    const pi = members[0]; // Professor 1
 
     const projectId = `proj-${Date.now()}`;
     const newProject: ProjectItem = {
@@ -297,7 +397,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       targetVenue: plan.targetVenue,
       tag: plan.tag || plan.targetVenue.split(' ')[0] || 'Paper',
       submissionDeadline: plan.deadlineDate,
-      status: 'DATA_EXP',
+      status: stages[1]?.id || 'DATA_EXP',
       leadAuthorId: lead.id,
       piId: pi.id,
       assets: {
@@ -320,96 +420,101 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const generatedTasks: TaskItem[] = [
       {
         id: `task-${Date.now()}-1`,
-        title: `[T-45] Baseline & Core Empirical Results Freeze: ${plan.title}`,
-        description: `Finalize experimental benchmark suites, freeze baseline comparisons, and verify seed replicability for ${plan.targetVenue}.`,
-        stage: 'DATA_EXP',
+        title: language === 'zh'
+          ? `[T-45 基线锁定] ${plan.title}`
+          : `[T-45 Baseline Freeze] ${plan.title}`,
+        description: language === 'zh'
+          ? '锁定基准算法与核心实验数据，完成随机种子复现性核查。'
+          : `Freeze algorithm benchmark baselines and verify empirical seed stability.`,
+        stage: stages[1]?.id || 'DATA_EXP',
         projectId,
         projectTag: newProject.tag,
         targetVenue: plan.targetVenue,
+        startDate: subtractDays(t45, 14),
         deadline: t45,
+        progress: 25,
         leadAuthor: lead,
         pi,
         priority: 'HIGH',
         assets: newProject.assets,
         isBlocked: false,
         order: 0,
-        tags: ['Empirical Freeze', 'Baselines', plan.targetVenue],
-        checklist: [
-          { id: 'c1', text: 'Lock baseline algorithm configurations & hyperparameters', done: false },
-          { id: 'c2', text: 'Generate primary evaluation table across 5 random seeds', done: false },
-          { id: 'c3', text: 'Backup raw tensor/log checkpoints to cloud storage', done: false },
-        ],
+        tags: ['Baseline', plan.targetVenue],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
         id: `task-${Date.now()}-2`,
-        title: `[T-30] Full Manuscript First Draft Ready (Overleaf): ${plan.title}`,
-        description: `Complete full draft in Overleaf including Introduction, Related Work, Methodology, Main Theorems, and Discussion.`,
-        stage: 'DRAFTING',
+        title: language === 'zh'
+          ? `[T-30 初稿就绪] ${plan.title}`
+          : `[T-30 Manuscript Draft] ${plan.title}`,
+        description: language === 'zh'
+          ? '在 Overleaf 完成包括方法、引理、主定理与实验对比在内的完整初稿。'
+          : `Complete full draft in Overleaf including Methodology, Theorems, and Discussion.`,
+        stage: stages[2]?.id || 'DRAFTING',
         projectId,
         projectTag: newProject.tag,
         targetVenue: plan.targetVenue,
+        startDate: t45,
         deadline: t30,
+        progress: 20,
         leadAuthor: lead,
         pi,
         priority: 'HIGH',
         assets: newProject.assets,
         isBlocked: false,
         order: 0,
-        tags: ['Drafting', 'Overleaf', 'Figures'],
-        checklist: [
-          { id: 'c1', text: 'Complete Section 1 & 2 literature framing', done: false },
-          { id: 'c2', text: 'Compile vector figures at 300 DPI', done: false },
-          { id: 'c3', text: 'Verify KaTeX/LaTeX math notations consistency', done: false },
-        ],
+        tags: ['Overleaf', 'Drafting'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
         id: `task-${Date.now()}-3`,
-        title: `[T-14] Submit Polished PDF to PI for Internal Review: ${plan.title}`,
-        description: `Deliver ready manuscript to ${pi.name} for critical structural review, theorem verification, and abstract refinement.`,
-        stage: 'PI_REVIEW',
+        title: language === 'zh'
+          ? `[T-14 导师全篇审阅] ${plan.title}`
+          : `[T-14 Advisor Review] ${plan.title}`,
+        description: language === 'zh'
+          ? '提交完整 PDF 供导师进行结构性批评、定理严谨性核查与叙事润色。'
+          : `Deliver manuscript to advisor for structural review, theorem verification, and abstract polish.`,
+        stage: stages[3]?.id || 'PI_REVIEW',
         projectId,
         projectTag: newProject.tag,
         targetVenue: plan.targetVenue,
+        startDate: t30,
         deadline: t14,
+        progress: 10,
         leadAuthor: lead,
         pi,
         priority: 'URGENT',
         assets: newProject.assets,
         isBlocked: false,
         order: 0,
-        tags: ['PI Review', 'Critical Polish'],
-        checklist: [
-          { id: 'c1', text: 'Send compiled PDF & diff notes to PI', done: false },
-          { id: 'c2', text: 'Conduct internal lab dry-run walk-through', done: false },
-        ],
+        tags: ['Advisor Review'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
         id: `task-${Date.now()}-4`,
-        title: `[T-3] Camera Formatting, Anonymity & Code Check: ${plan.title}`,
-        description: `Final submission checks: OpenReview author profile confirmation, blind review scrub, supplementary replication zip pack.`,
-        stage: 'PI_REVIEW',
+        title: language === 'zh'
+          ? `[T-3 格式排版与匿名复核] ${plan.title}`
+          : `[T-3 Camera & Anonymity Check] ${plan.title}`,
+        description: language === 'zh'
+          ? '双盲匿名脱敏检查、附录压缩包打包与会议提交系统元数据核对。'
+          : `Final submission checks: OpenReview author confirmation, blind review scrub, and supplementary zip compile.`,
+        stage: stages[3]?.id || 'PI_REVIEW',
         projectId,
         projectTag: newProject.tag,
         targetVenue: plan.targetVenue,
+        startDate: t14,
         deadline: t3,
+        progress: 0,
         leadAuthor: lead,
         pi,
         priority: 'URGENT',
         assets: newProject.assets,
         isBlocked: false,
         order: 1,
-        tags: ['Submission Check', 'Camera Ready'],
-        checklist: [
-          { id: 'c1', text: 'Strip author names & institution metadata for double-blind review', done: false },
-          { id: 'c2', text: 'Compile anonymized GitHub code repository', done: false },
-          { id: 'c3', text: 'Submit to portal and verify confirmation receipt', done: false },
-        ],
+        tags: ['Submission'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -418,8 +523,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTasks((prev) => [...generatedTasks, ...prev]);
     triggerConfetti();
     addToast(
-      '⚡ Reverse Pipeline Generated!',
-      `Created 4 synchronized milestones leading up to ${plan.targetVenue} (${plan.deadlineDate})`,
+      language === 'zh' ? '⚡ 倒排期里程碑已生成' : '⚡ Reverse Pipeline Generated',
+      `${plan.targetVenue} (${plan.deadlineDate})`,
       'success'
     );
   };
@@ -447,8 +552,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
     );
     addToast(
-      '🖥️ Resource Claimed',
-      `Locked for @${currentUser} (${currentJob || 'Batch training'}, ${hours}h)`,
+      language === 'zh' ? '🖥️ 算力节点已认领' : '🖥️ Resource Claimed',
+      `@${currentUser} (${hours}h)`,
       'success'
     );
   };
@@ -470,13 +575,14 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return r;
       })
     );
-    addToast('Resource Released', 'Node is now IDLE and available for other lab members', 'info');
+    addToast(language === 'zh' ? '节点已释放' : 'Resource Released', '', 'info');
   };
 
   const resetToMockData = () => {
     setTasks(INITIAL_TASKS);
     setProjects(INITIAL_PROJECTS);
     setResources(INITIAL_RESOURCES);
+    setStages(DEFAULT_STAGES);
     setFilterOnlyBlockers(false);
     setSearchQuery('');
     setFilterMemberId('all');
@@ -485,16 +591,27 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.removeItem(STORAGE_KEYS.TASKS);
       localStorage.removeItem(STORAGE_KEYS.PROJECTS);
       localStorage.removeItem(STORAGE_KEYS.RESOURCES);
+      localStorage.removeItem(STORAGE_KEYS.STAGES);
     } catch (e) {
       console.warn('Could not reset localStorage', e);
     }
     triggerConfetti();
-    addToast('Demo State Reset', 'Restored pristine academic mock data across all pipelines', 'success');
+    addToast(language === 'zh' ? '示例数据已重置' : 'Demo State Reset', '', 'success');
   };
 
   return (
     <LabFlowContext.Provider
       value={{
+        language,
+        setLanguage,
+        t,
+        stages,
+        addStage,
+        updateStage,
+        deleteStage,
+        restoreDefaultStages,
+        isStageSettingsOpen,
+        setIsStageSettingsOpen,
         tasks,
         projects,
         members,
@@ -526,6 +643,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         resolveBlocker,
         addTask,
         updateTask,
+        updateTaskProgress,
+        updateTaskDates,
         deleteTask,
         generateReverseDDLPipeline,
         claimResource,

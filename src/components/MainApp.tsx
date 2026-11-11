@@ -5,12 +5,14 @@ import { useLabFlow } from '@/context/LabFlowContext';
 import { Header } from '@/components/Header';
 import { ResourceStrip } from '@/components/ResourceStrip';
 import { KanbanBoard } from '@/components/KanbanBoard';
+import { GanttView } from '@/components/GanttView';
 import { GroupMeetingView } from '@/components/GroupMeetingView';
 import { BlockerModal } from '@/components/BlockerModal';
 import { ReverseDDLModal } from '@/components/ReverseDDLModal';
 import { NewTaskModal } from '@/components/NewTaskModal';
 import { TaskDetailDrawer } from '@/components/TaskDetailDrawer';
 import { ResourceModal } from '@/components/ResourceModal';
+import { StageSettingsModal } from '@/components/StageSettingsModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
@@ -21,12 +23,18 @@ export const MainApp: React.FC = () => {
       {/* Top Header */}
       <Header />
 
-      {/* Compute & Lab Resource Status Strip */}
+      {/* Slim Foldable Compute Strip */}
       <ResourceStrip />
 
-      {/* Main View Area: Kanban vs Group Meeting */}
+      {/* Main View Area: Kanban vs Gantt vs Group Meeting */}
       <main className="flex-1 flex flex-col">
-        {viewMode === 'kanban' ? <KanbanBoard /> : <GroupMeetingView />}
+        {viewMode === 'kanban' ? (
+          <KanbanBoard />
+        ) : viewMode === 'gantt' ? (
+          <GanttView />
+        ) : (
+          <GroupMeetingView />
+        )}
       </main>
 
       {/* Modals & Slide-over Drawers */}
@@ -35,6 +43,7 @@ export const MainApp: React.FC = () => {
       <NewTaskModal />
       <TaskDetailDrawer />
       <ResourceModal />
+      <StageSettingsModal />
 
       {/* Toast Notification Layer */}
       <ToastContainer />

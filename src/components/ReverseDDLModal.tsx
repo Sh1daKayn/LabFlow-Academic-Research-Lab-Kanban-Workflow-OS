@@ -7,26 +7,32 @@ import { subtractDays, formatDate } from '@/utils/date';
 import { Zap, X, Sparkles } from 'lucide-react';
 
 const VENUE_PRESETS = [
-  { name: 'AAAI 2027', defaultLead: 'member-alex', tag: 'AAAI 2027' },
-  { name: 'NeurIPS 2027', defaultLead: 'member-kayn', tag: 'NeurIPS \'27' },
-  { name: 'ICML 2027', defaultLead: 'member-alex', tag: 'ICML \'27' },
-  { name: 'INFORMS / Management Science', defaultLead: 'member-kayn', tag: 'Mgt Sci' },
-  { name: 'AEPP / IFAMR', defaultLead: 'member-elena', tag: 'AEPP' },
-  { name: 'Nature Communications', defaultLead: 'member-kayn', tag: 'Nature Comms' },
+  { name: 'AAAI 2027', defaultLead: 'member-student2', tag: 'AAAI 2027' },
+  { name: 'NeurIPS 2027', defaultLead: 'member-student1', tag: 'NeurIPS \'27' },
+  { name: 'ICML 2027', defaultLead: 'member-student2', tag: 'ICML \'27' },
+  { name: 'INFORMS / Management Science', defaultLead: 'member-student1', tag: 'Mgt Sci' },
+  { name: 'AEPP / IFAMR', defaultLead: 'member-student3', tag: 'AEPP' },
+  { name: 'Nature Communications', defaultLead: 'member-student1', tag: 'Nature Comms' },
 ];
 
 export const ReverseDDLModal: React.FC = () => {
-  const { isReverseDDLOpen, setIsReverseDDLOpen, members, generateReverseDDLPipeline } =
-    useLabFlow();
+  const {
+    isReverseDDLOpen,
+    setIsReverseDDLOpen,
+    members,
+    generateReverseDDLPipeline,
+    language,
+    t,
+  } = useLabFlow();
 
   const [title, setTitle] = useState('');
   const [targetVenue, setTargetVenue] = useState('NeurIPS 2027');
   const [tag, setTag] = useState("NeurIPS '27");
-  // Default deadline 70 days from today
+
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 70);
   const [deadlineDate, setDeadlineDate] = useState(defaultDate.toISOString().split('T')[0]);
-  const [leadAuthorId, setLeadAuthorId] = useState('member-kayn');
+  const [leadAuthorId, setLeadAuthorId] = useState('member-student1');
   const [overleafUrl, setOverleafUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [datasetUrl, setDatasetUrl] = useState('');
@@ -81,17 +87,14 @@ export const ReverseDDLModal: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Academic DDL Algorithm
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                {t.reverseDDL}
               </span>
-              <span className="text-xs text-slate-400">Target Venue Synchronization</span>
             </div>
-            <h2 className="text-lg font-bold text-slate-100 mt-1 leading-snug">
-              Reverse DDL Scheduler (投稿倒推排期生成器)
+            <h2 className="text-base font-bold text-slate-100 mt-1 leading-snug">
+              {t.reverseDDLTitle}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Enter target submission date to automatically generate 4 synchronized milestone tasks onto your board.
-            </p>
+            <p className="text-xs text-slate-400 mt-0.5">{t.reverseDDLDesc}</p>
           </div>
         </div>
 
@@ -100,7 +103,7 @@ export const ReverseDDLModal: React.FC = () => {
           {/* Paper Title */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Paper / Research Project Title *
+              {t.paperTitle} *
             </label>
             <input
               type="text"
@@ -116,9 +119,8 @@ export const ReverseDDLModal: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-slate-300">
-                Target Venue / Conference / Journal *
+                {t.targetVenue} *
               </label>
-              <span className="text-[10px] text-slate-500">Quick Presets:</span>
             </div>
 
             {/* Presets pills */}
@@ -145,7 +147,7 @@ export const ReverseDDLModal: React.FC = () => {
                 required
                 value={targetVenue}
                 onChange={(e) => setTargetVenue(e.target.value)}
-                placeholder="Target Venue (e.g. INFORMS / Management Science)"
+                placeholder="Target Venue"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
               <input
@@ -153,7 +155,7 @@ export const ReverseDDLModal: React.FC = () => {
                 required
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
-                placeholder="Badge Tag (e.g. NeurIPS '27)"
+                placeholder={t.badgeTag}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
             </div>
@@ -163,22 +165,20 @@ export const ReverseDDLModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Submission Deadline (T-Day) *
+                {t.submissionDDL} *
               </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  required
-                  value={deadlineDate}
-                  onChange={(e) => setDeadlineDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60"
-                />
-              </div>
+              <input
+                type="date"
+                required
+                value={deadlineDate}
+                onChange={(e) => setDeadlineDate(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Lead Author / Assignee *
+                {t.leadAuthor} *
               </label>
               <select
                 value={leadAuthorId}
@@ -187,7 +187,7 @@ export const ReverseDDLModal: React.FC = () => {
               >
                 {members.map((m) => (
                   <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
-                    {m.name} ({m.role})
+                    {language === 'zh' ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
                   </option>
                 ))}
               </select>
@@ -197,7 +197,7 @@ export const ReverseDDLModal: React.FC = () => {
           {/* Optional Asset Links */}
           <div className="border-t border-slate-800/80 pt-3">
             <span className="text-xs font-medium text-slate-400 block mb-2">
-              Initial Asset Links (Optional)
+              {language === 'zh' ? '科研资源直达链接 (选填)' : 'Asset Links (Optional)'}
             </span>
             <div className="grid grid-cols-3 gap-2">
               <input
@@ -218,7 +218,7 @@ export const ReverseDDLModal: React.FC = () => {
                 type="url"
                 value={datasetUrl}
                 onChange={(e) => setDatasetUrl(e.target.value)}
-                placeholder="Dataset / Drive URL"
+                placeholder="Dataset URL"
                 className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
               />
             </div>
@@ -229,10 +229,10 @@ export const ReverseDDLModal: React.FC = () => {
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-amber-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                Generated 4-Stage Milestone Schedule:
+                {t.milestoneSchedule}:
               </span>
               <span className="text-[11px] text-slate-400 font-mono">
-                Deadline: {formatDate(deadlineDate)}
+                {formatDate(deadlineDate, language)}
               </span>
             </div>
 
@@ -244,15 +244,10 @@ export const ReverseDDLModal: React.FC = () => {
                     T - 45d
                   </span>
                   <span className="text-slate-200 font-medium">
-                    Baseline & Core Empirical Results Freeze
+                    {language === 'zh' ? '基线锁定与核心实验评测冻结' : 'Baseline & Core Empirical Results Freeze'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-cyan-400 font-mono">{formatDate(t45)}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                    Data & Modeling
-                  </span>
-                </div>
+                <span className="text-[11px] text-cyan-400 font-mono">{formatDate(t45, language)}</span>
               </div>
 
               {/* T-30 */}
@@ -262,15 +257,10 @@ export const ReverseDDLModal: React.FC = () => {
                     T - 30d
                   </span>
                   <span className="text-slate-200 font-medium">
-                    Full Manuscript First Draft Ready
+                    {language === 'zh' ? '完整学术论文初稿就绪' : 'Full Manuscript First Draft Ready'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-amber-400 font-mono">{formatDate(t30)}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                    Drafting
-                  </span>
-                </div>
+                <span className="text-[11px] text-amber-400 font-mono">{formatDate(t30, language)}</span>
               </div>
 
               {/* T-14 */}
@@ -280,15 +270,10 @@ export const ReverseDDLModal: React.FC = () => {
                     T - 14d
                   </span>
                   <span className="text-slate-200 font-medium">
-                    Submit Polished PDF to PI for Internal Review
+                    {language === 'zh' ? '提交导师进行全篇深入审阅' : 'Submit Polished PDF to Advisor for Review'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-blue-400 font-mono">{formatDate(t14)}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                    PI Review
-                  </span>
-                </div>
+                <span className="text-[11px] text-blue-400 font-mono">{formatDate(t14, language)}</span>
               </div>
 
               {/* T-3 */}
@@ -298,15 +283,10 @@ export const ReverseDDLModal: React.FC = () => {
                     T - 3d
                   </span>
                   <span className="text-slate-200 font-medium">
-                    Camera Formatting, Anonymity & Code Check
+                    {language === 'zh' ? '排版校验、双盲匿名脱敏与复现包核查' : 'Camera Formatting & Code Replication Check'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-rose-400 font-mono">{formatDate(t3)}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                    PI Review
-                  </span>
-                </div>
+                <span className="text-[11px] text-rose-400 font-mono">{formatDate(t3, language)}</span>
               </div>
             </div>
           </div>
@@ -318,14 +298,14 @@ export const ReverseDDLModal: React.FC = () => {
               onClick={() => setIsReverseDDLOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
             >
-              Cancel
+              {t.cancel}
             </button>
             <button
               type="submit"
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition-all duration-150"
             >
               <Zap className="w-4 h-4 fill-slate-950" />
-              <span>Generate Pipeline (生成全流程排期)</span>
+              <span>{t.generatePipelineBtn}</span>
             </button>
           </div>
         </form>
