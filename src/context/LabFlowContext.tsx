@@ -11,9 +11,11 @@ import {
   ReverseDDLForm,
   StageConfig,
   TaskItem,
+  VenuePreset,
 } from '@/types';
 import {
   DEFAULT_STAGES,
+  DEFAULT_VENUES,
   INITIAL_PROJECTS,
   INITIAL_RESOURCES,
   INITIAL_TASKS,
@@ -21,7 +23,7 @@ import {
 } from '@/data/mockData';
 import { en, LocaleTranslations } from '@/locales/en';
 import { zh } from '@/locales/zh';
-import { subtractDays } from '@/utils/date';
+import { subtractDays, formatDate } from '@/utils/date';
 import { triggerConfetti } from '@/utils/confetti';
 
 export interface ToastItem {
@@ -46,16 +48,36 @@ interface LabFlowContextType {
   isStageSettingsOpen: boolean;
   setIsStageSettingsOpen: (open: boolean) => void;
 
+  // Target Venues
+  venues: VenuePreset[];
+  addVenue: (venue: VenuePreset) => void;
+  deleteVenue: (venueId: string) => void;
+
+  // Members & Current User
+  members: LabMember[];
+  currentUserId: string;
+  setCurrentUserId: (id: string) => void;
+  addMember: (member: LabMember) => void;
+  updateMember: (id: string, updates: Partial<LabMember>) => void;
+  deleteMember: (id: string) => void;
+  isMemberManagerOpen: boolean;
+  setIsMemberManagerOpen: (open: boolean) => void;
+
   // Core Data
   tasks: TaskItem[];
   projects: ProjectItem[];
-  members: LabMember[];
   resources: LabResource[];
 
   // View & Filters
   filterOnlyBlockers: boolean;
   searchQuery: string;
   filterMemberId: string;
+  selectedStageFilter: string; // 'all' or specific stageId
+  setSelectedStageFilter: (val: string) => void;
+  selectedProjectFilter: string; // 'all' or specific projectId
+  setSelectedProjectFilter: (val: string) => void;
+  sortByDDLUrgency: boolean;
+  setSortByDDLUrgency: (val: boolean) => void;
   viewMode: 'kanban' | 'gantt' | 'meeting';
   theme: 'dark' | 'light';
 
@@ -93,6 +115,9 @@ interface LabFlowContextType {
   claimResource: (resourceId: string, currentUser: string, currentJob: string, hours: number) => void;
   releaseResource: (resourceId: string) => void;
   resetToMockData: () => void;
+  exportDataBackup: () => void;
+  importDataBackup: (jsonStr: string) => boolean;
+  generateMyWeeklyDigest: (targetMemberId?: string) => string;
   addToast: (title: string, description?: string, type?: ToastItem['type']) => void;
   removeToast: (id: string) => void;
 }
@@ -100,12 +125,15 @@ interface LabFlowContextType {
 const LabFlowContext = createContext<LabFlowContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  LANG: 'labflow_lang_v2',
-  STAGES: 'labflow_stages_v2',
-  TASKS: 'labflow_tasks_v2',
-  PROJECTS: 'labflow_projects_v2',
-  RESOURCES: 'labflow_resources_v2',
-  THEME: 'labflow_theme_v2',
+  LANG: 'labflow_lang_v3',
+  STAGES: 'labflow_stages_v3',
+  TASKS: 'labflow_tasks_v3',
+  PROJECTS: 'labflow_projects_v3',
+  MEMBERS: 'labflow_members_v3',
+  VENUES: 'labflow_venues_v3',
+  CURRENT_USER: 'labflow_current_user_v3',
+  RESOURCES: 'labflow_resources_v3',
+  THEME: 'labflow_theme_v3',
 };
 
 export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -113,12 +141,17 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [stages, setStages] = useState<StageConfig[]>(DEFAULT_STAGES);
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
-  const [members] = useState<LabMember[]>(LAB_MEMBERS);
+  const [members, setMembers] = useState<LabMember[]>(LAB_MEMBERS);
+  const [venues, setVenues] = useState<VenuePreset[]>(DEFAULT_VENUES);
+  const [currentUserId, setCurrentUserId] = useState<string>('member-student1');
   const [resources, setResources] = useState<LabResource[]>(INITIAL_RESOURCES);
 
   const [filterOnlyBlockers, setFilterOnlyBlockers] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
+  const [selectedStageFilter, setSelectedStageFilter] = useState<string>('all');
+  const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
+  const [sortByDDLUrgency, setSortByDDLUrgency] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'gantt' | 'meeting'>('kanban');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
@@ -127,12 +160,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isNewTaskOpen, setIsNewTaskOpen] = useState<boolean>(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
   const [isStageSettingsOpen, setIsStageSettingsOpen] = useState<boolean>(false);
+  const [isMemberManagerOpen, setIsMemberManagerOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // Active translation dictionary
   const t = language === 'zh' ? zh : en;
 
   // Load from localStorage
@@ -142,6 +175,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const savedStages = localStorage.getItem(STORAGE_KEYS.STAGES);
       const savedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
       const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+      const savedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
+      const savedVenues = localStorage.getItem(STORAGE_KEYS.VENUES);
+      const savedCurrentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       const savedResources = localStorage.getItem(STORAGE_KEYS.RESOURCES);
       const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light';
 
@@ -149,6 +185,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (savedStages) setStages(JSON.parse(savedStages));
       if (savedTasks) setTasks(JSON.parse(savedTasks));
       if (savedProjects) setProjects(JSON.parse(savedProjects));
+      if (savedMembers) setMembers(JSON.parse(savedMembers));
+      if (savedVenues) setVenues(JSON.parse(savedVenues));
+      if (savedCurrentUser) setCurrentUserId(savedCurrentUser);
       if (savedResources) setResources(JSON.parse(savedResources));
       if (savedTheme) setTheme(savedTheme);
     } catch (e) {
@@ -166,19 +205,24 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem(STORAGE_KEYS.STAGES, JSON.stringify(stages));
       localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+      localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(members));
+      localStorage.setItem(STORAGE_KEYS.VENUES, JSON.stringify(venues));
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, currentUserId);
       localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(resources));
       localStorage.setItem(STORAGE_KEYS.THEME, theme);
     } catch (e) {
       console.warn('Could not write to localStorage', e);
     }
-  }, [language, stages, tasks, projects, resources, theme, isInitialized]);
+  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, isInitialized]);
 
-  // Apply dark mode class
+  // Apply dark/light classes to <html>
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     }
   }, [theme]);
 
@@ -196,6 +240,40 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Member Management
+  const addMember = (member: LabMember) => {
+    setMembers((prev) => [...prev, member]);
+    addToast(language === 'zh' ? '成员已添加' : 'Member Added', member.nameZh || member.nameEn, 'success');
+  };
+
+  const updateMember = (id: string, updates: Partial<LabMember>) => {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+    addToast(language === 'zh' ? '成员资料已更新' : 'Member Updated', '', 'info');
+  };
+
+  const deleteMember = (id: string) => {
+    if (members.length <= 1) {
+      addToast(language === 'zh' ? '无法删除' : 'Cannot delete', language === 'zh' ? '至少保留一位成员' : 'Keep at least 1 member', 'error');
+      return;
+    }
+    setMembers((prev) => prev.filter((m) => m.id !== id));
+    if (currentUserId === id) {
+      setCurrentUserId(members[0].id);
+    }
+    addToast(language === 'zh' ? '成员已移除' : 'Member Removed', '', 'info');
+  };
+
+  // Venue Management
+  const addVenue = (venue: VenuePreset) => {
+    setVenues((prev) => [...prev, venue]);
+    addToast(language === 'zh' ? '目标会议已保存' : 'Target Venue Saved', venue.name, 'success');
+  };
+
+  const deleteVenue = (venueId: string) => {
+    setVenues((prev) => prev.filter((v) => v.id !== venueId));
+    addToast(language === 'zh' ? '目标会议已删除' : 'Target Venue Removed', '', 'info');
   };
 
   // Stage customization handlers
@@ -219,7 +297,6 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const remainingStages = stages.filter((s) => s.id !== stageId);
     const fallbackStageId = remainingStages[0].id;
 
-    // Migrate any tasks in the deleted stage to the fallback stage
     setTasks((prev) =>
       prev.map((task) =>
         task.stage === stageId ? { ...task, stage: fallbackStageId } : task
@@ -386,9 +463,10 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(language === 'zh' ? '任务已删除' : 'Task Deleted', '', 'info');
   };
 
+  // Reverse DDL generation with custom milestones
   const generateReverseDDLPipeline = (plan: ReverseDDLForm) => {
     const lead = members.find((m) => m.id === plan.leadAuthorId) || members[2];
-    const pi = members[0]; // Professor 1
+    const pi = members[0];
 
     const projectId = `proj-${Date.now()}`;
     const newProject: ProjectItem = {
@@ -410,115 +488,43 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setProjects((prev) => [newProject, ...prev]);
 
-    // Calculate dates
-    const ddl = plan.deadlineDate;
-    const t45 = subtractDays(ddl, 45);
-    const t30 = subtractDays(ddl, 30);
-    const t14 = subtractDays(ddl, 14);
-    const t3 = subtractDays(ddl, 3);
+    // Use custom milestones if provided, otherwise default 4
+    const steps = plan.customMilestones && plan.customMilestones.length > 0
+      ? plan.customMilestones
+      : [
+          { nameEn: 'Baseline & Empirical Freeze', nameZh: '基线锁定与实验评测冻结', offsetDays: 45, stageId: stages[1]?.id || 'DATA_EXP' },
+          { nameEn: 'Full Manuscript Draft Ready', nameZh: '完整学术论文初稿就绪', offsetDays: 30, stageId: stages[2]?.id || 'DRAFTING' },
+          { nameEn: 'Submit to Advisor for Review', nameZh: '提交导师进行全篇审阅', offsetDays: 14, stageId: stages[3]?.id || 'PI_REVIEW' },
+          { nameEn: 'Camera & Formatting Check', nameZh: '格式排版与匿名复核', offsetDays: 3, stageId: stages[3]?.id || 'PI_REVIEW' },
+        ];
 
-    const generatedTasks: TaskItem[] = [
-      {
-        id: `task-${Date.now()}-1`,
-        title: language === 'zh'
-          ? `[T-45 基线锁定] ${plan.title}`
-          : `[T-45 Baseline Freeze] ${plan.title}`,
-        description: language === 'zh'
-          ? '锁定基准算法与核心实验数据，完成随机种子复现性核查。'
-          : `Freeze algorithm benchmark baselines and verify empirical seed stability.`,
-        stage: stages[1]?.id || 'DATA_EXP',
+    const ddl = plan.deadlineDate;
+    const generatedTasks: TaskItem[] = steps.map((step, idx) => {
+      const stepDeadline = subtractDays(ddl, step.offsetDays);
+      const stepStart = subtractDays(stepDeadline, 14);
+
+      return {
+        id: `task-${Date.now()}-${idx + 1}`,
+        title: `[T-${step.offsetDays}d] ${language === 'zh' ? step.nameZh : step.nameEn}: ${plan.title}`,
+        description: `${plan.targetVenue} milestone planned ${step.offsetDays} days prior to submission.`,
+        stage: step.stageId,
         projectId,
         projectTag: newProject.tag,
         targetVenue: plan.targetVenue,
-        startDate: subtractDays(t45, 14),
-        deadline: t45,
-        progress: 25,
+        startDate: stepStart,
+        deadline: stepDeadline,
+        progress: idx === 0 ? 30 : 0,
         leadAuthor: lead,
         pi,
-        priority: 'HIGH',
+        priority: step.offsetDays <= 7 ? 'URGENT' : 'HIGH',
         assets: newProject.assets,
         isBlocked: false,
-        order: 0,
-        tags: ['Baseline', plan.targetVenue],
+        order: idx,
+        tags: [newProject.tag, `T-${step.offsetDays}d`],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      },
-      {
-        id: `task-${Date.now()}-2`,
-        title: language === 'zh'
-          ? `[T-30 初稿就绪] ${plan.title}`
-          : `[T-30 Manuscript Draft] ${plan.title}`,
-        description: language === 'zh'
-          ? '在 Overleaf 完成包括方法、引理、主定理与实验对比在内的完整初稿。'
-          : `Complete full draft in Overleaf including Methodology, Theorems, and Discussion.`,
-        stage: stages[2]?.id || 'DRAFTING',
-        projectId,
-        projectTag: newProject.tag,
-        targetVenue: plan.targetVenue,
-        startDate: t45,
-        deadline: t30,
-        progress: 20,
-        leadAuthor: lead,
-        pi,
-        priority: 'HIGH',
-        assets: newProject.assets,
-        isBlocked: false,
-        order: 0,
-        tags: ['Overleaf', 'Drafting'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: `task-${Date.now()}-3`,
-        title: language === 'zh'
-          ? `[T-14 导师全篇审阅] ${plan.title}`
-          : `[T-14 Advisor Review] ${plan.title}`,
-        description: language === 'zh'
-          ? '提交完整 PDF 供导师进行结构性批评、定理严谨性核查与叙事润色。'
-          : `Deliver manuscript to advisor for structural review, theorem verification, and abstract polish.`,
-        stage: stages[3]?.id || 'PI_REVIEW',
-        projectId,
-        projectTag: newProject.tag,
-        targetVenue: plan.targetVenue,
-        startDate: t30,
-        deadline: t14,
-        progress: 10,
-        leadAuthor: lead,
-        pi,
-        priority: 'URGENT',
-        assets: newProject.assets,
-        isBlocked: false,
-        order: 0,
-        tags: ['Advisor Review'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: `task-${Date.now()}-4`,
-        title: language === 'zh'
-          ? `[T-3 格式排版与匿名复核] ${plan.title}`
-          : `[T-3 Camera & Anonymity Check] ${plan.title}`,
-        description: language === 'zh'
-          ? '双盲匿名脱敏检查、附录压缩包打包与会议提交系统元数据核对。'
-          : `Final submission checks: OpenReview author confirmation, blind review scrub, and supplementary zip compile.`,
-        stage: stages[3]?.id || 'PI_REVIEW',
-        projectId,
-        projectTag: newProject.tag,
-        targetVenue: plan.targetVenue,
-        startDate: t14,
-        deadline: t3,
-        progress: 0,
-        leadAuthor: lead,
-        pi,
-        priority: 'URGENT',
-        assets: newProject.assets,
-        isBlocked: false,
-        order: 1,
-        tags: ['Submission'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+      };
+    });
 
     setTasks((prev) => [...generatedTasks, ...prev]);
     triggerConfetti();
@@ -578,20 +584,136 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(language === 'zh' ? '节点已释放' : 'Resource Released', '', 'info');
   };
 
+  // Backup & Restore
+  const exportDataBackup = () => {
+    const backupData = {
+      version: 3,
+      exportedAt: new Date().toISOString(),
+      stages,
+      tasks,
+      projects,
+      members,
+      venues,
+      resources,
+    };
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LabFlow_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast(language === 'zh' ? '数据备份已下载' : 'Backup Downloaded', '', 'success');
+  };
+
+  const importDataBackup = (jsonStr: string): boolean => {
+    try {
+      const data = JSON.parse(jsonStr);
+      if (!data.tasks || !data.stages) return false;
+      if (data.stages) setStages(data.stages);
+      if (data.tasks) setTasks(data.tasks);
+      if (data.projects) setProjects(data.projects);
+      if (data.members) setMembers(data.members);
+      if (data.venues) setVenues(data.venues);
+      if (data.resources) setResources(data.resources);
+      triggerConfetti();
+      addToast(language === 'zh' ? '数据已成功恢复！' : 'Data Restored Successfully!', '', 'success');
+      return true;
+    } catch (e) {
+      console.warn('Invalid backup file', e);
+      addToast(language === 'zh' ? '备份文件解析失败' : 'Failed to parse backup', '', 'error');
+      return false;
+    }
+  };
+
+  // Personal Weekly Digest Generator
+  const generateMyWeeklyDigest = (targetMemberId?: string): string => {
+    const activeId = targetMemberId || currentUserId;
+    const userMember = members.find((m) => m.id === activeId) || members[0];
+    const isZh = language === 'zh';
+    const userName = isZh ? userMember.nameZh : userMember.nameEn;
+    const userRole = isZh ? userMember.titleZh : userMember.titleEn;
+
+    const userTasks = tasks.filter((t) => t.leadAuthor.id === userMember.id);
+    const completed = userTasks.filter((t) => t.stage === 'ACCEPTED' || !!t.completedAt);
+    const active = userTasks.filter((t) => !t.isBlocked && t.stage !== 'ACCEPTED' && !t.completedAt);
+    const blocked = userTasks.filter((t) => t.isBlocked);
+
+    let report = isZh
+      ? `## 📋 学术周进展汇报 - ${userName} (${userRole})\n`
+      : `## 📋 Academic Weekly Progress Report - ${userName} (${userRole})\n`;
+
+    report += isZh
+      ? `**汇报日期**: ${formatDate(new Date().toISOString(), 'zh')}\n\n`
+      : `**Date**: ${formatDate(new Date().toISOString(), 'en')}\n\n`;
+
+    // 1. Completed
+    report += isZh ? `### 1. 本周已完成 / 里程碑结项\n` : `### 1. Recently Completed & Milestones\n`;
+    if (completed.length === 0) {
+      report += isZh ? `*暂无新结项任务*\n\n` : `*No completed milestones this cycle*\n\n`;
+    } else {
+      completed.forEach((t) => {
+        report += `- ✅ **[${t.projectTag}]** ${t.title} (${t.targetVenue})\n`;
+      });
+      report += `\n`;
+    }
+
+    // 2. In Progress
+    report += isZh ? `### 2. 正在推进中课题 / 实验与初稿\n` : `### 2. Active Tasks & In-Progress Pipelines\n`;
+    if (active.length === 0) {
+      report += isZh ? `*无进行中任务*\n\n` : `*No active in-progress tasks*\n\n`;
+    } else {
+      active.forEach((t) => {
+        report += `- ⚡ **[${t.projectTag}]** ${t.title} (进度: ${t.progress || 0}%, 截稿: ${formatDate(t.deadline, language)})\n`;
+      });
+      report += `\n`;
+    }
+
+    // 3. Blockers
+    report += isZh ? `### 3. 当前技术卡点与求助需求\n` : `### 3. Critical Blockers & Assistance Needed\n`;
+    if (blocked.length === 0) {
+      report += isZh ? `*本周无技术受阻卡点，各方向按计划推进。*\n\n` : `*No active blockers reported. Proceeding on schedule.*\n\n`;
+    } else {
+      blocked.forEach((t) => {
+        report += `- 🔥 **[${t.projectTag}]** ${t.title}\n`;
+        report += isZh
+          ? `  - 卡点原因: ${t.blocker?.details || '详见系统'}\n  - 已尝试解法: ${t.blocker?.tried || '无'}\n  - 建议决断: ${t.blocker?.escalatedTo || '导师'}\n`
+          : `  - Stuck on: ${t.blocker?.details}\n  - Tried: ${t.blocker?.tried}\n  - Escalate to: ${t.blocker?.escalatedTo}\n`;
+      });
+      report += `\n`;
+    }
+
+    report += `---\n*Generated by LabFlow OS*\n`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(report).then(() => {
+      addToast(t.myWeeklyDigest, t.digestCopied, 'success');
+    }).catch(() => {});
+
+    return report;
+  };
+
   const resetToMockData = () => {
     setTasks(INITIAL_TASKS);
     setProjects(INITIAL_PROJECTS);
     setResources(INITIAL_RESOURCES);
     setStages(DEFAULT_STAGES);
+    setMembers(LAB_MEMBERS);
+    setVenues(DEFAULT_VENUES);
     setFilterOnlyBlockers(false);
     setSearchQuery('');
     setFilterMemberId('all');
+    setSelectedStageFilter('all');
+    setSelectedProjectFilter('all');
     setViewMode('kanban');
     try {
       localStorage.removeItem(STORAGE_KEYS.TASKS);
       localStorage.removeItem(STORAGE_KEYS.PROJECTS);
       localStorage.removeItem(STORAGE_KEYS.RESOURCES);
       localStorage.removeItem(STORAGE_KEYS.STAGES);
+      localStorage.removeItem(STORAGE_KEYS.MEMBERS);
+      localStorage.removeItem(STORAGE_KEYS.VENUES);
     } catch (e) {
       console.warn('Could not reset localStorage', e);
     }
@@ -612,13 +734,29 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         restoreDefaultStages,
         isStageSettingsOpen,
         setIsStageSettingsOpen,
+        venues,
+        addVenue,
+        deleteVenue,
+        members,
+        currentUserId,
+        setCurrentUserId,
+        addMember,
+        updateMember,
+        deleteMember,
+        isMemberManagerOpen,
+        setIsMemberManagerOpen,
         tasks,
         projects,
-        members,
         resources,
         filterOnlyBlockers,
         searchQuery,
         filterMemberId,
+        selectedStageFilter,
+        setSelectedStageFilter,
+        selectedProjectFilter,
+        setSelectedProjectFilter,
+        sortByDDLUrgency,
+        setSortByDDLUrgency,
         viewMode,
         theme,
         activeBlockerTask,
@@ -650,6 +788,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         claimResource,
         releaseResource,
         resetToMockData,
+        exportDataBackup,
+        importDataBackup,
+        generateMyWeeklyDigest,
         addToast,
         removeToast,
       }}

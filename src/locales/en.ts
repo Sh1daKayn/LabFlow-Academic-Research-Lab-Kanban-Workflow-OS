@@ -1,14 +1,14 @@
 export const en = {
   brand: 'LabFlow',
   academicOS: 'Academic OS',
-  labTitle: 'Computational Systems & Decision Lab',
-  labSub: 'Research Group',
+  labTitle: 'LabFlow OS',
 
   // View modes
   kanban: 'Kanban',
   gantt: 'Gantt Chart',
   meeting: 'Group Standup',
-  pipelineSettings: 'Settings',
+  pipelineSettings: 'Stages',
+  membersManager: 'Members',
 
   // Top action buttons
   onlyBlockers: 'Only Blockers',
@@ -17,20 +17,25 @@ export const en = {
   resetDemo: 'Reset Demo',
   toggleTheme: 'Toggle Theme',
   switchLang: '中文',
+  exportBackup: 'Backup Data',
+  importBackup: 'Restore Data',
 
   // Search & Filters
-  searchPlaceholder: 'Search paper title, venue, or author...',
+  searchPlaceholder: 'Search paper, venue, or author...',
   allMembers: 'All Lab Members',
+  allStages: 'All Stages',
+  allProjects: 'All Projects',
   activeFilters: 'Active Filters',
   showingTasks: 'Showing matching tasks across pipeline',
   noTasksInStage: 'No tasks in this stage',
   dragHint: 'Drag a card here or click +',
+  sortByDDLUrgency: 'Sort by Urgency',
 
   // Resource Strip
-  computeTitle: 'Shared Compute & Infrastructure',
+  computeTitle: 'Shared Compute',
   busyNodes: 'busy',
   idleNodes: 'idle',
-  claimManage: 'Claim / Manage Nodes',
+  claimManage: 'Claim Nodes',
   readyForRuns: 'Ready for batch runs',
   reservedFor: 'Reserved',
   hoursRemaining: 'h remaining',
@@ -48,7 +53,7 @@ export const en = {
 
   // Reverse DDL Modal
   reverseDDLTitle: 'Reverse Submission DDL Scheduler',
-  reverseDDLDesc: 'Input target submission date to automatically generate 4 synchronized milestone tasks.',
+  reverseDDLDesc: 'Customize milestone steps and days before submission to auto-generate pipeline.',
   paperTitle: 'Paper / Project Title',
   targetVenue: 'Target Venue / Conference',
   submissionDDL: 'Submission Deadline (T-Day)',
@@ -56,13 +61,21 @@ export const en = {
   badgeTag: 'Short Badge Tag',
   generatePipelineBtn: 'Generate Milestone Pipeline',
   milestoneSchedule: 'Calculated Milestone Schedule',
+  customVenues: 'Manage Target Venues',
+  addVenue: 'Add Venue',
+  customMilestoneOffsets: 'Milestone Timeline Offsets',
+  stepDays: 'Days before DDL (T - Days)',
+  stepTitle: 'Step Title',
+  addStep: 'Add Milestone Step',
 
   // Group Meeting Standup
   standupTitle: 'Group Meeting Standup Presenter',
   standupDesc: 'Projection mode for weekly sync, peer unblocking, and advisor decisions.',
   timerLabel: 'Meeting Timer',
-  exportMinutes: 'Export Markdown Minutes',
+  exportMinutes: 'Export Minutes',
   downloadMinutes: 'Download .md',
+  myWeeklyDigest: 'My Weekly Digest',
+  digestCopied: 'Weekly report copied to clipboard!',
   colCompleted: '1. Completed Recently',
   colCompletedSub: 'Archived publications & completed milestones',
   colActive: '2. Active & In Progress',
@@ -73,7 +86,7 @@ export const en = {
 
   // Gantt Chart View
   ganttTitle: 'Academic Pipeline Gantt Chart',
-  ganttDesc: 'Interactive timeline mapping paper milestones, experimental cycles, and deadlines.',
+  ganttDesc: 'Timeline mapping paper milestones, experimental cycles, and deadlines.',
   timeScale: 'Timeline Scale',
   weekly: 'Weekly Scale',
   monthly: 'Monthly Scale',
@@ -82,6 +95,8 @@ export const en = {
   startDate: 'Start Date',
   endDate: 'End Date / DDL',
   saveTimeline: 'Save Timeline Adjustments',
+  filterByProject: 'Filter by Project',
+  groupByProject: 'Project Grouping',
 
   // Stage Customization Settings
   settingsTitle: 'Custom Academic Stages',
@@ -93,6 +108,17 @@ export const en = {
   defaultStagesRestored: 'Restored default academic stages',
   restoreDefaults: 'Restore Default Stages',
 
+  // Members Management
+  memberManagerTitle: 'Lab Members & User Center',
+  memberManagerDesc: 'Manage team members, roles, and switch your current active session user.',
+  addNewMember: 'Add Team Member',
+  currentActiveUser: 'Active Session User',
+  setAsActiveUser: 'Set as Me',
+  memberName: 'Member Name',
+  memberRole: 'Academic Role',
+  memberEmail: 'Email',
+  memberTitle: 'Specialization / Title',
+
   // Card & Drawer details
   inspector: 'Card Inspector',
   priority: 'Priority',
@@ -100,6 +126,8 @@ export const en = {
   methodologyDesc: 'Methodology / Task Description',
   checklist: 'Milestones & Verification Checklist',
   addSubtask: 'Add checklist subtask...',
+  insertRubricChecklist: 'Insert Top-Tier Conference Checklist',
+  rubricInserted: 'Inserted Double-Blind, Reproducibility & Ethics Checklists!',
   assets: 'Direct Asset Quick-Links',
   resolveAction: 'Resolve',
   editAction: 'Edit',

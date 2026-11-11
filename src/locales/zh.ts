@@ -3,37 +3,42 @@ import { LocaleTranslations } from './en';
 export const zh: LocaleTranslations = {
   brand: 'LabFlow',
   academicOS: '学术操作系统',
-  labTitle: '计算系统与决策实验室',
-  labSub: '科研课题组',
+  labTitle: '课题组工作台',
 
   // View modes
   kanban: '学术看板',
   gantt: '学术甘特图',
   meeting: '组会投屏',
-  pipelineSettings: '流程设置',
+  pipelineSettings: '阶段设置',
+  membersManager: '成员中心',
 
   // Top action buttons
   onlyBlockers: '仅看卡点',
   reverseDDL: '投稿倒排期',
   newTask: '新建任务',
   resetDemo: '重置示例',
-  toggleTheme: '切换主题',
+  toggleTheme: '切换模式',
   switchLang: 'EN',
+  exportBackup: '数据备份',
+  importBackup: '数据恢复',
 
   // Search & Filters
   searchPlaceholder: '搜索论文题目、目标会议或负责人...',
   allMembers: '全实验室成员',
+  allStages: '全部阶段',
+  allProjects: '全部课题',
   activeFilters: '当前生效的筛选条件',
   showingTasks: '展示匹配当前条件的论文任务',
   noTasksInStage: '该阶段暂无任务',
   dragHint: '拖拽卡片至此或点击上方 + 号添加',
+  sortByDDLUrgency: '按截稿日紧迫度排序',
 
   // Resource Strip
-  computeTitle: '公共算力与设施状态',
+  computeTitle: '公共算力与设施',
   busyNodes: '运行中',
   idleNodes: '空闲',
-  claimManage: '认领与管理节点',
-  readyForRuns: '空闲可用，可直接跑批',
+  claimManage: '认领节点',
+  readyForRuns: '空闲可用',
   reservedFor: '已预约',
   hoursRemaining: '小时剩余',
 
@@ -50,14 +55,20 @@ export const zh: LocaleTranslations = {
 
   // Reverse DDL Modal
   reverseDDLTitle: '投稿倒推排期生成器',
-  reverseDDLDesc: '输入目标会议截稿期，系统将根据顶会发表规范自动倒推生成 4 项协同里程碑任务。',
+  reverseDDLDesc: '自由设置各步骤截稿倒推天数与名称，一键自动生成全流程里程碑。',
   paperTitle: '论文 / 课题完整标题',
   targetVenue: '目标会议或期刊',
   submissionDDL: '投稿截稿日期 (T 日)',
   leadAuthor: '第一作者 / 负责人',
   badgeTag: '简短标签',
-  generatePipelineBtn: '生成全流程排期并加入看板',
+  generatePipelineBtn: '生成排期并加入看板',
   milestoneSchedule: '自动推导的里程碑时间表',
+  customVenues: '自定义会议与期刊库',
+  addVenue: '添加目标期刊/会议',
+  customMilestoneOffsets: '自定义里程碑节点与倒推天数',
+  stepDays: '距离截稿倒推天数 (T - 天数)',
+  stepTitle: '里程碑任务名称',
+  addStep: '新增倒推步骤',
 
   // Group Meeting Standup
   standupTitle: '无 PPT 组会投屏仪表盘',
@@ -65,6 +76,8 @@ export const zh: LocaleTranslations = {
   timerLabel: '汇报计时器',
   exportMinutes: '导出组会纪要',
   downloadMinutes: '下载纪要文档',
+  myWeeklyDigest: '生成我的个人周报',
+  digestCopied: '已生成并复制个人本周进展周报至剪贴板！',
   colCompleted: '1. 近期进展与录用',
   colCompletedSub: '已归档发表的论文与已结项里程碑',
   colActive: '2. 当前实验与撰写推进',
@@ -84,6 +97,8 @@ export const zh: LocaleTranslations = {
   startDate: '起始日期',
   endDate: '截止日期',
   saveTimeline: '保存排期调整',
+  filterByProject: '按课题分类筛选',
+  groupByProject: '按课题分组',
 
   // Stage Customization Settings
   settingsTitle: '自定义学术研发阶段',
@@ -95,6 +110,17 @@ export const zh: LocaleTranslations = {
   defaultStagesRestored: '已恢复系统默认阶段设置',
   restoreDefaults: '恢复默认阶段',
 
+  // Members Management
+  memberManagerTitle: '实验室成员与用户中心',
+  memberManagerDesc: '自由增减团队成员，支持每个人配置自己的学者身份并切换为当前操作者。',
+  addNewMember: '添加新成员',
+  currentActiveUser: '当前操作用户',
+  setAsActiveUser: '设为我本人',
+  memberName: '成员姓名',
+  memberRole: '学术角色',
+  memberEmail: '工作邮箱',
+  memberTitle: '研究方向 / 职称代号',
+
   // Card & Drawer details
   inspector: '任务属性检查器',
   priority: '优先级',
@@ -102,6 +128,8 @@ export const zh: LocaleTranslations = {
   methodologyDesc: '研究方案与任务详述',
   checklist: '执行清单与验收项',
   addSubtask: '添加子任务清单...',
+  insertRubricChecklist: '注入顶会学术合规核查规范',
+  rubricInserted: '已注入双盲匿名、可复现性代码与伦理局限性自检清单！',
   assets: '科研资源快捷直达',
   resolveAction: '解除',
   editAction: '编辑',

@@ -13,6 +13,7 @@ import { NewTaskModal } from '@/components/NewTaskModal';
 import { TaskDetailDrawer } from '@/components/TaskDetailDrawer';
 import { ResourceModal } from '@/components/ResourceModal';
 import { StageSettingsModal } from '@/components/StageSettingsModal';
+import { MemberManagerModal } from '@/components/MemberManagerModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
@@ -44,6 +45,7 @@ export const MainApp: React.FC = () => {
       <TaskDetailDrawer />
       <ResourceModal />
       <StageSettingsModal />
+      <MemberManagerModal />
 
       {/* Toast Notification Layer */}
       <ToastContainer />

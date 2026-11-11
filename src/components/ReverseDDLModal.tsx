@@ -2,24 +2,19 @@
 
 import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { ReverseDDLForm } from '@/types';
+import { ReverseDDLForm, MilestoneTemplate, AcademicStage } from '@/types';
 import { subtractDays, formatDate } from '@/utils/date';
-import { Zap, X, Sparkles } from 'lucide-react';
-
-const VENUE_PRESETS = [
-  { name: 'AAAI 2027', defaultLead: 'member-student2', tag: 'AAAI 2027' },
-  { name: 'NeurIPS 2027', defaultLead: 'member-student1', tag: 'NeurIPS \'27' },
-  { name: 'ICML 2027', defaultLead: 'member-student2', tag: 'ICML \'27' },
-  { name: 'INFORMS / Management Science', defaultLead: 'member-student1', tag: 'Mgt Sci' },
-  { name: 'AEPP / IFAMR', defaultLead: 'member-student3', tag: 'AEPP' },
-  { name: 'Nature Communications', defaultLead: 'member-student1', tag: 'Nature Comms' },
-];
+import { Zap, X, Sparkles, Plus, Trash2, ChevronUp } from 'lucide-react';
 
 export const ReverseDDLModal: React.FC = () => {
   const {
     isReverseDDLOpen,
     setIsReverseDDLOpen,
     members,
+    venues,
+    addVenue,
+    deleteVenue,
+    stages,
     generateReverseDDLPipeline,
     language,
     t,
@@ -37,13 +32,20 @@ export const ReverseDDLModal: React.FC = () => {
   const [githubUrl, setGithubUrl] = useState('');
   const [datasetUrl, setDatasetUrl] = useState('');
 
-  if (!isReverseDDLOpen) return null;
+  // Customizable Milestones State
+  const [milestones, setMilestones] = useState<MilestoneTemplate[]>([
+    { nameEn: 'Baseline & Empirical Freeze', nameZh: '基线锁定与实验评测冻结', offsetDays: 45, stageId: 'DATA_EXP' },
+    { nameEn: 'Full Manuscript Draft Ready', nameZh: '完整学术论文初稿就绪', offsetDays: 30, stageId: 'DRAFTING' },
+    { nameEn: 'Submit to Advisor for Review', nameZh: '提交导师进行全篇审阅', offsetDays: 14, stageId: 'PI_REVIEW' },
+    { nameEn: 'Camera & Formatting Check', nameZh: '格式排版与匿名复核', offsetDays: 3, stageId: 'PI_REVIEW' },
+  ]);
 
-  // Calculate milestones
-  const t45 = subtractDays(deadlineDate, 45);
-  const t30 = subtractDays(deadlineDate, 30);
-  const t14 = subtractDays(deadlineDate, 14);
-  const t3 = subtractDays(deadlineDate, 3);
+  // Add Venue Accordion State
+  const [isAddingVenue, setIsAddingVenue] = useState(false);
+  const [newVenueName, setNewVenueName] = useState('');
+  const [newVenueTag, setNewVenueTag] = useState('');
+
+  if (!isReverseDDLOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,20 +60,71 @@ export const ReverseDDLModal: React.FC = () => {
       overleafUrl: overleafUrl.trim() || undefined,
       githubUrl: githubUrl.trim() || undefined,
       datasetUrl: datasetUrl.trim() || undefined,
+      customMilestones: milestones.map((m) => ({
+        ...m,
+        offsetDays: Math.max(1, Number(m.offsetDays) || 1),
+      })),
     };
 
     generateReverseDDLPipeline(form);
     setIsReverseDDLOpen(false);
   };
 
-  const handleSelectPreset = (preset: typeof VENUE_PRESETS[0]) => {
-    setTargetVenue(preset.name);
-    setTag(preset.tag);
+  const handleSelectVenue = (v: (typeof venues)[0]) => {
+    setTargetVenue(v.name);
+    setTag(v.tag);
+    if (v.defaultLeadId) setLeadAuthorId(v.defaultLeadId);
+    if (v.milestones && v.milestones.length > 0) {
+      setMilestones(JSON.parse(JSON.stringify(v.milestones)));
+    }
+  };
+
+  const handleAddCustomVenue = () => {
+    if (!newVenueName.trim()) return;
+    const vTag = newVenueTag.trim() || newVenueName.split(' ')[0];
+    addVenue({
+      id: `venue-${Date.now()}`,
+      name: newVenueName.trim(),
+      tag: vTag,
+      defaultLeadId: leadAuthorId,
+      milestones: [...milestones],
+    });
+    setTargetVenue(newVenueName.trim());
+    setTag(vTag);
+    setNewVenueName('');
+    setNewVenueTag('');
+    setIsAddingVenue(false);
+  };
+
+  const updateMilestone = (index: number, updates: Partial<MilestoneTemplate>) => {
+    setMilestones((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], ...updates };
+      return copy;
+    });
+  };
+
+  const removeMilestone = (index: number) => {
+    if (milestones.length <= 1) return;
+    setMilestones((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addMilestoneStep = () => {
+    const defaultOffset = milestones.length > 0 ? Math.max(1, milestones[milestones.length - 1].offsetDays - 5) : 7;
+    setMilestones((prev) => [
+      ...prev,
+      {
+        nameEn: 'Supplementary Milestone',
+        nameZh: '补充阶段里程碑',
+        offsetDays: defaultOffset,
+        stageId: (stages[2]?.id || 'DRAFTING') as AcademicStage,
+      },
+    ]);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-slate-100 max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-slate-100 max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={() => setIsReverseDDLOpen(false)}
@@ -121,25 +174,88 @@ export const ReverseDDLModal: React.FC = () => {
               <label className="text-xs font-medium text-slate-300">
                 {t.targetVenue} *
               </label>
+              <button
+                type="button"
+                onClick={() => setIsAddingVenue(!isAddingVenue)}
+                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1"
+              >
+                {isAddingVenue ? <ChevronUp className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                <span>{t.addVenue}</span>
+              </button>
             </div>
 
-            {/* Presets pills */}
+            {/* Presets pills from customizable venues state */}
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {VENUE_PRESETS.map((vp) => (
-                <button
-                  key={vp.name}
-                  type="button"
-                  onClick={() => handleSelectPreset(vp)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
-                    targetVenue === vp.name
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                      : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  {vp.name}
-                </button>
+              {venues.map((v) => (
+                <div key={v.id} className="relative group inline-flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectVenue(v)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+                      targetVenue === v.name
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    {v.name}
+                  </button>
+                  {venues.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteVenue(v.id);
+                      }}
+                      className="hidden group-hover:inline-block ml-0.5 p-0.5 text-slate-500 hover:text-rose-400"
+                      title={language === 'zh' ? '删除该预设' : 'Delete preset'}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
+
+            {/* Collapsible Add Custom Venue Form */}
+            {isAddingVenue && (
+              <div className="mb-3 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <span className="text-[11px] font-semibold text-slate-300 block">
+                  {language === 'zh' ? '添加自定义会议/期刊库' : 'Add Custom Target Venue'}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={newVenueName}
+                    onChange={(e) => setNewVenueName(e.target.value)}
+                    placeholder={language === 'zh' ? '会议/期刊全称 (如 KDD 2027)' : 'Venue Full Name'}
+                    className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                  />
+                  <input
+                    type="text"
+                    value={newVenueTag}
+                    onChange={(e) => setNewVenueTag(e.target.value)}
+                    placeholder={language === 'zh' ? '简写标签 (如 KDD)' : 'Short Tag'}
+                    className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingVenue(false)}
+                    className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200"
+                  >
+                    {t.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddCustomVenue}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-medium"
+                  >
+                    {language === 'zh' ? '存入期刊库' : 'Save to Library'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <input
@@ -194,6 +310,104 @@ export const ReverseDDLModal: React.FC = () => {
             </div>
           </div>
 
+          {/* Customizable Milestone Steps Table (Offset Days & Stage Customization) */}
+          <div className="rounded-xl bg-slate-950 border border-slate-800 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-slate-200">
+                  {t.customMilestoneOffsets}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={addMilestoneStep}
+                className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{t.addStep}</span>
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {milestones.map((m, idx) => {
+                const targetDate = subtractDays(deadlineDate, m.offsetDays);
+                const stepName = language === 'zh' ? m.nameZh : m.nameEn;
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs"
+                  >
+                    {/* Days Offset Input */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-slate-400 font-mono text-[11px]">T -</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={m.offsetDays}
+                        onChange={(e) =>
+                          updateMilestone(idx, { offsetDays: parseInt(e.target.value) || 0 })
+                        }
+                        className="w-14 bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-center font-mono font-bold text-amber-400 text-xs focus:outline-none focus:border-amber-500"
+                      />
+                      <span className="text-slate-400 text-[11px]">
+                        {language === 'zh' ? '天' : 'd'}
+                      </span>
+                    </div>
+
+                    {/* Step Title Input */}
+                    <input
+                      type="text"
+                      value={stepName}
+                      onChange={(e) =>
+                        updateMilestone(
+                          idx,
+                          language === 'zh'
+                            ? { nameZh: e.target.value }
+                            : { nameEn: e.target.value }
+                        )
+                      }
+                      placeholder={t.stepTitle}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+
+                    {/* Stage Select */}
+                    <select
+                      value={m.stageId}
+                      onChange={(e) =>
+                        updateMilestone(idx, { stageId: e.target.value as AcademicStage })
+                      }
+                      className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 shrink-0"
+                    >
+                      {stages.map((st) => (
+                        <option key={st.id} value={st.id}>
+                          {language === 'zh' ? st.labelZh : st.labelEn}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Calculated Date Preview & Delete */}
+                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                      <span className="text-[11px] font-mono text-cyan-400">
+                        {formatDate(targetDate, language)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeMilestone(idx)}
+                        disabled={milestones.length <= 1}
+                        className="p-1 rounded text-slate-500 hover:text-rose-400 disabled:opacity-30 disabled:pointer-events-none"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Optional Asset Links */}
           <div className="border-t border-slate-800/80 pt-3">
             <span className="text-xs font-medium text-slate-400 block mb-2">
@@ -224,75 +438,8 @@ export const ReverseDDLModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Milestone Calculation Live Preview */}
-          <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-4 space-y-2.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                {t.milestoneSchedule}:
-              </span>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {formatDate(deadlineDate, language)}
-              </span>
-            </div>
-
-            <div className="space-y-2 pt-1">
-              {/* T-45 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-cyan-500/30 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    T - 45d
-                  </span>
-                  <span className="text-slate-200 font-medium">
-                    {language === 'zh' ? '基线锁定与核心实验评测冻结' : 'Baseline & Core Empirical Results Freeze'}
-                  </span>
-                </div>
-                <span className="text-[11px] text-cyan-400 font-mono">{formatDate(t45, language)}</span>
-              </div>
-
-              {/* T-30 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-amber-500/30 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    T - 30d
-                  </span>
-                  <span className="text-slate-200 font-medium">
-                    {language === 'zh' ? '完整学术论文初稿就绪' : 'Full Manuscript First Draft Ready'}
-                  </span>
-                </div>
-                <span className="text-[11px] text-amber-400 font-mono">{formatDate(t30, language)}</span>
-              </div>
-
-              {/* T-14 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-blue-500/30 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                    T - 14d
-                  </span>
-                  <span className="text-slate-200 font-medium">
-                    {language === 'zh' ? '提交导师进行全篇深入审阅' : 'Submit Polished PDF to Advisor for Review'}
-                  </span>
-                </div>
-                <span className="text-[11px] text-blue-400 font-mono">{formatDate(t14, language)}</span>
-              </div>
-
-              {/* T-3 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-rose-500/30 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                    T - 3d
-                  </span>
-                  <span className="text-slate-200 font-medium">
-                    {language === 'zh' ? '排版校验、双盲匿名脱敏与复现包核查' : 'Camera Formatting & Code Replication Check'}
-                  </span>
-                </div>
-                <span className="text-[11px] text-rose-400 font-mono">{formatDate(t3, language)}</span>
-              </div>
-            </div>
-          </div>
-
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               onClick={() => setIsReverseDDLOpen(false)}
@@ -302,9 +449,9 @@ export const ReverseDDLModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition-all duration-150"
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
             >
-              <Zap className="w-4 h-4 fill-slate-950" />
+              <Zap className="w-3.5 h-3.5 fill-current" />
               <span>{t.generatePipelineBtn}</span>
             </button>
           </div>

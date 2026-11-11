@@ -217,16 +217,19 @@ labflow/
 │   │   ├── icons/
 │   │   │   └── BrandIcons.tsx   # Pixel-perfect Overleaf & GitHub brand SVGs
 │   │   ├── BlockerModal.tsx     # Feature B: Blocker escalation & resolution modal
-│   │   ├── GroupMeetingView.tsx # Feature D: Group meeting standup presenter mode
-│   │   ├── Header.tsx           # Navigation bar, blocker filter & mode switcher
-│   │   ├── KanbanBoard.tsx      # Feature A: 6-stage academic drag-and-drop board
+│   │   ├── GanttView.tsx        # Project-grouped timeline Gantt with collapsible accordions
+│   │   ├── GroupMeetingView.tsx # Feature D: Group meeting standup presenter mode & personal weekly digest
+│   │   ├── Header.tsx           # Navigation bar, blocker filter, backup/restore & mode switcher
+│   │   ├── KanbanBoard.tsx      # Feature A: 6-stage academic board with stage filter & DDL sorting
 │   │   ├── KanbanCard.tsx       # Research card with DDL badges & asset quick-links
 │   │   ├── MainApp.tsx          # Dynamic view renderer
+│   │   ├── MemberManagerModal.tsx # Customizable lab roster & user identity center
 │   │   ├── NewTaskModal.tsx     # Ad-hoc task and milestone creator
 │   │   ├── ResourceModal.tsx    # Compute node claim & release manager
 │   │   ├── ResourceStrip.tsx    # Feature E: Live GPU & HPC resource status strip
-│   │   ├── ReverseDDLModal.tsx  # Feature C: Reverse DDL scheduler (T-45/30/14/3)
-│   │   ├── TaskDetailDrawer.tsx # Comprehensive task inspector & subtasks
+│   │   ├── ReverseDDLModal.tsx  # Feature C: Reverse DDL scheduler with custom venues & milestone offsets
+│   │   ├── StageSettingsModal.tsx # Customizable academic pipeline stages editor
+│   │   ├── TaskDetailDrawer.tsx # Task inspector, subtasks & top-tier rubric injection
 │   │   └── Toast.tsx            # Floating toast notification system
 │   ├── context/
 │   │   └── LabFlowContext.tsx   # Reactive state store with localStorage persistence

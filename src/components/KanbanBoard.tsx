@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, TaskItem } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
-import { Plus, FilterX } from 'lucide-react';
+import { Plus, FilterX, Clock } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
   const {
@@ -16,6 +16,10 @@ export const KanbanBoard: React.FC = () => {
     filterOnlyBlockers,
     searchQuery,
     filterMemberId,
+    selectedStageFilter,
+    setSelectedStageFilter,
+    sortByDDLUrgency,
+    setSortByDDLUrgency,
     moveTask,
     reorderTasks,
     setIsNewTaskOpen,
@@ -62,7 +66,14 @@ export const KanbanBoard: React.FC = () => {
         }
         return true;
       })
-      .sort((a, b) => a.order - b.order);
+      .sort((a, b) => {
+        if (sortByDDLUrgency) {
+          const timeA = new Date(a.deadline).getTime() || 9999999999999;
+          const timeB = new Date(b.deadline).getTime() || 9999999999999;
+          return timeA - timeB;
+        }
+        return a.order - b.order;
+      });
   };
 
   if (!mounted) {
@@ -73,11 +84,69 @@ export const KanbanBoard: React.FC = () => {
     );
   }
 
+  const visibleStages = selectedStageFilter === 'all'
+    ? stages
+    : stages.filter((s) => s.id === selectedStageFilter);
+
+  const isSingleStage = selectedStageFilter !== 'all';
+
   return (
-    <div className="flex-1 overflow-x-auto p-4 lg:p-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+    <div className="flex-1 overflow-x-auto p-4 lg:p-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent flex flex-col">
+      {/* Top Stage Filter Tabs & Sort Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none max-w-full">
+          <button
+            onClick={() => setSelectedStageFilter('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 ${
+              selectedStageFilter === 'all'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            {t.allStages} ({tasks.length})
+          </button>
+          {stages.map((stage) => {
+            const isSelected = selectedStageFilter === stage.id;
+            const count = tasks.filter((t) => t.stage === stage.id).length;
+            const name = language === 'zh' ? stage.labelZh : stage.labelEn;
+            return (
+              <button
+                key={stage.id}
+                onClick={() => setSelectedStageFilter(stage.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
+                <span>{name}</span>
+                <span className="text-[10px] opacity-75">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sort by urgency toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setSortByDDLUrgency(!sortByDDLUrgency)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${
+              sortByDDLUrgency
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border-slate-800'
+            }`}
+            title={t.sortByDDLUrgency}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>{t.sortByDDLUrgency}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Active filter announcement bar if active */}
       {(filterOnlyBlockers || filterMemberId !== 'all' || searchQuery) && (
-        <div className="mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
+        <div className="mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-cyan-400">{t.activeFilters}:</span>
             {filterOnlyBlockers && (
@@ -97,8 +166,12 @@ export const KanbanBoard: React.FC = () => {
 
       {/* DND Context */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 items-start min-w-[1550px] pb-8">
-          {stages.map((stage) => {
+        <div
+          className={`flex gap-4 items-start pb-8 ${
+            isSingleStage ? 'w-full max-w-4xl mx-auto' : 'min-w-[1550px]'
+          }`}
+        >
+          {visibleStages.map((stage) => {
             const stageTasks = getFilteredTasksForStage(stage.id);
             const blockedInStage = stageTasks.filter((t) => t.isBlocked).length;
             const stageName = language === 'zh' ? stage.labelZh : stage.labelEn;
@@ -107,7 +180,9 @@ export const KanbanBoard: React.FC = () => {
             return (
               <div
                 key={stage.id}
-                className="w-72 shrink-0 flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 shadow-sm"
+                className={`shrink-0 flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 shadow-sm ${
+                  isSingleStage ? 'w-full' : 'w-72'
+                }`}
               >
                 {/* Stage Header */}
                 <div className="p-3 border-b border-slate-800/80">

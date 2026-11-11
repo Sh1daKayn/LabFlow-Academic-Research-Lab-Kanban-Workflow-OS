@@ -12,6 +12,7 @@ import {
   Users,
   Timer,
   Calendar,
+  FileText,
 } from 'lucide-react';
 import { generateMeetingMinutesMarkdown, formatDate, formatCountdownBadge } from '@/utils/date';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
@@ -29,6 +30,7 @@ export const GroupMeetingView: React.FC = () => {
     resolveBlocker,
     setSelectedTask,
     addToast,
+    generateMyWeeklyDigest,
     language,
     t,
   } = useLabFlow();
@@ -74,10 +76,15 @@ export const GroupMeetingView: React.FC = () => {
 
   const blockedTasks = filteredTasks.filter((t) => t.isBlocked);
 
+  const piMember = members.find((m) => m.role === 'PI') || members[0];
+  const dynamicPiName = piMember
+    ? (language === 'zh' ? piMember.nameZh : piMember.nameEn)
+    : (language === 'zh' ? '教授 1' : 'Professor 1');
+
   const handleExportMinutes = () => {
     const md = generateMeetingMinutesMarkdown({
       labName: t.labTitle,
-      piName: language === 'zh' ? '教授 1' : 'Professor 1',
+      piName: dynamicPiName,
       members,
       tasks,
       projects,
@@ -104,7 +111,7 @@ export const GroupMeetingView: React.FC = () => {
   const handleDownloadMinutes = () => {
     const md = generateMeetingMinutesMarkdown({
       labName: t.labTitle,
-      piName: language === 'zh' ? '教授 1' : 'Professor 1',
+      piName: dynamicPiName,
       members,
       tasks,
       projects,
@@ -170,6 +177,16 @@ export const GroupMeetingView: React.FC = () => {
                 {isTimerRunning ? (language === 'zh' ? '暂停' : 'Pause') : (language === 'zh' ? '继续' : 'Resume')}
               </button>
             </div>
+
+            {/* Personal Weekly Digest */}
+            <button
+              onClick={() => generateMyWeeklyDigest(selectedMember !== 'all' ? selectedMember : undefined)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-slate-200 hover:text-white font-medium text-xs transition-all shadow-sm"
+              title={t.myWeeklyDigest}
+            >
+              <FileText className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{t.myWeeklyDigest}</span>
+            </button>
 
             {/* Export Markdown Minutes Button */}
             <button

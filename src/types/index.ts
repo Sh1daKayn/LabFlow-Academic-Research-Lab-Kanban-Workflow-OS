@@ -6,8 +6,8 @@ export interface StageConfig {
   id: string;
   labelEn: string;
   labelZh: string;
-  subTitleEn: string;
-  subTitleZh: string;
+  subTitleEn?: string;
+  subTitleZh?: string;
   color: string;
   badgeBg: string;
   borderColor: string;
@@ -115,6 +115,21 @@ export interface LabResource {
   updatedAt?: string;
 }
 
+export interface MilestoneTemplate {
+  nameEn: string;
+  nameZh: string;
+  offsetDays: number; // e.g. 45 -> T - 45 days
+  stageId: string;
+}
+
+export interface VenuePreset {
+  id: string;
+  name: string;
+  tag: string;
+  defaultLeadId: string;
+  milestones: MilestoneTemplate[];
+}
+
 export interface ReverseDDLForm {
   title: string;
   targetVenue: string;
@@ -126,4 +141,5 @@ export interface ReverseDDLForm {
   datasetUrl?: string;
   zoteroUrl?: string;
   notes?: string;
+  customMilestones?: MilestoneTemplate[];
 }

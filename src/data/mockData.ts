@@ -73,6 +73,69 @@ export const DEFAULT_STAGES: StageConfig[] = [
 
 export const STAGES = DEFAULT_STAGES;
 
+export const DEFAULT_VENUES = [
+  {
+    id: 'venue-aaai',
+    name: 'AAAI 2027',
+    tag: 'AAAI 2027',
+    defaultLeadId: 'member-student2',
+    milestones: [
+      { nameEn: 'Baseline & Empirical Freeze', nameZh: '基线锁定与实验评测冻结', offsetDays: 45, stageId: 'DATA_EXP' },
+      { nameEn: 'Full Manuscript Draft', nameZh: '论文完整初稿完成', offsetDays: 30, stageId: 'DRAFTING' },
+      { nameEn: 'Advisor Internal Review', nameZh: '提交导师深入审阅', offsetDays: 14, stageId: 'PI_REVIEW' },
+      { nameEn: 'Double-Blind & Formatting Check', nameZh: '双盲匿名与格式复核', offsetDays: 3, stageId: 'PI_REVIEW' },
+    ],
+  },
+  {
+    id: 'venue-neurips',
+    name: 'NeurIPS 2027',
+    tag: "NeurIPS '27",
+    defaultLeadId: 'member-student1',
+    milestones: [
+      { nameEn: 'Core Empirical Freeze', nameZh: '核心实验结果锁定', offsetDays: 50, stageId: 'DATA_EXP' },
+      { nameEn: 'Complete Overleaf Draft', nameZh: '初稿及附录撰写完成', offsetDays: 30, stageId: 'DRAFTING' },
+      { nameEn: 'Internal Lab Dry-run Review', nameZh: '组内评审与导师把关', offsetDays: 14, stageId: 'PI_REVIEW' },
+      { nameEn: 'Reproducibility & OpenReview Pack', nameZh: '可复现包与提交核验', offsetDays: 3, stageId: 'PI_REVIEW' },
+    ],
+  },
+  {
+    id: 'venue-mgt-sci',
+    name: 'INFORMS / Management Science',
+    tag: 'Mgt Sci',
+    defaultLeadId: 'member-student1',
+    milestones: [
+      { nameEn: 'Econometric Estimation Finalized', nameZh: '计量估计与稳健性检验收敛', offsetDays: 60, stageId: 'DATA_EXP' },
+      { nameEn: 'Working Paper Draft Complete', nameZh: '工作论文完整定稿', offsetDays: 35, stageId: 'DRAFTING' },
+      { nameEn: 'Senior Faculty Critique', nameZh: '导师全篇审阅与修改', offsetDays: 14, stageId: 'PI_REVIEW' },
+      { nameEn: 'Journal Package Submission', nameZh: '投稿系统包打包提交', offsetDays: 3, stageId: 'PI_REVIEW' },
+    ],
+  },
+  {
+    id: 'venue-aepp',
+    name: 'AEPP / IFAMR',
+    tag: 'AEPP',
+    defaultLeadId: 'member-student3',
+    milestones: [
+      { nameEn: 'Empirical Pipeline Lock', nameZh: '实证分析模型锁定', offsetDays: 45, stageId: 'DATA_EXP' },
+      { nameEn: 'Manuscript Ready for Review', nameZh: '论文撰写就绪', offsetDays: 28, stageId: 'DRAFTING' },
+      { nameEn: 'Advisor Sign-off', nameZh: '导师定稿确认', offsetDays: 10, stageId: 'PI_REVIEW' },
+      { nameEn: 'Submission Final Proof', nameZh: '投稿格式与文末检查', offsetDays: 3, stageId: 'PI_REVIEW' },
+    ],
+  },
+  {
+    id: 'venue-nature-comms',
+    name: 'Nature Communications',
+    tag: 'Nature Comms',
+    defaultLeadId: 'member-student1',
+    milestones: [
+      { nameEn: 'Multi-Center Trial Analysis Freeze', nameZh: '多中心数据试验分析冻结', offsetDays: 60, stageId: 'DATA_EXP' },
+      { nameEn: 'Full Article & Extended Data Ready', nameZh: '正文与扩展图表初稿就绪', offsetDays: 35, stageId: 'DRAFTING' },
+      { nameEn: 'PI & Co-author Consortium Sign-off', nameZh: '导师与共作联盟审阅签署', offsetDays: 15, stageId: 'PI_REVIEW' },
+      { nameEn: 'Editorial Formatting & DOI Minting', nameZh: '期刊格式校验与数据包归档', offsetDays: 4, stageId: 'PI_REVIEW' },
+    ],
+  },
+];
+
 export const BLOCKER_CATEGORIES: Record<BlockerCategory, BlockerCategoryMeta> = {
   DATA_DEFICIT: {
     id: 'DATA_DEFICIT',

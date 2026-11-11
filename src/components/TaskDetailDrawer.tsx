@@ -13,6 +13,7 @@ import {
   FileText,
   Database,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { GitHubIcon } from '@/components/icons/BrandIcons';
 
@@ -27,6 +28,7 @@ export const TaskDetailDrawer: React.FC = () => {
     language,
     t,
     resolveBlocker,
+    addToast,
   } = useLabFlow();
 
   const [title, setTitle] = useState('');
@@ -119,6 +121,32 @@ export const TaskDetailDrawer: React.FC = () => {
 
   const handleDeleteSubtask = (subId: string) => {
     setChecklist(checklist.filter((c) => c.id !== subId));
+  };
+
+  const handleInsertRubric = () => {
+    const isZh = language === 'zh';
+    const rubricItems = isZh
+      ? [
+          '【双盲匿名】彻底清除论文与附录中的作者姓名、致谢、机构标识与非匿名仓库链接',
+          '【可复现性】提供随机数种子配置、超参数网格列表与一键复现依赖环境清单 (conda/docker)',
+          '【实验统计】核心基线实验完成至少 5 次不同随机种子运行并报告均值与置信区间 (std/CI)',
+          '【理论与伦理】补充引理完整数学推导附录、潜在社会负面影响与合规伦理声明',
+        ]
+      : [
+          '[Double-Blind] Remove all author names, acknowledgments, affiliations, and de-anonymized URLs',
+          '[Reproducibility] Specify random seeds, hyperparameter search grids, and conda/docker environment',
+          '[Significance] Run baseline & proposed models with >=5 random seeds and report std / confidence intervals',
+          '[Ethics & Proofs] Complete supplementary mathematical proofs, limitations, and ethical impact statements',
+        ];
+
+    const newItems = rubricItems.map((text, idx) => ({
+      id: `rubric-${Date.now()}-${idx}`,
+      text,
+      done: false,
+    }));
+
+    setChecklist((prev) => [...prev, ...newItems]);
+    addToast(t.insertRubricChecklist, t.rubricInserted, 'success');
   };
 
   return (
@@ -320,9 +348,19 @@ export const TaskDetailDrawer: React.FC = () => {
 
           {/* Checklist */}
           <div className="border-t border-slate-800 pt-3">
-            <label className="block text-xs font-medium text-slate-400 mb-2">
-              {t.checklist}
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium text-slate-400">
+                {t.checklist}
+              </label>
+              <button
+                type="button"
+                onClick={handleInsertRubric}
+                className="text-[11px] font-medium text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>{t.insertRubricChecklist}</span>
+              </button>
+            </div>
             <div className="space-y-1.5 mb-2">
               {checklist.map((c) => (
                 <div
