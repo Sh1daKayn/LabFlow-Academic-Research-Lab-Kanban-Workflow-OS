@@ -11,8 +11,7 @@ import { BlockerModal } from '@/components/BlockerModal';
 import { ReverseDDLModal } from '@/components/ReverseDDLModal';
 import { NewTaskModal } from '@/components/NewTaskModal';
 import { ResourceModal } from '@/components/ResourceModal';
-import { StageSettingsModal } from '@/components/StageSettingsModal';
-import { MemberManagerModal } from '@/components/MemberManagerModal';
+import { SettingsModal } from '@/components/SettingsModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
@@ -42,8 +41,7 @@ export const MainApp: React.FC = () => {
       <ReverseDDLModal />
       <NewTaskModal />
       <ResourceModal />
-      <StageSettingsModal />
-      <MemberManagerModal />
+      <SettingsModal />
 
       {/* Toast Notification Layer */}
       <ToastContainer />

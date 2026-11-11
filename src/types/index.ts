@@ -1,5 +1,9 @@
 export type Language = 'zh' | 'en';
 
+export type AccentColor = 'indigo' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'violet';
+export type BgTheme = 'default' | 'oled' | 'warm';
+export type SettingsTab = 'appearance' | 'members' | 'resources' | 'stages' | 'venues' | 'backup';
+
 export type AcademicStage = string;
 
 export interface StageConfig {

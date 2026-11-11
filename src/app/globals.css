@@ -22,6 +22,38 @@ body {
 }
 
 /* ========================================================================= */
+/* THEME BACKGROUND TONES (OLED Pure Black & Warm Paper) */
+/* ========================================================================= */
+
+html[data-bg="oled"].dark body,
+html[data-bg="oled"].dark .min-h-screen {
+  background-color: #000000 !important;
+}
+html[data-bg="oled"].dark header {
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  border-color: #171717 !important;
+}
+html[data-bg="oled"].dark [class*="bg-slate-900"],
+html[data-bg="oled"].dark [class*="bg-slate-950"] {
+  background-color: #080808 !important;
+  border-color: #1a1a1a !important;
+}
+
+html[data-bg="warm"].light body,
+html[data-bg="warm"].light .min-h-screen {
+  background-color: #fbf9f5 !important;
+}
+html[data-bg="warm"].light header {
+  background-color: rgba(253, 251, 247, 0.95) !important;
+  border-color: #eae3d7 !important;
+}
+html[data-bg="warm"].light [class*="bg-slate-900"],
+html[data-bg="warm"].light [class*="bg-slate-950"] {
+  background-color: #ffffff !important;
+  border-color: #eae3d7 !important;
+}
+
+/* ========================================================================= */
 /* NOTION / LINEAR GRADE LIGHT MODE COMPREHENSIVE OVERRIDES */
 /* ========================================================================= */
 

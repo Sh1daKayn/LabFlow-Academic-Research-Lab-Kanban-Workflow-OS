@@ -12,6 +12,9 @@ import {
   StageConfig,
   TaskItem,
   VenuePreset,
+  AccentColor,
+  BgTheme,
+  SettingsTab,
 } from '@/types';
 import {
   DEFAULT_STAGES,
@@ -80,6 +83,16 @@ interface LabFlowContextType {
   setSortByDDLUrgency: (val: boolean) => void;
   viewMode: 'kanban' | 'gantt' | 'meeting';
   theme: 'dark' | 'light';
+  accentColor: AccentColor;
+  setAccentColor: (val: AccentColor) => void;
+  bgStyle: BgTheme;
+  setBgStyle: (val: BgTheme) => void;
+
+  // Settings Modal Center
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: (open: boolean) => void;
+  activeSettingsTab: SettingsTab;
+  setActiveSettingsTab: (tab: SettingsTab) => void;
 
   // Modals
   activeBlockerTask: TaskItem | null;
@@ -114,6 +127,9 @@ interface LabFlowContextType {
   generateReverseDDLPipeline: (plan: ReverseDDLForm) => void;
   claimResource: (resourceId: string, currentUser: string, currentJob: string, hours: number) => void;
   releaseResource: (resourceId: string) => void;
+  addResource: (res: LabResource) => void;
+  updateResource: (id: string, updates: Partial<LabResource>) => void;
+  deleteResource: (id: string) => void;
   resetToMockData: () => void;
   exportDataBackup: () => void;
   importDataBackup: (jsonStr: string) => boolean;
@@ -134,6 +150,8 @@ const STORAGE_KEYS = {
   CURRENT_USER: 'labflow_current_user_v3',
   RESOURCES: 'labflow_resources_v3',
   THEME: 'labflow_theme_v3',
+  ACCENT: 'labflow_accent_v3',
+  BG_STYLE: 'labflow_bg_style_v3',
 };
 
 export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -154,6 +172,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [sortByDDLUrgency, setSortByDDLUrgency] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'gantt' | 'meeting'>('kanban');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [accentColor, setAccentColor] = useState<AccentColor>('indigo');
+  const [bgStyle, setBgStyle] = useState<BgTheme>('default');
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('appearance');
 
   const [activeBlockerTask, setActiveBlockerTask] = useState<TaskItem | null>(null);
   const [isReverseDDLOpen, setIsReverseDDLOpen] = useState<boolean>(false);
@@ -180,6 +203,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const savedCurrentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       const savedResources = localStorage.getItem(STORAGE_KEYS.RESOURCES);
       const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light';
+      const savedAccent = localStorage.getItem(STORAGE_KEYS.ACCENT) as AccentColor;
+      const savedBgStyle = localStorage.getItem(STORAGE_KEYS.BG_STYLE) as BgTheme;
 
       if (savedLang) setLanguage(savedLang);
       if (savedStages) setStages(JSON.parse(savedStages));
@@ -190,6 +215,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (savedCurrentUser) setCurrentUserId(savedCurrentUser);
       if (savedResources) setResources(JSON.parse(savedResources));
       if (savedTheme) setTheme(savedTheme);
+      if (savedAccent) setAccentColor(savedAccent);
+      if (savedBgStyle) setBgStyle(savedBgStyle);
     } catch (e) {
       console.warn('Could not read from localStorage', e);
     } finally {
@@ -210,10 +237,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER, currentUserId);
       localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(resources));
       localStorage.setItem(STORAGE_KEYS.THEME, theme);
+      localStorage.setItem(STORAGE_KEYS.ACCENT, accentColor);
+      localStorage.setItem(STORAGE_KEYS.BG_STYLE, bgStyle);
     } catch (e) {
       console.warn('Could not write to localStorage', e);
     }
-  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, isInitialized]);
+  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, accentColor, bgStyle, isInitialized]);
 
   // Apply dark/light classes to <html>
   useEffect(() => {
@@ -225,6 +254,15 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       document.documentElement.classList.add('light');
     }
   }, [theme]);
+
+  // Apply accent color and background tone attributes to <html>
+  useEffect(() => {
+    document.documentElement.setAttribute('data-accent', accentColor);
+  }, [accentColor]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bg', bgStyle);
+  }, [bgStyle]);
 
   const addToast = (
     title: string,
@@ -584,6 +622,23 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(language === 'zh' ? '节点已释放' : 'Resource Released', '', 'info');
   };
 
+  const addResource = (res: LabResource) => {
+    setResources((prev) => [...prev, res]);
+    addToast(language === 'zh' ? '公共设施已添加' : 'Resource Added', res.nameZh || res.nameEn, 'success');
+  };
+
+  const updateResource = (id: string, updates: Partial<LabResource>) => {
+    setResources((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r))
+    );
+    addToast(language === 'zh' ? '设施状态已更新' : 'Resource Updated', '', 'info');
+  };
+
+  const deleteResource = (id: string) => {
+    setResources((prev) => prev.filter((r) => r.id !== id));
+    addToast(language === 'zh' ? '设施已移除' : 'Resource Removed', '', 'info');
+  };
+
   // Backup & Restore
   const exportDataBackup = () => {
     const backupData = {
@@ -759,6 +814,14 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSortByDDLUrgency,
         viewMode,
         theme,
+        accentColor,
+        setAccentColor,
+        bgStyle,
+        setBgStyle,
+        isSettingsOpen,
+        setIsSettingsOpen,
+        activeSettingsTab,
+        setActiveSettingsTab,
         activeBlockerTask,
         isReverseDDLOpen,
         isNewTaskOpen,
@@ -787,6 +850,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         generateReverseDDLPipeline,
         claimResource,
         releaseResource,
+        addResource,
+        updateResource,
+        deleteResource,
         resetToMockData,
         exportDataBackup,
         importDataBackup,

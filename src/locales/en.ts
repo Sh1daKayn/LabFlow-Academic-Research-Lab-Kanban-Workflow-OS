@@ -135,6 +135,29 @@ export const en = {
   save: 'Save Changes',
   delete: 'Delete Task',
   confirmDelete: 'Are you sure you want to delete this task?',
+
+  // Settings Center
+  settingsCenter: 'System Settings',
+  settingsCenterDesc: 'Unified configuration center for personnel, compute, stages, and theme styling.',
+  tabAppearance: 'Appearance & Themes',
+  tabMembers: 'Lab Members',
+  tabResources: 'Compute & Facilities',
+  tabStages: 'Academic Stages',
+  tabVenues: 'Target Venues',
+  tabBackup: 'Data & Backup',
+  themeMode: 'Display Mode',
+  themeDark: 'Dark Mode',
+  themeLight: 'Light Mode',
+  accentColor: 'Theme Accent Color',
+  bgStyle: 'Background Tone',
+  bgDefault: 'Slate Scientific (Default)',
+  bgOled: 'Pure OLED Black',
+  bgWarm: 'Warm Paper Tone',
+  addResource: 'Add Facility / Compute Node',
+  resourceName: 'Facility / Node Name',
+  resourceType: 'Category',
+  resourceSpecs: 'Hardware Specs',
+  deleteResourceConfirm: 'Are you sure you want to delete this facility/node?',
 };
 
 export type LocaleTranslations = typeof en;
