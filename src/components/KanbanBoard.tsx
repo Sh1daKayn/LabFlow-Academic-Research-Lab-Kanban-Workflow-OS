@@ -175,50 +175,42 @@ export const KanbanBoard: React.FC = () => {
             const stageTasks = getFilteredTasksForStage(stage.id);
             const blockedInStage = stageTasks.filter((t) => t.isBlocked).length;
             const stageName = language === 'zh' ? stage.labelZh : stage.labelEn;
-            const stageSub = language === 'zh' ? stage.subTitleZh : stage.subTitleEn;
 
             return (
               <div
                 key={stage.id}
-                className={`shrink-0 flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 shadow-sm ${
+                className={`shrink-0 flex flex-col rounded-2xl bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 shadow-sm ${
                   isSingleStage ? 'w-full' : 'w-72'
                 }`}
               >
                 {/* Stage Header */}
-                <div className="p-3 border-b border-slate-800/80">
-                  <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="p-3 border-b border-slate-200 dark:border-slate-800/80">
+                  <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-2.5 h-2.5 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
-                      <h2 className="text-xs font-bold text-slate-200 tracking-tight truncate">
+                      <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate">
                         {stageName}
                       </h2>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {blockedInStage > 0 && (
-                        <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300 animate-pulse">
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-600 dark:text-rose-300 animate-pulse">
                           {blockedInStage} {language === 'zh' ? '卡点' : 'blocked'}
                         </span>
                       )}
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-900 border border-slate-800 text-slate-400">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                         {stageTasks.length}
                       </span>
                       <button
                         onClick={() => setIsNewTaskOpen(true)}
-                        className="p-1 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
                         title={language === 'zh' ? '添加任务' : 'Add task'}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
-
-                  {/* Subtitle */}
-                  {stageSub && (
-                    <div className="text-[10px] text-slate-500 truncate">
-                      {stageSub}
-                    </div>
-                  )}
                 </div>
 
                 {/* Droppable Area */}
@@ -229,7 +221,7 @@ export const KanbanBoard: React.FC = () => {
                       {...provided.droppableProps}
                       className={`p-2.5 flex-1 flex flex-col gap-2.5 min-h-[460px] transition-colors rounded-b-2xl ${
                         snapshot.isDraggingOver
-                          ? 'bg-slate-900/70 ring-1 ring-inset ring-indigo-500/40'
+                          ? 'bg-indigo-50/60 dark:bg-slate-900/70 ring-1 ring-inset ring-indigo-500/40'
                           : 'bg-transparent'
                       }`}
                     >

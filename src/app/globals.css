@@ -7,9 +7,10 @@
   --foreground: #f8fafc;
 }
 
-.light {
+html.light {
   --background: #f8fafc;
   --foreground: #0f172a;
+  color-scheme: light;
 }
 
 body {
@@ -20,58 +21,136 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Light mode overrides for high contrast Notion-style crispness */
-html.light {
-  color-scheme: light;
-}
+/* ========================================================================= */
+/* NOTION / LINEAR GRADE LIGHT MODE COMPREHENSIVE OVERRIDES */
+/* ========================================================================= */
 
-html.light body {
+html.light body,
+html.light .min-h-screen {
   background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
-html.light header {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  border-color: #e2e8f0 !important;
+/* 1. Modals & Dialog Backdrop ("窗子遮罩") */
+html.light [class*="fixed"][class*="inset-0"],
+html.light .fixed.inset-0 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(6px) !important;
 }
 
-html.light .bg-slate-950 {
-  background-color: #f8fafc !important;
-}
-
-html.light .bg-slate-900 {
+/* 2. Modal Windows & Dialog Cards ("窗子本体") */
+html.light [class*="fixed"][class*="inset-0"] > div,
+html.light [class*="fixed"][class*="inset-0"] [class*="rounded-2xl"],
+html.light [class*="fixed"][class*="inset-0"] [class*="rounded-xl"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2) !important;
 }
 
-html.light .border-slate-800 {
+/* 3. Global Cards & Backgrounds */
+html.light [class*="bg-slate-900"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
   border-color: #e2e8f0 !important;
 }
 
-html.light .border-slate-900 {
+html.light [class*="bg-slate-950"] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
   border-color: #e2e8f0 !important;
 }
 
-html.light .text-slate-100,
-html.light .text-slate-200 {
+/* 4. Sub-boxes, Wells & Forms inside Modals */
+html.light [class*="fixed"][class*="inset-0"] form,
+html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950"],
+html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-900/90"],
+html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950/80"] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
-html.light .text-slate-300,
-html.light .text-slate-400 {
-  color: #475569 !important;
-}
-
-html.light .text-slate-500 {
-  color: #64748b !important;
-}
-
+/* 5. Inputs, Textareas, Selects */
 html.light input,
 html.light select,
 html.light textarea {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #6366f1 !important;
+  outline: none !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* 6. Typography */
+html.light [class*="text-slate-100"],
+html.light [class*="text-slate-200"],
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4 {
+  color: #0f172a !important;
+}
+
+html.light [class*="text-slate-300"],
+html.light [class*="text-slate-400"] {
+  color: #334155 !important;
+}
+
+html.light [class*="text-slate-500"],
+html.light [class*="text-slate-600"] {
+  color: #64748b !important;
+}
+
+/* 7. Borders & Dividers */
+html.light [class*="border-slate-800"],
+html.light [class*="border-slate-900"],
+html.light [class*="border-slate-700"] {
+  border-color: #e2e8f0 !important;
+}
+
+/* 8. Secondary Buttons & Badges */
+html.light [class*="bg-slate-800"] {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light [class*="hover:bg-slate-800"]:hover,
+html.light [class*="hover:bg-slate-700"]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* 9. Header & Sticky Bars */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 10. Preserved Brand & Status Colors */
+html.light button.bg-indigo-600,
+html.light [class*="bg-indigo-600"],
+html.light [class*="from-amber-500"],
+html.light [class*="from-cyan-600"] {
+  color: #ffffff !important;
 }
 
 /* Custom scrollbars */

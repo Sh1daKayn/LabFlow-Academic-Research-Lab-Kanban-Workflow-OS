@@ -123,31 +123,31 @@ export const ReverseDDLModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-slate-100 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 text-slate-900 dark:text-slate-100 max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={() => setIsReverseDDLOpen(false)}
-          className="absolute right-4 top-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+          className="absolute right-4 top-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
         <div className="flex items-start gap-3 mb-5">
-          <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400">
+          <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-500 dark:text-amber-400">
             <Zap className="w-6 h-6 fill-amber-400/20" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
                 {t.reverseDDL}
               </span>
             </div>
-            <h2 className="text-base font-bold text-slate-100 mt-1 leading-snug">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-1 leading-snug">
               {t.reverseDDLTitle}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">{t.reverseDDLDesc}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t.reverseDDLDesc}</p>
           </div>
         </div>
 

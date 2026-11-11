@@ -10,7 +10,6 @@ import { GroupMeetingView } from '@/components/GroupMeetingView';
 import { BlockerModal } from '@/components/BlockerModal';
 import { ReverseDDLModal } from '@/components/ReverseDDLModal';
 import { NewTaskModal } from '@/components/NewTaskModal';
-import { TaskDetailDrawer } from '@/components/TaskDetailDrawer';
 import { ResourceModal } from '@/components/ResourceModal';
 import { StageSettingsModal } from '@/components/StageSettingsModal';
 import { MemberManagerModal } from '@/components/MemberManagerModal';
@@ -20,7 +19,7 @@ export const MainApp: React.FC = () => {
   const { viewMode } = useLabFlow();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200">
       {/* Top Header */}
       <Header />
 
@@ -38,11 +37,10 @@ export const MainApp: React.FC = () => {
         )}
       </main>
 
-      {/* Modals & Slide-over Drawers */}
+      {/* Modals & Dialog Windows */}
       <BlockerModal />
       <ReverseDDLModal />
       <NewTaskModal />
-      <TaskDetailDrawer />
       <ResourceModal />
       <StageSettingsModal />
       <MemberManagerModal />

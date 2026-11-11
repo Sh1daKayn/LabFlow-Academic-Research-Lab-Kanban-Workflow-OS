@@ -69,7 +69,7 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur-md transition-colors shadow-sm">
       <div className="max-w-[1720px] mx-auto px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 gap-3">
           {/* Left: Minimal Branding & View Switcher */}

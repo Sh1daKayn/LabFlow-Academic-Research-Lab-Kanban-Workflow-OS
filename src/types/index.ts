@@ -60,6 +60,12 @@ export interface BlockerInfo {
   reportedAt: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface TaskItem {
   id: string;
   title: string;
@@ -79,7 +85,7 @@ export interface TaskItem {
   blocker?: BlockerInfo;
   order: number;
   tags?: string[];
-  checklist?: { id: string; text: string; done: boolean }[];
+  checklist?: ChecklistItem[];
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
