@@ -30,21 +30,22 @@ import {
   SettingsTab,
   LabMember,
   ResourceType,
+  FontSize,
 } from '@/types';
 
 const ACCENT_OPTIONS: { id: AccentColor; nameZh: string; nameEn: string; color: string; border: string; bg: string }[] = [
-  { id: 'indigo', nameZh: '经典学术蓝紫 (Indigo)', nameEn: 'Academic Indigo', color: '#6366f1', border: 'border-indigo-500', bg: 'bg-indigo-600' },
-  { id: 'cyan', nameZh: '交叉计算青 (Cyan)', nameEn: 'Computational Cyan', color: '#06b6d4', border: 'border-cyan-500', bg: 'bg-cyan-600' },
-  { id: 'emerald', nameZh: '自然与生态绿 (Emerald)', nameEn: 'Nature Emerald', color: '#10b981', border: 'border-emerald-500', bg: 'bg-emerald-600' },
-  { id: 'amber', nameZh: '经管与金融金 (Amber)', nameEn: 'Economics Amber', color: '#f59e0b', border: 'border-amber-500', bg: 'bg-amber-600' },
-  { id: 'rose', nameZh: '量子与物理红 (Rose)', nameEn: 'Quantum Rose', color: '#f43f5e', border: 'border-rose-500', bg: 'bg-rose-600' },
-  { id: 'violet', nameZh: '基础理论深紫 (Violet)', nameEn: 'Pure Theory Violet', color: '#8b5cf6', border: 'border-violet-500', bg: 'bg-violet-600' },
+  { id: 'indigo', nameZh: '经典学术蓝紫', nameEn: 'Academic Indigo', color: '#6366f1', border: 'border-indigo-500', bg: 'bg-indigo-600' },
+  { id: 'cyan', nameZh: '交叉计算青', nameEn: 'Computational Cyan', color: '#06b6d4', border: 'border-cyan-500', bg: 'bg-cyan-600' },
+  { id: 'emerald', nameZh: '自然与生态绿', nameEn: 'Nature Emerald', color: '#10b981', border: 'border-emerald-500', bg: 'bg-emerald-600' },
+  { id: 'amber', nameZh: '经管与金融金', nameEn: 'Economics Amber', color: '#f59e0b', border: 'border-amber-500', bg: 'bg-amber-600' },
+  { id: 'rose', nameZh: '量子与物理红', nameEn: 'Quantum Rose', color: '#f43f5e', border: 'border-rose-500', bg: 'bg-rose-600' },
+  { id: 'violet', nameZh: '基础理论深紫', nameEn: 'Pure Theory Violet', color: '#8b5cf6', border: 'border-violet-500', bg: 'bg-violet-600' },
 ];
 
 const BG_OPTIONS: { id: BgTheme; nameZh: string; nameEn: string; descZh: string; descEn: string }[] = [
-  { id: 'default', nameZh: '科研深灰 (Slate)', nameEn: 'Slate Scientific', descZh: '经典学术高阶灰度，沉浸护眼', descEn: 'High-contrast subtle dark slate' },
-  { id: 'oled', nameZh: '极客高对比 (Pure Black)', nameEn: 'Pure OLED Black', descZh: '深邃纯黑底色，硬件原色对比极高', descEn: 'Zero backlight deep black' },
-  { id: 'warm', nameZh: '素雅微暖 (Warm Paper)', nameEn: 'Warm Paper Tone', descZh: '柔和纸本微温色调，舒适耐读', descEn: 'Soft organic paper warmth' },
+  { id: 'default', nameZh: '科研深灰', nameEn: 'Slate Scientific', descZh: '经典学术高阶灰度，沉浸护眼', descEn: 'High-contrast subtle dark slate' },
+  { id: 'oled', nameZh: '极客纯黑', nameEn: 'Pure OLED Black', descZh: '深邃纯黑底色，硬件原色对比极高', descEn: 'Zero backlight deep black' },
+  { id: 'warm', nameZh: '素雅微暖', nameEn: 'Warm Paper Tone', descZh: '柔和纸本微温色调，舒适耐读', descEn: 'Soft organic paper warmth' },
 ];
 
 export const SettingsModal: React.FC = () => {
@@ -59,6 +60,10 @@ export const SettingsModal: React.FC = () => {
     setAccentColor,
     bgStyle,
     setBgStyle,
+    fontSize,
+    setFontSize,
+    enableComputeStrip,
+    setEnableComputeStrip,
     members,
     currentUserId,
     setCurrentUserId,
@@ -77,6 +82,7 @@ export const SettingsModal: React.FC = () => {
     exportDataBackup,
     importDataBackup,
     resetToMockData,
+    cleanSlateWipe,
     language,
     t,
   } = useLabFlow();
@@ -352,6 +358,44 @@ export const SettingsModal: React.FC = () => {
                     })}
                   </div>
                 </div>
+
+                {/* Font Size & Typography */}
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {t.fontSize}
+                    </h3>
+                    <span className="text-[11px] text-slate-500 font-serif">
+                      Times New Roman · Publication Standard
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5 max-w-md">
+                    {(['compact', 'standard', 'large'] as FontSize[]).map((size) => {
+                      const isSelected = fontSize === size;
+                      const labels = {
+                        compact: { zh: '紧凑版 (Compact)', en: 'Compact' },
+                        standard: { zh: '标准版 (Standard)', en: 'Standard' },
+                        large: { zh: '大号 (Large)', en: 'Large' },
+                      };
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setFontSize(size)}
+                          className={`p-2.5 rounded-xl border text-center transition-all ${
+                            isSelected
+                              ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/30 dark:bg-indigo-950/20 font-bold'
+                              : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="text-xs block">
+                            {language === 'zh' ? (size === 'compact' ? '紧凑' : size === 'standard' ? '标准' : '大号') : labels[size].en}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -515,6 +559,31 @@ export const SettingsModal: React.FC = () => {
                       ? '自由增减 GPU 算力节点、计量经济服务器、高性能集群或专业实验设备。'
                       : 'Manage GPU clusters, servers, and laboratory scientific instruments.'}
                   </p>
+                </div>
+
+                {/* Enable/Disable Strip Toggle */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl border bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      {language === 'zh' ? '在主界面显示公共算力与设施栏' : 'Show Compute & Facilities Strip on Main View'}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">
+                      {language === 'zh' ? '若课题组偏重纯理论或人文学科、无需算力监控，可关闭此栏' : 'Hide the top compute status strip if your lab does not track GPU/HPC nodes'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEnableComputeStrip(!enableComputeStrip)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      enableComputeStrip ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        enableComputeStrip ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 {/* Resource Nodes List */}
@@ -838,22 +907,52 @@ export const SettingsModal: React.FC = () => {
 
                 {/* Reset to Mock */}
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                     <div>
-                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                         {t.resetDemo}
                       </span>
                       <span className="text-[10px] text-slate-500">
-                        清除所有本地修改，恢复初始的高水准科研论文与卡点示例数据
+                        {language === 'zh'
+                          ? '恢复初始的国际高水平论文、阶段及卡点示例数据'
+                          : 'Restore default sample papers, pipelines, and blocker mock state'}
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={resetToMockData}
-                      className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>{t.resetDemo}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Clean Slate Wipe (一键初始化空白实验室) */}
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
+                    <div>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block">
+                        {language === 'zh' ? '一键初始化空白实验室' : 'Clean Slate (Wipe All to Blank)'}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {language === 'zh'
+                          ? '清空全部任务、项目、算力与预设人员，从零开始搭建属于自己的课题组'
+                          : 'Wipe all tasks, projects, resources, and members to build your lab from scratch'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(language === 'zh' ? '确定要清空所有数据并从零初始化吗？此操作将删除所有现有任务和人员！' : 'Wipe all data and start completely fresh? This cannot be undone!')) {
+                          cleanSlateWipe();
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{language === 'zh' ? '清空并初始化' : 'Wipe & Initialize'}</span>
                     </button>
                   </div>
                 </div>

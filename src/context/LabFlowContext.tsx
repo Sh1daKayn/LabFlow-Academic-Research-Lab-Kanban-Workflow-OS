@@ -14,6 +14,7 @@ import {
   VenuePreset,
   AccentColor,
   BgTheme,
+  FontSize,
   SettingsTab,
 } from '@/types';
 import {
@@ -87,6 +88,10 @@ interface LabFlowContextType {
   setAccentColor: (val: AccentColor) => void;
   bgStyle: BgTheme;
   setBgStyle: (val: BgTheme) => void;
+  fontSize: FontSize;
+  setFontSize: (val: FontSize) => void;
+  enableComputeStrip: boolean;
+  setEnableComputeStrip: (val: boolean) => void;
 
   // Settings Modal Center
   isSettingsOpen: boolean;
@@ -131,6 +136,7 @@ interface LabFlowContextType {
   updateResource: (id: string, updates: Partial<LabResource>) => void;
   deleteResource: (id: string) => void;
   resetToMockData: () => void;
+  cleanSlateWipe: () => void;
   exportDataBackup: () => void;
   importDataBackup: (jsonStr: string) => boolean;
   generateMyWeeklyDigest: (targetMemberId?: string) => string;
@@ -152,6 +158,8 @@ const STORAGE_KEYS = {
   THEME: 'labflow_theme_v3',
   ACCENT: 'labflow_accent_v3',
   BG_STYLE: 'labflow_bg_style_v3',
+  FONT_SIZE: 'labflow_font_size_v3',
+  ENABLE_COMPUTE: 'labflow_enable_compute_v3',
 };
 
 export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -174,6 +182,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [accentColor, setAccentColor] = useState<AccentColor>('indigo');
   const [bgStyle, setBgStyle] = useState<BgTheme>('default');
+  const [fontSize, setFontSize] = useState<FontSize>('standard');
+  const [enableComputeStrip, setEnableComputeStrip] = useState<boolean>(true);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('appearance');
@@ -205,6 +215,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light';
       const savedAccent = localStorage.getItem(STORAGE_KEYS.ACCENT) as AccentColor;
       const savedBgStyle = localStorage.getItem(STORAGE_KEYS.BG_STYLE) as BgTheme;
+      const savedFontSize = localStorage.getItem(STORAGE_KEYS.FONT_SIZE) as FontSize;
+      const savedCompute = localStorage.getItem(STORAGE_KEYS.ENABLE_COMPUTE);
 
       if (savedLang) setLanguage(savedLang);
       if (savedStages) setStages(JSON.parse(savedStages));
@@ -217,6 +229,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (savedTheme) setTheme(savedTheme);
       if (savedAccent) setAccentColor(savedAccent);
       if (savedBgStyle) setBgStyle(savedBgStyle);
+      if (savedFontSize) setFontSize(savedFontSize);
+      if (savedCompute !== null) setEnableComputeStrip(savedCompute === 'true');
     } catch (e) {
       console.warn('Could not read from localStorage', e);
     } finally {
@@ -239,10 +253,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem(STORAGE_KEYS.THEME, theme);
       localStorage.setItem(STORAGE_KEYS.ACCENT, accentColor);
       localStorage.setItem(STORAGE_KEYS.BG_STYLE, bgStyle);
+      localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize);
+      localStorage.setItem(STORAGE_KEYS.ENABLE_COMPUTE, enableComputeStrip ? 'true' : 'false');
     } catch (e) {
       console.warn('Could not write to localStorage', e);
     }
-  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, accentColor, bgStyle, isInitialized]);
+  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, accentColor, bgStyle, fontSize, enableComputeStrip, isInitialized]);
 
   // Apply dark/light classes to <html>
   useEffect(() => {
@@ -255,7 +271,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [theme]);
 
-  // Apply accent color and background tone attributes to <html>
+  // Apply accent color, background tone, and font size attributes to <html>
   useEffect(() => {
     document.documentElement.setAttribute('data-accent', accentColor);
   }, [accentColor]);
@@ -263,6 +279,10 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     document.documentElement.setAttribute('data-bg', bgStyle);
   }, [bgStyle]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-font-size', fontSize);
+  }, [fontSize]);
 
   const addToast = (
     title: string,
@@ -776,6 +796,39 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(language === 'zh' ? '示例数据已重置' : 'Demo State Reset', '', 'success');
   };
 
+  const cleanSlateWipe = () => {
+    const initialUser: LabMember = {
+      id: 'member-me',
+      nameEn: 'Researcher 1',
+      nameZh: '研究员 1',
+      role: 'PI',
+      titleEn: 'Principal Investigator',
+      titleZh: '课题组长 (PI)',
+      avatar: '🧑‍💻',
+      email: 'pi@lab.edu'
+    };
+    setTasks([]);
+    setProjects([]);
+    setResources([]);
+    setMembers([initialUser]);
+    setCurrentUserId('member-me');
+    setFilterOnlyBlockers(false);
+    setSearchQuery('');
+    setFilterMemberId('all');
+    setSelectedStageFilter('all');
+    setSelectedProjectFilter('all');
+    try {
+      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify([]));
+      localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify([initialUser]));
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, 'member-me');
+    } catch (e) {
+      console.warn('Could not wipe localStorage', e);
+    }
+    addToast(t.cleanSlateSuccess || (language === 'zh' ? '已一键清空所有任务和人员，开启全新实验室' : 'All tasks and members wiped. Blank canvas ready.'), '', 'warning');
+  };
+
   return (
     <LabFlowContext.Provider
       value={{
@@ -818,6 +871,10 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAccentColor,
         bgStyle,
         setBgStyle,
+        fontSize,
+        setFontSize,
+        enableComputeStrip,
+        setEnableComputeStrip,
         isSettingsOpen,
         setIsSettingsOpen,
         activeSettingsTab,
@@ -854,6 +911,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateResource,
         deleteResource,
         resetToMockData,
+        cleanSlateWipe,
         exportDataBackup,
         importDataBackup,
         generateMyWeeklyDigest,

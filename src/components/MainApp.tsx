@@ -15,7 +15,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
-  const { viewMode } = useLabFlow();
+  const { viewMode, enableComputeStrip } = useLabFlow();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200">
@@ -23,7 +23,7 @@ export const MainApp: React.FC = () => {
       <Header />
 
       {/* Slim Foldable Compute Strip */}
-      <ResourceStrip />
+      {enableComputeStrip && <ResourceStrip />}
 
       {/* Main View Area: Kanban vs Gantt vs Group Meeting */}
       <main className="flex-1 flex flex-col">

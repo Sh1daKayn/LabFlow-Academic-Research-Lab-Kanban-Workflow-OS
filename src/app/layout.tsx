@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: 'LabFlow | Academic Research Lab Kanban & Workflow OS',
   description:
     'Paper-Driven & Blocker-Aware Workflow OS for Academic Research Labs. Reverse DDL planning, 6-stage publication pipeline, math & compute blocker escalation, and PPT-less group meeting standups.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   keywords: [
     'Academic Lab OS',
     'Research Kanban',

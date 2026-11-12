@@ -111,9 +111,20 @@ Tired of students spending 6 hours making slides every week for a 10-minute upda
 
 ---
 
-## 🛠️ Quick Start / 快速开始
+## 🛠️ Quick Start & Standalone App / 快速开始与免部署桌面端
 
-### Option A: Local Development (Instant Out-of-the-Box Demo)
+### Option 0: 🖥️ 1-Click Windows / Desktop Launcher (无需命令行，开箱即用)
+如果你不想敲命令行，从 GitHub 下载本项目后：
+1. **双击 `Start-LabFlow.bat`**（Windows 用户）或运行 `./Start-LabFlow.ps1`：
+   - 脚本将自动检测 Node.js，并在首次运行时自动安装依赖，随后自动唤起默认浏览器访问 `http://localhost:3000`。
+2. **免部署安装为独立桌面应用 (PWA Standalone App)**：
+   - 打开页面后，点击 Chrome 或 Edge 浏览器地址栏右侧的 **“安装 LabFlow” (或“应用” → “将此站点作为应用安装”)** 图标。
+   - 即可将 LabFlow 转化为完全独立的桌面应用窗口（无浏览器地址栏，具备独立任务栏图标与原生应用体验）。
+   - 全部数据保存在本地客户端，离线亦可流畅使用。
+
+---
+
+### Option A: Local Development (常规本地开发)
 LabFlow includes a pre-populated reactive mock store in `localStorage`, allowing immediate execution without configuring a database:
 
 ```bash
