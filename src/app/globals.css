@@ -38,7 +38,8 @@ html[data-font-size="large"] {
 }
 
 /* ========================================================================= */
-/* GLOBAL REAL-TIME ACCENT COLOR SYSTEM (Presets & Color Picker Swatches) */
+/* DYNAMIC ACCENT & COLOR FAMILY IMMERSION SYSTEM                           */
+/* Except pure black & white, every background & border adopts the hue      */
 /* ========================================================================= */
 
 :root {
@@ -46,6 +47,24 @@ html[data-font-size="large"] {
   --lab-accent-hover: #4f46e5;
   --lab-accent-light: rgba(99, 102, 241, 0.12);
   --lab-accent-border: rgba(99, 102, 241, 0.35);
+
+  /* Fallback dark values */
+  --lab-bg-canvas: #040407;
+  --lab-bg-surface: #0a0a12;
+  --lab-bg-card: #10101c;
+  --lab-bg-elevated: #181828;
+  --lab-bg-hover: #1f1f33;
+  --lab-border-subtle: #25253d;
+  --lab-border-strong: #3b3b61;
+  --lab-bg-backdrop: rgba(4, 4, 7, 0.78);
+
+  /* Fallback light values */
+  --lab-bg-canvas-light: #f9f9fb;
+  --lab-bg-surface-light: #f3f3f7;
+  --lab-bg-card-light: #ececf3;
+  --lab-bg-elevated-light: #e2e2ec;
+  --lab-border-subtle-light: #dbdbe8;
+  --lab-border-strong-light: #c2c2d9;
 }
 
 /* Universal dynamic accent styling for any selected color or custom picker */
@@ -55,7 +74,8 @@ button.bg-indigo-600,
   background-color: var(--lab-accent) !important;
 }
 button.bg-indigo-600:hover,
-[class*="hover:bg-indigo-500"]:hover {
+[class*="hover:bg-indigo-500"]:hover,
+[class*="hover:bg-indigo-600"]:hover {
   background-color: var(--lab-accent-hover) !important;
 }
 [class*="text-indigo-400"],
@@ -80,108 +100,144 @@ button.bg-indigo-600:hover,
   background-color: var(--lab-accent-light) !important;
 }
 
-/* SPECIAL PURDUE UNIVERSITY OLD GOLD & BLACK AESTHETIC */
-html[data-accent="purdue"].dark body,
-html[data-accent="purdue"].dark .min-h-screen {
-  background-color: #070707 !important;
-}
-html[data-accent="purdue"].dark header {
-  background-color: rgba(10, 10, 10, 0.96) !important;
-  border-color: rgba(194, 142, 14, 0.25) !important;
-}
-html[data-accent="purdue"] [class*="text-cyan-500"],
-html[data-accent="purdue"] [class*="text-cyan-400"] {
-  color: #c28e0e !important;
-}
-
 /* ========================================================================= */
-/* THEME BACKGROUND TONES (OLED Pure Black & Warm Paper) */
+/* DARK MODE: COMPLETE COLOR FAMILY IMMERSION (Toned Backgrounds & Borders)  */
 /* ========================================================================= */
 
+html.dark body,
+html.dark .min-h-screen,
+html.dark main {
+  background-color: var(--lab-bg-canvas) !important;
+}
+
+html.dark header {
+  background-color: var(--lab-bg-surface) !important;
+  border-color: var(--lab-border-subtle) !important;
+}
+
+/* Modals & Dialog Backdrop (tinted translucent blur) */
+html.dark [class*="fixed"][class*="inset-0"][class*="bg-slate-950"],
+html.dark .fixed.inset-0[class*="bg-slate-950"] {
+  background-color: var(--lab-bg-backdrop) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Kanban Columns, Wells, and Deep Surfaces */
+html.dark [class*="bg-slate-950"]:not([class*="fixed"]) {
+  background-color: var(--lab-bg-surface) !important;
+}
+
+/* Cards, Dialog bodies, Dropdowns */
+html.dark [class*="bg-slate-900"] {
+  background-color: var(--lab-bg-card) !important;
+}
+
+/* Elevated containers, inputs, secondary buttons */
+html.dark [class*="bg-slate-800"] {
+  background-color: var(--lab-bg-elevated) !important;
+}
+
+/* Hover surfaces and active states */
+html.dark [class*="hover:bg-slate-800"]:hover,
+html.dark [class*="hover:bg-slate-700"]:hover,
+html.dark [class*="bg-slate-700"] {
+  background-color: var(--lab-bg-hover) !important;
+}
+
+/* Borders */
+html.dark [class*="border-slate-800"],
+html.dark [class*="border-slate-900"] {
+  border-color: var(--lab-border-subtle) !important;
+}
+
+html.dark [class*="border-slate-700"] {
+  border-color: var(--lab-border-strong) !important;
+}
+
+/* OLED Mode: Pure #000000 black canvas, but keeps cards and borders delicately immersed */
 html[data-bg="oled"].dark body,
-html[data-bg="oled"].dark .min-h-screen {
+html[data-bg="oled"].dark .min-h-screen,
+html[data-bg="oled"].dark main {
   background-color: #000000 !important;
 }
 html[data-bg="oled"].dark header {
   background-color: rgba(0, 0, 0, 0.95) !important;
-  border-color: #171717 !important;
+  border-color: var(--lab-border-subtle) !important;
 }
-html[data-bg="oled"].dark [class*="bg-slate-900"],
-html[data-bg="oled"].dark [class*="bg-slate-950"] {
-  background-color: #080808 !important;
-  border-color: #1a1a1a !important;
+html[data-bg="oled"].dark [class*="bg-slate-950"]:not([class*="fixed"]) {
+  background-color: #060606 !important;
 }
-
-html[data-bg="warm"].light body,
-html[data-bg="warm"].light .min-h-screen {
-  background-color: #fbf9f5 !important;
-}
-html[data-bg="warm"].light header {
-  background-color: rgba(253, 251, 247, 0.95) !important;
-  border-color: #eae3d7 !important;
-}
-html[data-bg="warm"].light [class*="bg-slate-900"],
-html[data-bg="warm"].light [class*="bg-slate-950"] {
-  background-color: #ffffff !important;
-  border-color: #eae3d7 !important;
+html[data-bg="oled"].dark [class*="bg-slate-900"] {
+  background-color: #0c0c0c !important;
 }
 
 /* ========================================================================= */
-/* NOTION / LINEAR GRADE LIGHT MODE COMPREHENSIVE OVERRIDES */
+/* LIGHT MODE: ELEGANT COLOR FAMILY IMMERSION (Crisp White + Tinted Surfaces)*/
 /* ========================================================================= */
 
 html.light body,
-html.light .min-h-screen {
-  background-color: #f8fafc !important;
+html.light .min-h-screen,
+html.light main {
+  background-color: var(--lab-bg-canvas-light) !important;
   color: #0f172a !important;
 }
 
-/* 1. Modals & Dialog Backdrop ("窗子遮罩") */
+/* Light Mode Header */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  border-color: var(--lab-border-subtle-light) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 1. Modals & Dialog Backdrop */
 html.light [class*="fixed"][class*="inset-0"],
 html.light .fixed.inset-0 {
   background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(6px) !important;
 }
 
-/* 2. Modal Windows & Dialog Cards ("窗子本体") */
+/* 2. Modal Windows & Dialog Cards (Crisp pure white body) */
 html.light [class*="fixed"][class*="inset-0"] > div,
 html.light [class*="fixed"][class*="inset-0"] [class*="rounded-2xl"],
 html.light [class*="fixed"][class*="inset-0"] [class*="rounded-xl"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2) !important;
+  border-color: var(--lab-border-subtle-light) !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18) !important;
 }
 
-/* 3. Global Cards & Backgrounds */
+/* 3. Global Cards: Crisp White for high readability */
 html.light [class*="bg-slate-900"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border-color: #e2e8f0 !important;
+  border-color: var(--lab-border-subtle-light) !important;
 }
 
-html.light [class*="bg-slate-950"] {
-  background-color: #f8fafc !important;
+/* 4. Kanban Columns, Wells & Sub-boxes immersed in delicate color tone */
+html.light [class*="bg-slate-950"],
+html.light [class*="bg-slate-100"],
+html.light [class*="bg-slate-50"] {
+  background-color: var(--lab-bg-surface-light) !important;
   color: #0f172a !important;
-  border-color: #e2e8f0 !important;
+  border-color: var(--lab-border-subtle-light) !important;
 }
 
-/* 4. Sub-boxes, Wells & Forms inside Modals */
+/* Sub-boxes inside Modals */
 html.light [class*="fixed"][class*="inset-0"] form,
 html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950"],
 html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-900/90"],
 html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950/80"] {
-  background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+  background-color: var(--lab-bg-surface-light) !important;
+  border-color: var(--lab-border-subtle-light) !important;
   color: #0f172a !important;
 }
 
-/* 5. Inputs, Textareas, Selects */
+/* 5. Inputs, Textareas, Selects: Crisp White with Tinted Borders */
 html.light input,
 html.light select,
 html.light textarea {
   background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
+  border-color: var(--lab-border-subtle-light) !important;
   color: #0f172a !important;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
@@ -189,7 +245,7 @@ html.light textarea {
 html.light input:focus,
 html.light select:focus,
 html.light textarea:focus {
-  border-color: #6366f1 !important;
+  border-color: var(--lab-accent) !important;
   outline: none !important;
 }
 
@@ -226,28 +282,45 @@ html.light [class*="text-slate-600"] {
 /* 7. Borders & Dividers */
 html.light [class*="border-slate-800"],
 html.light [class*="border-slate-900"],
-html.light [class*="border-slate-700"] {
-  border-color: #e2e8f0 !important;
+html.light [class*="border-slate-700"],
+html.light [class*="border-slate-200"],
+html.light [class*="border-slate-100"] {
+  border-color: var(--lab-border-subtle-light) !important;
+}
+
+html.light [class*="border-slate-300"] {
+  border-color: var(--lab-border-strong-light) !important;
 }
 
 /* 8. Secondary Buttons & Badges */
-html.light [class*="bg-slate-800"] {
-  background-color: #f1f5f9 !important;
+html.light [class*="bg-slate-800"],
+html.light [class*="bg-slate-200"] {
+  background-color: var(--lab-bg-elevated-light) !important;
   color: #334155 !important;
-  border-color: #e2e8f0 !important;
+  border-color: var(--lab-border-subtle-light) !important;
 }
 
 html.light [class*="hover:bg-slate-800"]:hover,
-html.light [class*="hover:bg-slate-700"]:hover {
-  background-color: #e2e8f0 !important;
+html.light [class*="hover:bg-slate-700"]:hover,
+html.light [class*="hover:bg-slate-200"]:hover {
+  background-color: var(--lab-border-subtle-light) !important;
   color: #0f172a !important;
 }
 
-/* 9. Header & Sticky Bars */
-html.light header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+/* 9. Warm Paper Option in Light Mode */
+html[data-bg="warm"].light body,
+html[data-bg="warm"].light .min-h-screen,
+html[data-bg="warm"].light main {
+  background-color: #fbf9f5 !important;
+}
+html[data-bg="warm"].light header {
+  background-color: rgba(253, 251, 247, 0.95) !important;
+  border-color: #eae3d7 !important;
+}
+html[data-bg="warm"].light [class*="bg-slate-950"],
+html[data-bg="warm"].light [class*="bg-slate-100"] {
+  background-color: #f6f1e8 !important;
+  border-color: #eae3d7 !important;
 }
 
 /* 10. Preserved Brand & Status Colors */

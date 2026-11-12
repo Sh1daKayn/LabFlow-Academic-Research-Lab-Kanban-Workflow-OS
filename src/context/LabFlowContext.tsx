@@ -316,20 +316,20 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Apply accent color, background tone, and font size attributes to <html>
   useEffect(() => {
     const ACCENT_MAP: Record<string, string> = {
-      purdue: '#C28E0E', // Purdue Old Gold
-      oxford: '#1e40af', // Oxford Blue
-      cardinal: '#8c1515', // Stanford Cardinal
-      cambridge: '#0f766e', // Cambridge Teal / Blue
-      crimson: '#991b1b', // MIT Crimson
-      indigo: '#4f46e5',
-      cyan: '#0891b2',
-      emerald: '#059669',
-      amber: '#d97706',
-      rose: '#e11d48',
-      violet: '#7c3aed',
+      purdue: '#C28E0E', // 黑金
+      oxford: '#1e40af', // 深蓝
+      cardinal: '#8c1515', // 深红
+      cambridge: '#0f766e', // 青绿
+      crimson: '#991b1b', // 酒红
+      indigo: '#6366f1', // 经典蓝紫
+      cyan: '#06b6d4', // 计算青
+      emerald: '#10b981', // 翠绿
+      amber: '#f59e0b', // 琥珀金
+      rose: '#f43f5e', // 玫瑰红
+      violet: '#8b5cf6', // 深紫
     };
 
-    const hex = ACCENT_MAP[accentColor] || (accentColor.startsWith('#') ? accentColor : '#4f46e5');
+    const hex = ACCENT_MAP[accentColor] || (accentColor.startsWith('#') ? accentColor : '#6366f1');
 
     document.documentElement.setAttribute('data-accent', accentColor);
     document.documentElement.style.setProperty('--lab-accent', hex);
@@ -338,7 +338,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       let c = h.replace('#', '');
       if (c.length === 3) c = c.split('').map((x) => x + x).join('');
       const num = parseInt(c, 16);
-      if (isNaN(num)) return `rgba(79, 70, 229, ${alpha})`;
+      if (isNaN(num)) return `rgba(99, 102, 241, ${alpha})`;
       const r = (num >> 16) & 255;
       const g = (num >> 8) & 255;
       const b = num & 255;
@@ -348,6 +348,67 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     document.documentElement.style.setProperty('--lab-accent-light', hexToRgba(hex, 0.15));
     document.documentElement.style.setProperty('--lab-accent-border', hexToRgba(hex, 0.35));
     document.documentElement.style.setProperty('--lab-accent-hover', hexToRgba(hex, 0.88));
+
+    // Dynamic HSL Conversion to immerse all non-black/non-white background surfaces into this color family
+    const hexToHsl = (h: string): [number, number, number] => {
+      let c = h.replace('#', '');
+      if (c.length === 3) c = c.split('').map((x) => x + x).join('');
+      const num = parseInt(c, 16);
+      if (isNaN(num)) return [240, 70, 60];
+      const r = ((num >> 16) & 255) / 255;
+      const g = ((num >> 8) & 255) / 255;
+      const b = (num & 255) / 255;
+
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let hue = 0;
+      let s = 0;
+      const l = (max + min) / 2;
+
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r:
+            hue = (g - b) / d + (g < b ? 6 : 0);
+            break;
+          case g:
+            hue = (b - r) / d + 2;
+            break;
+          case b:
+            hue = (r - g) / d + 4;
+            break;
+        }
+        hue *= 60;
+      }
+      return [Math.round(hue), Math.round(s * 100), Math.round(l * 100)];
+    };
+
+    const [hue, sat] = hexToHsl(hex);
+    // Calibrated saturation ensuring vibrant themes immerse the UI elegantly without being loud
+    const darkSat = Math.min(Math.max(Math.round(sat * 0.38), 16), 30);
+    const lightSat = Math.min(Math.max(Math.round(sat * 0.32), 14), 28);
+
+    document.documentElement.style.setProperty('--lab-hue', String(hue));
+    document.documentElement.style.setProperty('--lab-sat', `${sat}%`);
+
+    // Dark Mode: rich deep obsidian surfaces toned to this color
+    document.documentElement.style.setProperty('--lab-bg-canvas', `hsl(${hue}, ${darkSat}%, 4%)`);
+    document.documentElement.style.setProperty('--lab-bg-surface', `hsl(${hue}, ${darkSat}%, 7.5%)`);
+    document.documentElement.style.setProperty('--lab-bg-card', `hsl(${hue}, ${Math.max(10, darkSat - 3)}%, 11%)`);
+    document.documentElement.style.setProperty('--lab-bg-elevated', `hsl(${hue}, ${Math.max(8, darkSat - 5)}%, 15.5%)`);
+    document.documentElement.style.setProperty('--lab-bg-hover', `hsl(${hue}, ${Math.min(darkSat + 4, 32)}%, 19%)`);
+    document.documentElement.style.setProperty('--lab-border-subtle', `hsl(${hue}, ${darkSat}%, 18%)`);
+    document.documentElement.style.setProperty('--lab-border-strong', `hsl(${hue}, ${Math.min(sat, 36)}%, 26%)`);
+    document.documentElement.style.setProperty('--lab-bg-backdrop', `hsla(${hue}, ${darkSat}%, 4%, 0.78)`);
+
+    // Light Mode: soft elegant paper surfaces toned to this color
+    document.documentElement.style.setProperty('--lab-bg-canvas-light', `hsl(${hue}, ${lightSat}%, 98.2%)`);
+    document.documentElement.style.setProperty('--lab-bg-surface-light', `hsl(${hue}, ${Math.max(10, lightSat - 3)}%, 95.5%)`);
+    document.documentElement.style.setProperty('--lab-bg-card-light', `hsl(${hue}, ${Math.max(8, lightSat - 5)}%, 93%)`);
+    document.documentElement.style.setProperty('--lab-bg-elevated-light', `hsl(${hue}, ${Math.max(6, lightSat - 7)}%, 89%)`);
+    document.documentElement.style.setProperty('--lab-border-subtle-light', `hsl(${hue}, ${lightSat}%, 86%)`);
+    document.documentElement.style.setProperty('--lab-border-strong-light', `hsl(${hue}, ${Math.min(sat, 35)}%, 76%)`);
   }, [accentColor]);
 
   useEffect(() => {
