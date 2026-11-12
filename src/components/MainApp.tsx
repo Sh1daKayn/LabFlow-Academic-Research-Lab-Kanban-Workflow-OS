@@ -14,6 +14,7 @@ import { ResourceModal } from '@/components/ResourceModal';
 import { SettingsModal } from '@/components/SettingsModal';
 import { AdminPasswordModal } from '@/components/AdminPasswordModal';
 import { MemberRegisterModal } from '@/components/MemberRegisterModal';
+import { AIImportModal } from '@/components/AIImportModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
@@ -46,6 +47,7 @@ export const MainApp: React.FC = () => {
       <SettingsModal />
       <AdminPasswordModal />
       <MemberRegisterModal />
+      <AIImportModal />
 
       {/* Toast Notification Layer */}
       <ToastContainer />

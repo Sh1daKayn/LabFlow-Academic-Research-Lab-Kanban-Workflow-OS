@@ -19,6 +19,7 @@ import {
   Globe,
   Lock,
   Unlock,
+  Sparkles,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -47,6 +48,7 @@ export const Header: React.FC = () => {
     setCurrentUserId,
     setIsReverseDDLOpen,
     setIsNewTaskOpen,
+    setIsAIImportOpen,
     setIsSettingsOpen,
   } = useLabFlow();
 
@@ -183,6 +185,16 @@ export const Header: React.FC = () => {
             >
               <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-400/20" />
               <span className="hidden sm:inline">{t.reverseDDL}</span>
+            </button>
+
+            {/* AI Document Importer Launch Button */}
+            <button
+              onClick={() => setIsAIImportOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:from-cyan-500/25 hover:to-indigo-500/25 text-xs font-bold transition-all shadow-sm"
+              title={t.aiImportTitle}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 fill-cyan-400/20" />
+              <span className="hidden sm:inline">{t.aiImport}</span>
             </button>
 
             {/* User Identity & Role Capsule */}

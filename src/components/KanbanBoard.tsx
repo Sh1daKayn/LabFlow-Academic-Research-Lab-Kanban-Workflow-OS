@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, TaskItem } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
-import { Plus, FilterX, Clock } from 'lucide-react';
+import { Plus, FilterX, Clock, Sparkles } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
   const {
@@ -23,6 +23,7 @@ export const KanbanBoard: React.FC = () => {
     moveTask,
     reorderTasks,
     setIsNewTaskOpen,
+    setIsAIImportOpen,
   } = useLabFlow();
 
   const [mounted, setMounted] = useState(false);
@@ -161,6 +162,34 @@ export const KanbanBoard: React.FC = () => {
             )}
           </div>
           <span className="text-[11px] text-slate-400">{t.showingTasks}</span>
+        </div>
+      )}
+
+      {/* Empty State Banner if no tasks */}
+      {tasks.length === 0 && (
+        <div className="mb-6 p-6 rounded-2xl border border-dashed border-cyan-500/40 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-md">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                {language === 'zh' ? '从零开始？使用 AI 智能冷启动导入！' : 'Starting Fresh? Use AI Smart Importer!'}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {language === 'zh'
+                  ? '老师只需把平时的课题文档、立项书、学生名单或周报丢给任意 AI，就能一键自动生成全组项目与任务看板！'
+                  : 'Feed your existing project docs to any AI with our prompt to auto-populate members, projects, and tasks in seconds.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsAIImportOpen(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shrink-0 flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{language === 'zh' ? '✨ 打开 AI 智能导入' : '✨ Open AI Importer'}</span>
+          </button>
         </div>
       )}
 

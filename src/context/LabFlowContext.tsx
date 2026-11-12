@@ -17,6 +17,7 @@ import {
   BgTheme,
   FontSize,
   SettingsTab,
+  VisibilityLevel,
 } from '@/types';
 import {
   DEFAULT_STAGES,
@@ -30,6 +31,7 @@ import { en, LocaleTranslations } from '@/locales/en';
 import { zh } from '@/locales/zh';
 import { subtractDays, formatDate } from '@/utils/date';
 import { triggerConfetti } from '@/utils/confetti';
+import { ParsedAIData } from '@/utils/aiDocumentParser';
 
 export interface ToastItem {
   id: string;
@@ -105,6 +107,9 @@ interface LabFlowContextType {
   isReverseDDLOpen: boolean;
   isNewTaskOpen: boolean;
   isResourceModalOpen: boolean;
+  isAIImportOpen: boolean;
+  setIsAIImportOpen: (open: boolean) => void;
+  applyAIImport: (data: ParsedAIData, mode: 'overwrite' | 'append') => void;
   selectedTask: TaskItem | null;
   toasts: ToastItem[];
 
@@ -221,6 +226,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isReverseDDLOpen, setIsReverseDDLOpen] = useState<boolean>(false);
   const [isNewTaskOpen, setIsNewTaskOpen] = useState<boolean>(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
+  const [isAIImportOpen, setIsAIImportOpen] = useState<boolean>(false);
   const [isStageSettingsOpen, setIsStageSettingsOpen] = useState<boolean>(false);
   const [isMemberManagerOpen, setIsMemberManagerOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
@@ -1055,6 +1061,203 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(t.cleanSlateSuccess || (language === 'zh' ? '已一键清空所有任务和人员，开启全新实验室' : 'All tasks and members wiped. Blank canvas ready.'), '', 'warning');
   };
 
+  const applyAIImport = (data: ParsedAIData, mode: 'overwrite' | 'append') => {
+    // 1. Members
+    let updatedMembers = [...members];
+    if (mode === 'overwrite') {
+      const newMembers: LabMember[] = data.members.map((m) => ({
+        id: m.id,
+        nameZh: m.nameZh,
+        nameEn: m.nameEn,
+        role: m.role,
+        accessRole: m.accessRole,
+        titleZh: m.titleZh,
+        titleEn: m.titleEn,
+        email: m.email,
+        avatar: m.avatar,
+      }));
+      const hasPI = newMembers.some((m) => m.role === 'PI' || m.accessRole === 'ADMIN_PI');
+      if (!hasPI && newMembers.length > 0) {
+        newMembers[0].role = 'PI';
+        newMembers[0].accessRole = 'ADMIN_PI';
+      }
+      updatedMembers = newMembers.length > 0 ? newMembers : members;
+      setMembers(updatedMembers);
+      const piUser = updatedMembers.find((m) => m.role === 'PI' || m.accessRole === 'ADMIN_PI') || updatedMembers[0];
+      if (piUser) {
+        setCurrentUserId(piUser.id);
+      }
+    } else {
+      const existingNames = new Set(
+        members.map((m) => m.nameZh.toLowerCase()).concat(members.map((m) => m.nameEn.toLowerCase()))
+      );
+      const toAdd: LabMember[] = [];
+      data.members.forEach((m) => {
+        if (!existingNames.has(m.nameZh.toLowerCase()) && !existingNames.has(m.nameEn.toLowerCase())) {
+          toAdd.push({
+            id: m.id,
+            nameZh: m.nameZh,
+            nameEn: m.nameEn,
+            role: m.role,
+            accessRole: m.accessRole,
+            titleZh: m.titleZh,
+            titleEn: m.titleEn,
+            email: m.email,
+            avatar: m.avatar,
+          });
+          existingNames.add(m.nameZh.toLowerCase());
+          existingNames.add(m.nameEn.toLowerCase());
+        }
+      });
+      updatedMembers = [...members, ...toAdd];
+      setMembers(updatedMembers);
+    }
+
+    const getMemberByName = (name: string): LabMember => {
+      const match = updatedMembers.find(
+        (m) =>
+          m.nameZh === name ||
+          m.nameEn.toLowerCase() === name.toLowerCase() ||
+          m.id === name
+      );
+      return match || updatedMembers[0];
+    };
+
+    const piMember = updatedMembers.find((m) => m.role === 'PI' || m.accessRole === 'ADMIN_PI') || updatedMembers[0];
+
+    // 2. Projects
+    let updatedProjects = [...projects];
+    if (mode === 'overwrite') {
+      updatedProjects = data.projects.map((p) => {
+        const lead = getMemberByName(p.leadAuthorName);
+        return {
+          id: p.id,
+          title: p.title,
+          abstract: p.abstract,
+          targetVenue: p.targetVenue,
+          tag: p.tag,
+          status: p.status,
+          leadAuthorId: lead.id,
+          piId: piMember.id,
+          assets: {},
+          visibility: 'PUBLIC' as VisibilityLevel,
+        };
+      });
+      setProjects(updatedProjects);
+    } else {
+      const existingProjTitles = new Set(projects.map((p) => p.title.toLowerCase()));
+      const projsToAdd: ProjectItem[] = [];
+      data.projects.forEach((p) => {
+        if (!existingProjTitles.has(p.title.toLowerCase())) {
+          const lead = getMemberByName(p.leadAuthorName);
+          projsToAdd.push({
+            id: p.id,
+            title: p.title,
+            abstract: p.abstract,
+            targetVenue: p.targetVenue,
+            tag: p.tag,
+            status: p.status,
+            leadAuthorId: lead.id,
+            piId: piMember.id,
+            assets: {},
+            visibility: 'PUBLIC' as VisibilityLevel,
+          });
+          existingProjTitles.add(p.title.toLowerCase());
+        }
+      });
+      updatedProjects = [...projects, ...projsToAdd];
+      setProjects(updatedProjects);
+    }
+
+    // 3. Tasks
+    const projectLookup = new Map<string, ProjectItem>();
+    updatedProjects.forEach((p) => {
+      projectLookup.set(p.title, p);
+      projectLookup.set(p.id, p);
+    });
+
+    const newTasks: TaskItem[] = data.tasks.map((t, idx) => {
+      const lead = getMemberByName(t.leadAuthorName);
+      const proj = projectLookup.get(t.projectName) || projectLookup.get(t.projectId) || updatedProjects[0];
+      const validStage = stages.some((s) => s.id === t.stage) ? t.stage : (stages[0]?.id || 'IDEATION');
+
+      return {
+        id: t.id || `task-ai-${Date.now()}-${idx}`,
+        title: t.title,
+        description: t.description,
+        stage: validStage,
+        projectId: proj ? proj.id : 'proj-general',
+        projectTag: proj ? proj.tag : 'AI-LAB',
+        targetVenue: proj ? proj.targetVenue : 'Conference',
+        startDate: new Date().toISOString().split('T')[0],
+        deadline: t.deadline || new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        progress: t.progress || 0,
+        leadAuthor: lead,
+        pi: piMember,
+        priority: t.priority,
+        visibility: t.visibility,
+        assets: {},
+        isBlocked: false,
+        order: idx,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    if (mode === 'overwrite') {
+      setTasks(newTasks);
+    } else {
+      setTasks((prev) => [...prev, ...newTasks]);
+    }
+
+    // 4. Resources
+    if (data.resources && data.resources.length > 0) {
+      if (mode === 'overwrite') {
+        const newResources: LabResource[] = data.resources.map((r) => ({
+          id: r.id,
+          nameZh: r.nameZh,
+          nameEn: r.nameEn,
+          type: r.type,
+          specs: r.specs,
+          status: 'IDLE',
+        }));
+        setResources(newResources);
+      } else {
+        const existingRes = new Set(resources.map((r) => r.nameZh.toLowerCase()));
+        const toAddRes: LabResource[] = [];
+        data.resources.forEach((r) => {
+          if (!existingRes.has(r.nameZh.toLowerCase())) {
+            toAddRes.push({
+              id: r.id,
+              nameZh: r.nameZh,
+              nameEn: r.nameEn,
+              type: r.type,
+              specs: r.specs,
+              status: 'IDLE',
+            });
+            existingRes.add(r.nameZh.toLowerCase());
+          }
+        });
+        setResources((prev) => [...prev, ...toAddRes]);
+      }
+    }
+
+    triggerConfetti();
+    const countMembers = data.members.length;
+    const countProjects = data.projects.length;
+    const countTasks = data.tasks.length;
+    const isZh = language === 'zh';
+    addToast(
+      isZh
+        ? (mode === 'overwrite' ? '🎉 AI 智能冷启动导入成功！' : '✨ 成功追加导入 AI 数据！')
+        : (mode === 'overwrite' ? '🎉 AI Onboarding Imported!' : '✨ AI Data Appended!'),
+      isZh
+        ? `成功载入 ${countMembers} 位成员、${countProjects} 个课题项目与 ${countTasks} 项学术任务`
+        : `Imported ${countMembers} members, ${countProjects} projects, and ${countTasks} tasks`,
+      'success'
+    );
+  };
+
   const handleSetCurrentUserId = (newId: string) => {
     const target = members.find((m) => m.id === newId);
     const targetRole = target?.accessRole || (target?.role === 'PI' ? 'ADMIN_PI' : 'STUDENT_RA');
@@ -1122,6 +1325,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isReverseDDLOpen,
         isNewTaskOpen,
         isResourceModalOpen,
+        isAIImportOpen,
+        setIsAIImportOpen,
+        applyAIImport,
         selectedTask,
         toasts,
         setFilterOnlyBlockers,

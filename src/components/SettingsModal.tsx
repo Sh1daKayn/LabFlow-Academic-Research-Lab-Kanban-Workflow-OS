@@ -25,6 +25,7 @@ import {
   Monitor,
   Lock,
   KeyRound,
+  Sparkles,
 } from 'lucide-react';
 import {
   AccentColor,
@@ -55,6 +56,7 @@ export const SettingsModal: React.FC = () => {
   const {
     isSettingsOpen,
     setIsSettingsOpen,
+    setIsAIImportOpen,
     activeSettingsTab,
     setActiveSettingsTab,
     theme,
@@ -902,6 +904,34 @@ export const SettingsModal: React.FC = () => {
                       ? '完整导出或恢复您的课题组全量数据（包含全部任务、课题、成员、算力与自定义阶段）。'
                       : 'Export and restore complete JSON snapshot of all lab data and state.'}
                   </p>
+                </div>
+
+                {/* AI Smart Document Importer Fast Track */}
+                <div className="p-4 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-sm">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+                        {t.aiImportTitle}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        {t.aiImportDesc}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettingsOpen(false);
+                      setIsAIImportOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm shrink-0"
+                  >
+                    {language === 'zh' ? '打开 AI 导入' : 'Open AI Importer'}
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
