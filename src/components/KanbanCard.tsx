@@ -22,6 +22,8 @@ import {
   Sparkles,
   X,
   Plus,
+  Lock,
+  Shield,
 } from 'lucide-react';
 import { GitHubIcon } from '@/components/icons/BrandIcons';
 
@@ -43,7 +45,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
     language,
     t,
     addToast,
+    canEditTask,
+    canDeleteTask,
   } = useLabFlow();
+
+  const hasEditPermission = canEditTask(task);
+  const hasDeletePermission = canDeleteTask(task);
 
   const isExpanded = selectedTask?.id === task.id;
   const ddlBadge = formatCountdownBadge(task.deadline, language);
@@ -194,7 +201,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
   };
 
   return (
-    <Draggable draggableId={task.id} index={index}>
+    <Draggable draggableId={task.id} index={index} isDragDisabled={!hasEditPermission}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
@@ -217,13 +224,22 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
             {/* Top row: Drag handle + Project tag + Countdown */}
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <div
-                  {...provided.dragHandleProps}
-                  className="cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 p-0.5 -ml-1 rounded transition-colors"
-                  title={language === 'zh' ? '拖拽调整排期或阶段' : 'Drag to move'}
-                >
-                  <GripVertical className="w-3.5 h-3.5" />
-                </div>
+                {hasEditPermission ? (
+                  <div
+                    {...provided.dragHandleProps}
+                    className="cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 p-0.5 -ml-1 rounded transition-colors"
+                    title={language === 'zh' ? '拖拽调整排期或阶段' : 'Drag to move'}
+                  >
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+                ) : (
+                  <div
+                    className="text-slate-300 dark:text-slate-600 p-0.5 -ml-1"
+                    title={language === 'zh' ? '只读/非负责人不可拖拽' : 'Read-only / Locked'}
+                  >
+                    <Lock className="w-3 h-3 text-slate-400" />
+                  </div>
+                )}
 
                 {/* Project Tag */}
                 <span
@@ -232,6 +248,25 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                 >
                   {task.projectTag}
                 </span>
+
+                {/* Visibility Badge */}
+                {task.visibility === 'TEAM_ONLY' && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                    title={language === 'zh' ? '仅本课题组成员与导师可见' : 'Project Team Only'}
+                  >
+                    {t.visibilityTeamBadge}
+                  </span>
+                )}
+                {task.visibility === 'PI_ONLY' && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-0.5"
+                    title={language === 'zh' ? '绝密 (仅导师与负责人可见)' : 'Confidential'}
+                  >
+                    <Shield className="w-2.5 h-2.5" />
+                    {t.visibilityPIBadge}
+                  </span>
+                )}
 
                 {/* Urgent dot */}
                 {task.priority === 'URGENT' && (
@@ -450,6 +485,14 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {/* Read-only Alert when user is not owner */}
+                {!hasEditPermission && (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <span>{t.readOnlyNotice}</span>
+                  </div>
+                )}
 
                 {/* Editable Title */}
                 <div>
@@ -708,24 +751,30 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
 
                 {/* Footer Buttons: Save, Blocker, Delete, Collapse */}
                 <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-slate-200 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={handleDeleteTask}
-                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                    title={t.delete}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-
-                  <div className="flex items-center gap-1.5">
+                  {hasDeletePermission ? (
                     <button
                       type="button"
-                      onClick={() => setActiveBlockerTask(task)}
-                      className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-medium transition-colors"
+                      onClick={handleDeleteTask}
+                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                      title={t.delete}
                     >
-                      <Flame className="w-3.5 h-3.5 inline mr-1" />
-                      {task.isBlocked ? (language === 'zh' ? '解除卡点' : 'Resolve') : (language === 'zh' ? '标记卡点' : 'Blocker')}
+                      <Trash2 className="w-4 h-4" />
                     </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    {hasEditPermission && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveBlockerTask(task)}
+                        className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-medium transition-colors"
+                      >
+                        <Flame className="w-3.5 h-3.5 inline mr-1" />
+                        {task.isBlocked ? (language === 'zh' ? '解除卡点' : 'Resolve') : (language === 'zh' ? '标记卡点' : 'Blocker')}
+                      </button>
+                    )}
 
                     <button
                       type="button"
@@ -735,13 +784,15 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                       {language === 'zh' ? '收起' : 'Close'}
                     </button>
 
-                    <button
-                      type="submit"
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow transition-all flex items-center gap-1"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>{t.save}</span>
-                    </button>
+                    {hasEditPermission && (
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow transition-all flex items-center gap-1"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>{t.save}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </form>

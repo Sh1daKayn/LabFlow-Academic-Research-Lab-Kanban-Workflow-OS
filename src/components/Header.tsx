@@ -17,6 +17,8 @@ import {
   BarChart2,
   Settings,
   Globe,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -36,6 +38,13 @@ export const Header: React.FC = () => {
     setLanguage,
     t,
     members,
+    currentMember,
+    currentAccessRole,
+    isAdminUnlocked,
+    lockAdmin,
+    setIsPasswordModalOpen,
+    setIsRegisterModalOpen,
+    setCurrentUserId,
     setIsReverseDDLOpen,
     setIsNewTaskOpen,
     setIsSettingsOpen,
@@ -175,6 +184,81 @@ export const Header: React.FC = () => {
               <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-400/20" />
               <span className="hidden sm:inline">{t.reverseDDL}</span>
             </button>
+
+            {/* User Identity & Role Capsule */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+              <select
+                value={currentMember.id}
+                onChange={(e) => {
+                  if (e.target.value === '__NEW__') {
+                    setIsRegisterModalOpen(true);
+                  } else {
+                    setCurrentUserId(e.target.value);
+                  }
+                }}
+                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer pl-1 pr-1.5"
+              >
+                {members.map((m) => {
+                  const roleLabel =
+                    m.accessRole === 'ADMIN_PI' || m.role === 'PI'
+                      ? '👑'
+                      : m.accessRole === 'PROJECT_LEAD' || m.role === 'POSTDOC' || m.role === 'SENIOR_PHD'
+                      ? '🔬'
+                      : m.accessRole === 'AUDITOR_GUEST' || m.role === 'VISITING_SCHOLAR'
+                      ? '👁️'
+                      : '🧑‍💻';
+                  return (
+                    <option key={m.id} value={m.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                      {roleLabel} {language === 'zh' ? m.nameZh : m.nameEn}
+                    </option>
+                  );
+                })}
+                <option value="__NEW__" className="bg-white dark:bg-slate-900 text-cyan-600 font-bold">
+                  + {t.quickRegisterMember}
+                </option>
+              </select>
+
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${
+                  currentAccessRole === 'ADMIN_PI'
+                    ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                    : currentAccessRole === 'PROJECT_LEAD'
+                    ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30'
+                    : currentAccessRole === 'STUDENT_RA'
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                    : 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30'
+                }`}
+              >
+                {currentAccessRole === 'ADMIN_PI'
+                  ? (language === 'zh' ? '导师' : 'PI')
+                  : currentAccessRole === 'PROJECT_LEAD'
+                  ? (language === 'zh' ? '骨干' : 'Lead')
+                  : currentAccessRole === 'STUDENT_RA'
+                  ? (language === 'zh' ? '组员' : 'Member')
+                  : (language === 'zh' ? '访客' : 'Guest')}
+              </span>
+
+              {currentAccessRole === 'ADMIN_PI' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isAdminUnlocked) {
+                      lockAdmin();
+                    } else {
+                      setIsPasswordModalOpen(true);
+                    }
+                  }}
+                  className={`p-1 rounded-md transition-colors ${
+                    isAdminUnlocked
+                      ? 'text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20'
+                      : 'text-amber-500 hover:text-amber-600 bg-amber-500/10 hover:bg-amber-500/20'
+                  }`}
+                  title={isAdminUnlocked ? t.lockAdminAction : t.enterAdminPassword}
+                >
+                  {isAdminUnlocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                </button>
+              )}
+            </div>
 
             {/* Quick New Task */}
             <button

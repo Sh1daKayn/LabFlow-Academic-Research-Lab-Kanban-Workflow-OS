@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AcademicStage, Priority } from '@/types';
+import { AcademicStage, Priority, VisibilityLevel } from '@/types';
 import { Plus, X } from 'lucide-react';
 
 export const NewTaskModal: React.FC = () => {
@@ -21,6 +21,7 @@ export const NewTaskModal: React.FC = () => {
   const [description, setDescription] = useState('');
   const [stage, setStage] = useState<AcademicStage>(stages[1]?.id || 'DATA_EXP');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
+  const [visibility, setVisibility] = useState<VisibilityLevel>('PUBLIC');
   const [projectId, setProjectId] = useState(projects[0]?.id || 'proj-1');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [deadline, setDeadline] = useState(new Date().toISOString().split('T')[0]);
@@ -50,6 +51,7 @@ export const NewTaskModal: React.FC = () => {
       progress: 0,
       leadAuthor: lead,
       pi,
+      visibility,
       assets: {
         overleaf: currentProject.assets.overleaf,
         github: currentProject.assets.github,
@@ -196,6 +198,22 @@ export const NewTaskModal: React.FC = () => {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Visibility Scope */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              {t.visibility}
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as VisibilityLevel)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
+            >
+              <option value="PUBLIC">{t.visibilityPublic}</option>
+              <option value="TEAM_ONLY">{t.visibilityTeamOnly}</option>
+              <option value="PI_ONLY">{t.visibilityPIOnly}</option>
+            </select>
           </div>
 
           {/* Description */}

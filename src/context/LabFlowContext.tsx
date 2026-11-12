@@ -1,8 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import {
   AcademicStage,
+  AccessRole,
   BlockerInfo,
   LabMember,
   LabResource,
@@ -142,6 +143,25 @@ interface LabFlowContextType {
   generateMyWeeklyDigest: (targetMemberId?: string) => string;
   addToast: (title: string, description?: string, type?: ToastItem['type']) => void;
   removeToast: (id: string) => void;
+
+  // Permissions & RBAC
+  adminPassword: string;
+  isAdminUnlocked: boolean;
+  currentMember: LabMember;
+  currentAccessRole: AccessRole;
+  effectiveIsAdmin: boolean;
+  unlockAdmin: (password: string) => boolean;
+  lockAdmin: () => void;
+  updateAdminPassword: (newPass: string) => void;
+  requireAdminAuth: (action: () => void) => void;
+  isPasswordModalOpen: boolean;
+  setIsPasswordModalOpen: (open: boolean) => void;
+  isRegisterModalOpen: boolean;
+  setIsRegisterModalOpen: (open: boolean) => void;
+  canEditTask: (task: TaskItem) => boolean;
+  canDeleteTask: (task: TaskItem) => boolean;
+  canManageLab: () => boolean;
+  registerNewMember: (memberData: { nameZh: string; nameEn: string; role: LabMember['role']; email: string; accessRole?: AccessRole }) => LabMember;
 }
 
 const LabFlowContext = createContext<LabFlowContextType | undefined>(undefined);
@@ -160,6 +180,8 @@ const STORAGE_KEYS = {
   BG_STYLE: 'labflow_bg_style_v3',
   FONT_SIZE: 'labflow_font_size_v3',
   ENABLE_COMPUTE: 'labflow_enable_compute_v3',
+  ADMIN_PASSWORD: 'labflow_admin_password_v3',
+  ADMIN_UNLOCKED: 'labflow_admin_unlocked_v3',
 };
 
 export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -171,6 +193,13 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [venues, setVenues] = useState<VenuePreset[]>(DEFAULT_VENUES);
   const [currentUserId, setCurrentUserId] = useState<string>('member-student1');
   const [resources, setResources] = useState<LabResource[]>(INITIAL_RESOURCES);
+
+  // Auth & RBAC State
+  const [adminPassword, setAdminPasswordState] = useState<string>('admin888');
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState<boolean>(false);
+  const [passwordCallback, setPasswordCallback] = useState<(() => void) | null>(null);
 
   const [filterOnlyBlockers, setFilterOnlyBlockers] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -231,6 +260,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (savedBgStyle) setBgStyle(savedBgStyle);
       if (savedFontSize) setFontSize(savedFontSize);
       if (savedCompute !== null) setEnableComputeStrip(savedCompute === 'true');
+      const savedPass = localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORD);
+      if (savedPass) setAdminPasswordState(savedPass);
+      try {
+        const savedUnlocked = sessionStorage.getItem(STORAGE_KEYS.ADMIN_UNLOCKED);
+        if (savedUnlocked === 'true') setIsAdminUnlocked(true);
+      } catch {}
     } catch (e) {
       console.warn('Could not read from localStorage', e);
     } finally {
@@ -255,10 +290,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem(STORAGE_KEYS.BG_STYLE, bgStyle);
       localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize);
       localStorage.setItem(STORAGE_KEYS.ENABLE_COMPUTE, enableComputeStrip ? 'true' : 'false');
+      localStorage.setItem(STORAGE_KEYS.ADMIN_PASSWORD, adminPassword);
     } catch (e) {
       console.warn('Could not write to localStorage', e);
     }
-  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, accentColor, bgStyle, fontSize, enableComputeStrip, isInitialized]);
+  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, accentColor, bgStyle, fontSize, enableComputeStrip, adminPassword, isInitialized]);
 
   // Apply dark/light classes to <html>
   useEffect(() => {
@@ -283,6 +319,156 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     document.documentElement.setAttribute('data-font-size', fontSize);
   }, [fontSize]);
+
+  // Current Member & RBAC Derivation
+  const currentMember: LabMember = useMemo(() => {
+    return members.find((m) => m.id === currentUserId) || members[0] || LAB_MEMBERS[0];
+  }, [members, currentUserId]);
+
+  const currentAccessRole: AccessRole = useMemo(() => {
+    if (currentMember?.accessRole) return currentMember.accessRole;
+    if (currentMember?.role === 'PI') return 'ADMIN_PI';
+    if (currentMember?.role === 'POSTDOC' || currentMember?.role === 'SENIOR_PHD') return 'PROJECT_LEAD';
+    if (currentMember?.role === 'VISITING_SCHOLAR') return 'AUDITOR_GUEST';
+    return 'STUDENT_RA';
+  }, [currentMember]);
+
+  const effectiveIsAdmin = currentAccessRole === 'ADMIN_PI' && isAdminUnlocked;
+
+  // Visibility filtering for Confidentiality/Privacy
+  const visibleTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const vis = t.visibility || 'PUBLIC';
+      if (vis === 'PUBLIC') return true;
+      if (effectiveIsAdmin) return true;
+      if (vis === 'TEAM_ONLY') {
+        if (currentAccessRole === 'AUDITOR_GUEST') return false;
+        const isAuthor = t.leadAuthor?.id === currentUserId;
+        const project = projects.find((p) => p.id === t.projectId);
+        const isProjLead = project?.leadAuthorId === currentUserId;
+        return isAuthor || isProjLead;
+      }
+      if (vis === 'PI_ONLY') {
+        return t.leadAuthor?.id === currentUserId;
+      }
+      return true;
+    });
+  }, [tasks, effectiveIsAdmin, currentAccessRole, currentUserId, projects]);
+
+  const visibleProjects = useMemo(() => {
+    return projects.filter((p) => {
+      const vis = p.visibility || 'PUBLIC';
+      if (vis === 'PUBLIC') return true;
+      if (effectiveIsAdmin) return true;
+      if (vis === 'TEAM_ONLY') {
+        if (currentAccessRole === 'AUDITOR_GUEST') return false;
+        return p.leadAuthorId === currentUserId;
+      }
+      if (vis === 'PI_ONLY') {
+        return p.leadAuthorId === currentUserId;
+      }
+      return true;
+    });
+  }, [projects, effectiveIsAdmin, currentAccessRole, currentUserId]);
+
+  const unlockAdmin = (password: string): boolean => {
+    if (password === adminPassword) {
+      setIsAdminUnlocked(true);
+      try {
+        sessionStorage.setItem(STORAGE_KEYS.ADMIN_UNLOCKED, 'true');
+      } catch {}
+      addToast(t.unlockSuccess, '', 'success');
+      if (passwordCallback) {
+        const cb = passwordCallback;
+        setPasswordCallback(null);
+        cb();
+      }
+      setIsPasswordModalOpen(false);
+      return true;
+    } else {
+      addToast(t.passwordError, '', 'error');
+      return false;
+    }
+  };
+
+  const lockAdmin = () => {
+    setIsAdminUnlocked(false);
+    try {
+      sessionStorage.removeItem(STORAGE_KEYS.ADMIN_UNLOCKED);
+    } catch {}
+    addToast(t.adminLocked, '', 'info');
+  };
+
+  const updateAdminPassword = (newPass: string) => {
+    if (!newPass.trim()) return;
+    setAdminPasswordState(newPass.trim());
+    try {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_PASSWORD, newPass.trim());
+    } catch {}
+    addToast(t.passwordUpdated, '', 'success');
+  };
+
+  const requireAdminAuth = (action: () => void) => {
+    if (effectiveIsAdmin) {
+      action();
+    } else {
+      setPasswordCallback(() => action);
+      setIsPasswordModalOpen(true);
+    }
+  };
+
+  const canEditTask = (task: TaskItem): boolean => {
+    if (effectiveIsAdmin) return true;
+    if (currentAccessRole === 'AUDITOR_GUEST') return false;
+    if (currentAccessRole === 'PROJECT_LEAD') {
+      const isLead = task.leadAuthor?.id === currentUserId || task.pi?.id === currentUserId;
+      const project = projects.find((p) => p.id === task.projectId);
+      return isLead || project?.leadAuthorId === currentUserId;
+    }
+    if (currentAccessRole === 'STUDENT_RA') {
+      return task.leadAuthor?.id === currentUserId;
+    }
+    return false;
+  };
+
+  const canDeleteTask = (task: TaskItem): boolean => {
+    if (effectiveIsAdmin) return true;
+    if (currentAccessRole === 'PROJECT_LEAD') {
+      return task.leadAuthor?.id === currentUserId;
+    }
+    return false;
+  };
+
+  const canManageLab = (): boolean => {
+    return effectiveIsAdmin;
+  };
+
+  const registerNewMember = (data: {
+    nameZh: string;
+    nameEn: string;
+    role: LabMember['role'];
+    email: string;
+    accessRole?: AccessRole;
+  }): LabMember => {
+    const id = `member-${Date.now()}`;
+    const defaultAccess: AccessRole =
+      data.accessRole || (data.role === 'VISITING_SCHOLAR' ? 'AUDITOR_GUEST' : 'STUDENT_RA');
+    const newMember: LabMember = {
+      id,
+      nameZh: data.nameZh,
+      nameEn: data.nameEn || data.nameZh,
+      role: data.role,
+      accessRole: defaultAccess,
+      titleZh: data.role === 'RA' ? '科研助理' : data.role === 'PHD_CANDIDATE' ? '博士研究生' : '课题组成员',
+      titleEn: data.role === 'RA' ? 'Research Assistant' : 'PhD Researcher',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      email: data.email || `${id}@labflow.edu`,
+    };
+    setMembers((prev) => [...prev, newMember]);
+    setCurrentUserId(id);
+    addToast(t.welcomeMember, `${newMember.nameZh || newMember.nameEn}`, 'success');
+    return newMember;
+  };
 
   const addToast = (
     title: string,
@@ -372,6 +558,16 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const moveTask = (taskId: string, targetStage: AcademicStage, newOrder?: number) => {
     const targetTask = tasks.find((t) => t.id === taskId);
     if (!targetTask) return;
+
+    if (!canEditTask(targetTask)) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+
+    if (targetStage === 'ACCEPTED' && !effectiveIsAdmin && currentAccessRole !== 'PROJECT_LEAD') {
+      addToast(t.acceptedStageNotice, '', 'error');
+      return;
+    }
 
     if (targetStage === 'ACCEPTED' && targetTask.stage !== 'ACCEPTED') {
       triggerConfetti();
@@ -514,6 +710,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteTask = (taskId: string) => {
+    const target = tasks.find((t) => t.id === taskId);
+    if (target && !canDeleteTask(target)) {
+      addToast(t.cannotDeleteNotice, '', 'error');
+      return;
+    }
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
     if (selectedTask?.id === taskId) {
       setSelectedTask(null);
@@ -536,6 +737,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       status: stages[1]?.id || 'DATA_EXP',
       leadAuthorId: lead.id,
       piId: pi.id,
+      visibility: plan.visibility || 'PUBLIC',
       assets: {
         overleaf: plan.overleafUrl,
         github: plan.githubUrl,
@@ -575,6 +777,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         leadAuthor: lead,
         pi,
         priority: step.offsetDays <= 7 ? 'URGENT' : 'HIGH',
+        visibility: plan.visibility || 'PUBLIC',
         assets: newProject.assets,
         isBlocked: false,
         order: idx,
@@ -623,6 +826,25 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const releaseResource = (resourceId: string) => {
+    const target = resources.find((r) => r.id === resourceId);
+    if (!target) return;
+
+    const isOwner =
+      target.currentUser === currentMember.nameZh ||
+      target.currentUser === currentMember.nameEn ||
+      target.currentUser === currentMember.email;
+
+    if (!isOwner && !effectiveIsAdmin) {
+      addToast(
+        language === 'zh'
+          ? '该节点正由其他成员使用，非本人无法释放（需导师/管理员权限）'
+          : 'Occupied by another member. Requires Admin release.',
+        '',
+        'warning'
+      );
+      return;
+    }
+
     setResources((prev) =>
       prev.map((r) => {
         if (r.id === resourceId) {
@@ -639,7 +861,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return r;
       })
     );
-    addToast(language === 'zh' ? '节点已释放' : 'Resource Released', '', 'info');
+    addToast(
+      language === 'zh' ? '🖥️ 算力节点已成功释放' : '🖥️ Resource Released',
+      target.nameZh || target.nameEn,
+      'info'
+    );
   };
 
   const addResource = (res: LabResource) => {
@@ -829,6 +1055,19 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(t.cleanSlateSuccess || (language === 'zh' ? '已一键清空所有任务和人员，开启全新实验室' : 'All tasks and members wiped. Blank canvas ready.'), '', 'warning');
   };
 
+  const handleSetCurrentUserId = (newId: string) => {
+    const target = members.find((m) => m.id === newId);
+    const targetRole = target?.accessRole || (target?.role === 'PI' ? 'ADMIN_PI' : 'STUDENT_RA');
+    if (targetRole === 'ADMIN_PI' && !isAdminUnlocked) {
+      setPasswordCallback(() => () => {
+        setCurrentUserId(newId);
+      });
+      setIsPasswordModalOpen(true);
+      return;
+    }
+    setCurrentUserId(newId);
+  };
+
   return (
     <LabFlowContext.Provider
       value={{
@@ -847,14 +1086,14 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteVenue,
         members,
         currentUserId,
-        setCurrentUserId,
+        setCurrentUserId: handleSetCurrentUserId,
         addMember,
         updateMember,
         deleteMember,
         isMemberManagerOpen,
         setIsMemberManagerOpen,
-        tasks,
-        projects,
+        tasks: visibleTasks,
+        projects: visibleProjects,
         resources,
         filterOnlyBlockers,
         searchQuery,
@@ -917,6 +1156,23 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         generateMyWeeklyDigest,
         addToast,
         removeToast,
+        adminPassword,
+        isAdminUnlocked,
+        currentMember,
+        currentAccessRole,
+        effectiveIsAdmin,
+        unlockAdmin,
+        lockAdmin,
+        updateAdminPassword,
+        requireAdminAuth,
+        isPasswordModalOpen,
+        setIsPasswordModalOpen,
+        isRegisterModalOpen,
+        setIsRegisterModalOpen,
+        canEditTask,
+        canDeleteTask,
+        canManageLab,
+        registerNewMember,
       }}
     >
       {children}

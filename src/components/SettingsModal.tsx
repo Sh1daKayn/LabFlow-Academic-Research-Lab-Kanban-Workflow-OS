@@ -23,9 +23,12 @@ import {
   CheckCircle,
   Cpu,
   Monitor,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 import {
   AccentColor,
+  AccessRole,
   BgTheme,
   SettingsTab,
   LabMember,
@@ -68,7 +71,11 @@ export const SettingsModal: React.FC = () => {
     currentUserId,
     setCurrentUserId,
     addMember,
+    updateMember,
     deleteMember,
+    effectiveIsAdmin,
+    requireAdminAuth,
+    updateAdminPassword,
     resources,
     addResource,
     deleteResource,
@@ -105,6 +112,9 @@ export const SettingsModal: React.FC = () => {
   // New Stage Form State
   const [newStageNameZh, setNewStageNameZh] = useState('');
   const [newStageNameEn, setNewStageNameEn] = useState('');
+
+  // Admin password change state
+  const [newAdminPass, setNewAdminPass] = useState('');
 
   if (!isSettingsOpen) return null;
 
@@ -217,18 +227,32 @@ export const SettingsModal: React.FC = () => {
           <div className="w-full sm:w-56 shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-800 p-2.5 sm:p-4 space-y-1 bg-slate-50/60 dark:bg-slate-950/50 overflow-x-auto sm:overflow-y-auto flex sm:flex-col gap-1 sm:gap-0">
             {tabs.map((tab) => {
               const isActive = activeSettingsTab === tab.id;
+              const isRestricted = tab.id !== 'appearance' && !effectiveIsAdmin;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveSettingsTab(tab.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 text-left ${
+                  onClick={() => {
+                    if (isRestricted) {
+                      requireAdminAuth(() => setActiveSettingsTab(tab.id));
+                    } else {
+                      setActiveSettingsTab(tab.id);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 text-left ${
                     isActive
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
                   }`}
                 >
-                  {tab.icon}
-                  <span>{tab.label}</span>
+                  <div className="flex items-center gap-2.5">
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </div>
+                  {isRestricted && (
+                    <span className="p-1 rounded text-amber-500 opacity-80" title={t.requireAdminNotice}>
+                      <Lock className="w-3 h-3" />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -455,6 +479,18 @@ export const SettingsModal: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Access Role Selector */}
+                          <select
+                            value={m.accessRole || (m.role === 'PI' ? 'ADMIN_PI' : 'STUDENT_RA')}
+                            onChange={(e) => updateMember(m.id, { accessRole: e.target.value as AccessRole })}
+                            className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 font-semibold focus:outline-none"
+                          >
+                            <option value="ADMIN_PI">👑 {t.roleAdminPI}</option>
+                            <option value="PROJECT_LEAD">🔬 {t.roleProjectLead}</option>
+                            <option value="STUDENT_RA">🧑‍💻 {t.roleStudentRA}</option>
+                            <option value="AUDITOR_GUEST">👁️ {t.roleAuditorGuest}</option>
+                          </select>
+
                           {!isCurrent && (
                             <button
                               type="button"
@@ -903,6 +939,44 @@ export const SettingsModal: React.FC = () => {
                     accept=".json"
                     className="hidden"
                   />
+                </div>
+
+                {/* Admin Password Setting */}
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="w-4 h-4 text-indigo-500" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                          {t.changeAdminPassword}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {language === 'zh' ? '当前密码有效' : 'Password Active'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 max-w-md">
+                      <input
+                        type="password"
+                        value={newAdminPass}
+                        onChange={(e) => setNewAdminPass(e.target.value)}
+                        placeholder={language === 'zh' ? '输入新密码（默认: admin888）' : 'New password (default: admin888)'}
+                        className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newAdminPass.trim()) {
+                            updateAdminPassword(newAdminPass.trim());
+                            setNewAdminPass('');
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shrink-0"
+                      >
+                        {t.save}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Reset to Mock */}

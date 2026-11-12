@@ -12,6 +12,8 @@ import { ReverseDDLModal } from '@/components/ReverseDDLModal';
 import { NewTaskModal } from '@/components/NewTaskModal';
 import { ResourceModal } from '@/components/ResourceModal';
 import { SettingsModal } from '@/components/SettingsModal';
+import { AdminPasswordModal } from '@/components/AdminPasswordModal';
+import { MemberRegisterModal } from '@/components/MemberRegisterModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
@@ -42,6 +44,8 @@ export const MainApp: React.FC = () => {
       <NewTaskModal />
       <ResourceModal />
       <SettingsModal />
+      <AdminPasswordModal />
+      <MemberRegisterModal />
 
       {/* Toast Notification Layer */}
       <ToastContainer />

@@ -39,15 +39,21 @@ export interface BlockerCategoryMeta {
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export type AccessRole = 'ADMIN_PI' | 'PROJECT_LEAD' | 'STUDENT_RA' | 'AUDITOR_GUEST';
+
+export type VisibilityLevel = 'PUBLIC' | 'TEAM_ONLY' | 'PI_ONLY';
+
 export interface LabMember {
   id: string;
   nameEn: string;
   nameZh: string;
   role: 'PI' | 'POSTDOC' | 'SENIOR_PHD' | 'PHD_CANDIDATE' | 'RA' | 'VISITING_SCHOLAR';
+  accessRole?: AccessRole;
   titleEn: string;
   titleZh: string;
   avatar: string;
   email: string;
+  pin?: string;
 }
 
 export interface AssetLinks {
@@ -86,6 +92,7 @@ export interface TaskItem {
   pi: LabMember;
   priority: Priority;
   assets: AssetLinks;
+  visibility?: VisibilityLevel;
   isBlocked: boolean;
   blocker?: BlockerInfo;
   order: number;
@@ -107,6 +114,7 @@ export interface ProjectItem {
   leadAuthorId: string;
   piId: string;
   assets: AssetLinks;
+  visibility?: VisibilityLevel;
 }
 
 export type ResourceType = 'GPU' | 'SERVER' | 'CLUSTER' | 'EQUIPMENT';
@@ -147,6 +155,7 @@ export interface ReverseDDLForm {
   deadlineDate: string;
   leadAuthorId: string;
   tag: string;
+  visibility?: VisibilityLevel;
   overleafUrl?: string;
   githubUrl?: string;
   datasetUrl?: string;

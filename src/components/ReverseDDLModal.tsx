@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { ReverseDDLForm, MilestoneTemplate, AcademicStage } from '@/types';
+import { ReverseDDLForm, MilestoneTemplate, AcademicStage, VisibilityLevel } from '@/types';
 import { subtractDays, formatDate } from '@/utils/date';
 import { Zap, X, Sparkles, Plus, Trash2, ChevronUp } from 'lucide-react';
 
@@ -23,6 +23,7 @@ export const ReverseDDLModal: React.FC = () => {
   const [title, setTitle] = useState('');
   const [targetVenue, setTargetVenue] = useState('NeurIPS 2027');
   const [tag, setTag] = useState("NeurIPS '27");
+  const [visibility, setVisibility] = useState<VisibilityLevel>('PUBLIC');
 
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 70);
@@ -57,6 +58,7 @@ export const ReverseDDLModal: React.FC = () => {
       deadlineDate,
       leadAuthorId,
       tag: tag.trim() || targetVenue.split(' ')[0],
+      visibility,
       overleafUrl: overleafUrl.trim() || undefined,
       githubUrl: githubUrl.trim() || undefined,
       datasetUrl: datasetUrl.trim() || undefined,
@@ -308,6 +310,22 @@ export const ReverseDDLModal: React.FC = () => {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Visibility / Confidentiality Scope */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              {t.visibility}
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as VisibilityLevel)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60"
+            >
+              <option value="PUBLIC">{t.visibilityPublic}</option>
+              <option value="TEAM_ONLY">{t.visibilityTeamOnly}</option>
+              <option value="PI_ONLY">{t.visibilityPIOnly}</option>
+            </select>
           </div>
 
           {/* Customizable Milestone Steps Table (Offset Days & Stage Customization) */}
