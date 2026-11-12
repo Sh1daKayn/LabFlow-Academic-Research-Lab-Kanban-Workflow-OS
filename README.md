@@ -22,7 +22,7 @@ Academic research is fundamentally governed by publication deadlines (DDLs), Ove
 4. **4-Tier Academic RBAC**: PI Advisor, Project Lead, Student RA, and Auditor Guest roles guarded by an Admin Master Password.
 5. **Academic Gantt Chart**: Multi-project timeline breakdown and countdown visualization.
 6. **No-PPT Group Meeting Mode**: 3-column presenter dashboard with instant Markdown minutes export.
-7. **University Color Schemes & Times New Roman Typography**: Curated Purdue Old Gold & Black, Oxford Navy, Stanford Cardinal, Cambridge Teal, MIT Crimson, plus full-spectrum interactive color pickers.
+7. **Academic Theme Palettes & Times New Roman Typography**: Curated Black Gold, Deep Blue, Deep Red, Teal Green, Crimson, Indigo, plus interactive color palette swatches.
 
 ---
 
@@ -137,16 +137,16 @@ Academic research is fundamentally governed by publication deadlines (DDLs), Ove
 
 ---
 
-### 9. 🎨 名校专属配色体系、色卡选择与 Times New Roman 学术排版
-- **名校经典配色预设**：
-  - 🦅 **普渡黑金 (Purdue Old Gold & Black, `#C28E0E`)**：浓郁工科底蕴，深黑底色与老金撞色；
-  - 🏛️ **牛津深蓝 (Oxford Navy, `#002147`)**：沉稳典雅的英伦名校深蓝；
-  - 🌲 **斯坦福红 (Stanford Cardinal, `#8C1515`)**：硅谷创新源泉的标志性主教红；
-  - 🎓 **剑桥青蓝 (Cambridge Teal, `#0D9488`)**：清爽深邃的剑桥青；
-  - 🔬 **麻省深红 (MIT Crimson, `#A31F34`)**：严谨扎实的工程圣地深红；
-  - 🌌 经典学术靛蓝、交叉计算青、自然生态绿、经管琥珀金、量子玫瑰红等。
+### 9. 🎨 经典学术主题配色、色卡拾色器与 Times New Roman 学术排版
+- **主题配色预设**：
+  - 🌟 **黑金 (`#C28E0E`)**：沉稳高级黑金质感，完美契合暗黑与深灰底色；
+  - 🌊 **深蓝 (`#002147`)**：严谨深邃的经典学术深蓝；
+  - 🔴 **深红 (`#8C1515`)**：沉着大气的质感深红；
+  - 🍃 **青绿 (`#0D9488`)**：清爽聚焦的自然青绿；
+  - 🍷 **酒红 (`#A31F34`)**：沉稳坚韧的暗调酒红；
+  - 🌌 经典蓝紫、计算青、翠绿、琥珀金、玫瑰红等。
 - **色卡与拾色器直接点选**：
-  - 内置常春藤名校标准色卡矩阵，点击色卡立即全局生效；
+  - 内置经典学术色卡阵列，点击色卡立即全局生效；
   - 支持 HTML5 原生吸色笔 / 拾色器与 HEX 色值输入，任意色号皆可完美驱动界面。
 - **学术专业排版**：
   - 英文字体全面统一为国际学术期刊通用 **Times New Roman** 衬线体；

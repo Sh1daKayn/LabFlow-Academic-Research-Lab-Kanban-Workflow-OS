@@ -39,34 +39,34 @@ import {
 } from '@/types';
 
 const ACCENT_OPTIONS: { id: AccentColor; nameZh: string; nameEn: string; color: string; border: string; bg: string }[] = [
-  { id: 'purdue', nameZh: '普渡黑金', nameEn: 'Purdue Old Gold', color: '#C28E0E', border: 'border-amber-600', bg: 'bg-[#C28E0E]' },
-  { id: 'oxford', nameZh: '牛津深蓝', nameEn: 'Oxford Navy', color: '#1e40af', border: 'border-blue-700', bg: 'bg-blue-800' },
-  { id: 'cardinal', nameZh: '斯坦福红', nameEn: 'Stanford Cardinal', color: '#8c1515', border: 'border-red-800', bg: 'bg-[#8c1515]' },
-  { id: 'cambridge', nameZh: '剑桥青蓝', nameEn: 'Cambridge Teal', color: '#0f766e', border: 'border-teal-700', bg: 'bg-teal-700' },
-  { id: 'crimson', nameZh: '麻省深红', nameEn: 'MIT Crimson', color: '#991b1b', border: 'border-red-900', bg: 'bg-[#991b1b]' },
-  { id: 'indigo', nameZh: '经典学术蓝紫', nameEn: 'Academic Indigo', color: '#6366f1', border: 'border-indigo-500', bg: 'bg-indigo-600' },
-  { id: 'cyan', nameZh: '交叉计算青', nameEn: 'Computational Cyan', color: '#06b6d4', border: 'border-cyan-500', bg: 'bg-cyan-600' },
-  { id: 'emerald', nameZh: '自然与生态绿', nameEn: 'Nature Emerald', color: '#10b981', border: 'border-emerald-500', bg: 'bg-emerald-600' },
-  { id: 'amber', nameZh: '经管与金融金', nameEn: 'Economics Amber', color: '#f59e0b', border: 'border-amber-500', bg: 'bg-amber-600' },
-  { id: 'rose', nameZh: '量子与物理红', nameEn: 'Quantum Rose', color: '#f43f5e', border: 'border-rose-500', bg: 'bg-rose-600' },
-  { id: 'violet', nameZh: '基础理论深紫', nameEn: 'Pure Theory Violet', color: '#8b5cf6', border: 'border-violet-500', bg: 'bg-violet-600' },
+  { id: 'purdue', nameZh: '黑金', nameEn: 'Black Gold', color: '#C28E0E', border: 'border-amber-600', bg: 'bg-[#C28E0E]' },
+  { id: 'oxford', nameZh: '深蓝', nameEn: 'Deep Blue', color: '#1e40af', border: 'border-blue-700', bg: 'bg-blue-800' },
+  { id: 'cardinal', nameZh: '深红', nameEn: 'Deep Red', color: '#8c1515', border: 'border-red-800', bg: 'bg-[#8c1515]' },
+  { id: 'cambridge', nameZh: '青绿', nameEn: 'Teal Green', color: '#0f766e', border: 'border-teal-700', bg: 'bg-teal-700' },
+  { id: 'crimson', nameZh: '酒红', nameEn: 'Crimson', color: '#991b1b', border: 'border-red-900', bg: 'bg-[#991b1b]' },
+  { id: 'indigo', nameZh: '经典蓝紫', nameEn: 'Classic Indigo', color: '#6366f1', border: 'border-indigo-500', bg: 'bg-indigo-600' },
+  { id: 'cyan', nameZh: '计算青', nameEn: 'Cyan', color: '#06b6d4', border: 'border-cyan-500', bg: 'bg-cyan-600' },
+  { id: 'emerald', nameZh: '翠绿', nameEn: 'Emerald Green', color: '#10b981', border: 'border-emerald-500', bg: 'bg-emerald-600' },
+  { id: 'amber', nameZh: '琥珀金', nameEn: 'Amber Gold', color: '#f59e0b', border: 'border-amber-500', bg: 'bg-amber-600' },
+  { id: 'rose', nameZh: '玫瑰红', nameEn: 'Rose Red', color: '#f43f5e', border: 'border-rose-500', bg: 'bg-rose-600' },
+  { id: 'violet', nameZh: '深紫', nameEn: 'Deep Violet', color: '#8b5cf6', border: 'border-violet-500', bg: 'bg-violet-600' },
 ];
 
 const COLOR_SWATCHES = [
-  { hex: '#C28E0E', nameZh: '普渡金', nameEn: 'Purdue Gold' },
-  { hex: '#002147', nameZh: '牛津深蓝', nameEn: 'Oxford Navy' },
-  { hex: '#8C1515', nameZh: '斯坦福红', nameEn: 'Stanford Cardinal' },
-  { hex: '#A51C30', nameZh: '哈佛绯红', nameEn: 'Harvard Crimson' },
-  { hex: '#00356B', nameZh: '耶鲁深蓝', nameEn: 'Yale Blue' },
-  { hex: '#E77500', nameZh: '普林斯顿橙', nameEn: 'Princeton Orange' },
-  { hex: '#003262', nameZh: '伯克利蓝', nameEn: 'Berkeley Blue' },
-  { hex: '#0F766E', nameZh: '剑桥青', nameEn: 'Cambridge Teal' },
-  { hex: '#6366F1', nameZh: '学术靛蓝', nameEn: 'Academic Indigo' },
-  { hex: '#06B6D4', nameZh: '极客青', nameEn: 'Cyber Cyan' },
-  { hex: '#059669', nameZh: '常春藤绿', nameEn: 'Ivy Emerald' },
-  { hex: '#D97706', nameZh: '暖调琥珀', nameEn: 'Warm Amber' },
-  { hex: '#E11D48', nameZh: '雅致茜红', nameEn: 'Noble Rose' },
-  { hex: '#7C3AED', nameZh: '深邃紫', nameEn: 'Royal Violet' },
+  { hex: '#C28E0E', nameZh: '黑金', nameEn: 'Black Gold' },
+  { hex: '#002147', nameZh: '深蓝', nameEn: 'Deep Blue' },
+  { hex: '#8C1515', nameZh: '深红', nameEn: 'Deep Red' },
+  { hex: '#A51C30', nameZh: '酒红', nameEn: 'Wine Red' },
+  { hex: '#00356B', nameZh: '藏青', nameEn: 'Navy Blue' },
+  { hex: '#E77500', nameZh: '暖橙', nameEn: 'Warm Orange' },
+  { hex: '#003262', nameZh: '宝石蓝', nameEn: 'Sapphire Blue' },
+  { hex: '#0F766E', nameZh: '松青', nameEn: 'Teal' },
+  { hex: '#6366F1', nameZh: '蓝紫', nameEn: 'Indigo' },
+  { hex: '#06B6D4', nameZh: '青色', nameEn: 'Cyan' },
+  { hex: '#059669', nameZh: '翠绿', nameEn: 'Emerald' },
+  { hex: '#D97706', nameZh: '琥珀', nameEn: 'Amber' },
+  { hex: '#E11D48', nameZh: '茜红', nameEn: 'Rose' },
+  { hex: '#7C3AED', nameZh: '深紫', nameEn: 'Violet' },
 ];
 
 const BG_OPTIONS: { id: BgTheme; nameZh: string; nameEn: string; descZh: string; descEn: string }[] = [
@@ -378,7 +378,7 @@ export const SettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <Palette className="w-3.5 h-3.5 text-indigo-500" />
-                        {language === 'zh' ? '高校科研专属色卡直接点选' : 'University & Academic Color Swatches'}
+                        {language === 'zh' ? '经典色卡直接点选' : 'Color Palette Swatches'}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono">
                         {accentColor}
