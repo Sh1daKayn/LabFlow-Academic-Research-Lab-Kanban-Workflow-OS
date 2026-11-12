@@ -315,7 +315,39 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Apply accent color, background tone, and font size attributes to <html>
   useEffect(() => {
+    const ACCENT_MAP: Record<string, string> = {
+      purdue: '#C28E0E', // Purdue Old Gold
+      oxford: '#1e40af', // Oxford Blue
+      cardinal: '#8c1515', // Stanford Cardinal
+      cambridge: '#0f766e', // Cambridge Teal / Blue
+      crimson: '#991b1b', // MIT Crimson
+      indigo: '#4f46e5',
+      cyan: '#0891b2',
+      emerald: '#059669',
+      amber: '#d97706',
+      rose: '#e11d48',
+      violet: '#7c3aed',
+    };
+
+    const hex = ACCENT_MAP[accentColor] || (accentColor.startsWith('#') ? accentColor : '#4f46e5');
+
     document.documentElement.setAttribute('data-accent', accentColor);
+    document.documentElement.style.setProperty('--lab-accent', hex);
+
+    const hexToRgba = (h: string, alpha: number) => {
+      let c = h.replace('#', '');
+      if (c.length === 3) c = c.split('').map((x) => x + x).join('');
+      const num = parseInt(c, 16);
+      if (isNaN(num)) return `rgba(79, 70, 229, ${alpha})`;
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    document.documentElement.style.setProperty('--lab-accent-light', hexToRgba(hex, 0.15));
+    document.documentElement.style.setProperty('--lab-accent-border', hexToRgba(hex, 0.35));
+    document.documentElement.style.setProperty('--lab-accent-hover', hexToRgba(hex, 0.88));
   }, [accentColor]);
 
   useEffect(() => {

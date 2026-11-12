@@ -427,7 +427,7 @@ export const TaskDetailDrawer: React.FC = () => {
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <input
                   type="url"
                   value={overleaf}
@@ -438,7 +438,7 @@ export const TaskDetailDrawer: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <GitHubIcon className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <GitHubIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <input
                   type="url"
                   value={github}
@@ -449,7 +449,7 @@ export const TaskDetailDrawer: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <Database className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <Database className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <input
                   type="url"
                   value={dataset}
@@ -460,7 +460,7 @@ export const TaskDetailDrawer: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <input
                   type="url"
                   value={zotero}

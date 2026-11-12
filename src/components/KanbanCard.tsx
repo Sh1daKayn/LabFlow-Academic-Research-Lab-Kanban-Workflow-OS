@@ -353,20 +353,20 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               </div>
             )}
 
-            {/* Direct Asset Quick-Links */}
-            <div className="flex items-center gap-1 flex-wrap pt-0.5">
+            {/* Direct Asset Quick-Links (Unified Academic Neutral Styling) */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
               {task.assets.overleaf && (
                 <a
                   href={task.assets.overleaf}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 transition-colors"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
                   title="Overleaf"
                 >
-                  <FileText className="w-2.5 h-2.5" />
+                  <FileText className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
                   <span>Overleaf</span>
-                  <ExternalLink className="w-2 h-2 opacity-70" />
+                  <ExternalLink className="w-2 h-2 opacity-50" />
                 </a>
               )}
 
@@ -376,12 +376,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 transition-colors"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
                   title="GitHub"
                 >
-                  <GitHubIcon className="w-2.5 h-2.5" />
+                  <GitHubIcon className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
                   <span>GitHub</span>
-                  <ExternalLink className="w-2 h-2 opacity-70" />
+                  <ExternalLink className="w-2 h-2 opacity-50" />
                 </a>
               )}
 
@@ -391,12 +391,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition-colors"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
                   title="Dataset"
                 >
-                  <Database className="w-2.5 h-2.5" />
+                  <Database className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
                   <span>Dataset</span>
-                  <ExternalLink className="w-2 h-2 opacity-70" />
+                  <ExternalLink className="w-2 h-2 opacity-50" />
                 </a>
               )}
 
@@ -406,12 +406,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/30 transition-colors"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
                   title="Zotero"
                 >
-                  <BookOpen className="w-2.5 h-2.5" />
+                  <BookOpen className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
                   <span>Zotero</span>
-                  <ExternalLink className="w-2 h-2 opacity-70" />
+                  <ExternalLink className="w-2 h-2 opacity-50" />
                 </a>
               )}
             </div>

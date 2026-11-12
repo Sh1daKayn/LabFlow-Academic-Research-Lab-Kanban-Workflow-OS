@@ -1,286 +1,284 @@
 # LabFlow 🧪
 
 > **Paper-Driven & Blocker-Aware Workflow OS for Academic Research Labs**  
-> **面向学术课题组与实验室的“论文导向与科研卡点驱动”工作流操作系统**
+> **面向学术科研团队与高校实验室的“论文导向与科研卡点驱动”工作流操作系统**
 
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
-[![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg?style=flat-square)](LICENSE)
+[![PWA Ready](https://img.shields.io/badge/PWA-Desktop%20Installable-emerald?style=flat-square)](https://web.dev/progressive-web-apps/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg?style=flat-square)](LICENSE)
 
 ---
 
-## 🌟 English Overview / 英文概览
+## 🌟 English Introduction / 英文概览
 
-Academic research is governed by publication deadlines (DDLs), Overleaf drafts, complex empirical pipelines, GPU cluster contention, and sudden mathematical proof bottlenecks. Generic project management tools like **Jira** (built for enterprise sprint tickets) or **Notion** (unstructured blank canvases) fail to capture the reality of academic research.
+Academic research is fundamentally governed by publication deadlines (DDLs), Overleaf LaTeX drafts, complex empirical pipelines, shared GPU cluster contention, and sudden mathematical/algorithmic bottlenecks. Generic project tools like **Jira** (built for software agile sprints) or **Notion** (unstructured blank canvases) fail to capture the reality of academic labs.
 
-**LabFlow** is purpose-built from the ground up for Principal Investigators (PIs), Postdocs, PhD students, and Research Assistants (RAs). It replaces ad-hoc PPT group meetings with a paper-centric 6-stage publication board, reverse submission deadline scheduling, explicit technical bottleneck escalation, and shared GPU compute telemetry.
+**LabFlow** is purpose-built from the ground up for Principal Investigators (PIs), Postdocs, PhD candidates, and Research Assistants (RAs). It unifies:
+1. **Paper-Driven Academic Kanban**: 6-stage lifecycle (`IDEATION` → `DATA_EXP` → `DRAFTING` → `PI_REVIEW` → `REVISION` → `ACCEPTED`).
+2. **Reverse DDL Scheduler**: Auto-deriving $T-45$, $T-30$, $T-14$, and $T-3$ milestones backwards from submission deadlines.
+3. **AI Smart Document Importer**: Feed messy lab notes/proposals to any AI with our prompt to auto-populate members, projects, and milestones with 1 click.
+4. **4-Tier Academic RBAC**: PI Advisor, Project Lead, Student RA, and Auditor Guest roles guarded by an Admin Master Password.
+5. **Academic Gantt Chart**: Multi-project timeline breakdown and countdown visualization.
+6. **No-PPT Group Meeting Mode**: 3-column presenter dashboard with instant Markdown minutes export.
+7. **University Color Schemes & Times New Roman Typography**: Curated Purdue Old Gold & Black, Oxford Navy, Stanford Cardinal, Cambridge Teal, MIT Crimson, plus full-spectrum interactive color pickers.
 
 ---
 
 ## 🇨🇳 中文简介 / Chinese Overview
 
-学术科研管理的核心是**论文发表周期、投稿 Deadline、LaTeX/Overleaf 协作、复杂实验跑批、GPU 算力挤兑以及突发的数学推导与收敛性卡点**。通用的项目管理工具（如 Jira、Trello、Notion）无法适配学术课题组的真实工作流：
-- **Jira / Linear**：专为软件工程敏捷冲刺（Sprint）设计，充斥着对于学术无用的故事点（Story Points）与敏捷燃尽图；
-- **Notion**：自由度过高缺乏约束，通常沦为信息垃圾堆，无法自动推导论文截稿期或在组会中高效投屏。
+学术科研管理的核心是**论文发表周期、投稿 Deadline 倒推、LaTeX/Overleaf 实时写作、复杂实验跑批、GPU 算力抢占以及突发的数学证明与收敛性卡点**。通用的项目管理工具（如 Jira、Trello、Notion）无法适配学术团队的真实场景：
+- **Jira / Linear**：专为软件工程敏捷冲刺（Sprint）设计，充斥着学术场景完全用不到的故事点（Story Points）与燃尽图；
+- **Notion**：自由度过高缺乏学术流程约束，易沦为散乱的笔记垃圾堆，无法自动倒排论文截稿期或在组会中高效投屏。
 
-**LabFlow** 是专为高校、科研院所课题组打造的开源学术科研操作系统（Academic Research Lab OS）。通过 6 阶段学术看板、投稿倒推排期生成器（Reverse DDL Planner）、数学与算力卡点闭环求助机制、无 PPT 组会投屏模式及算力资源仪表盘，全面赋能顶尖实验室的高效产出。
+**LabFlow** 是专为高校与科研院所课题组打造的现代化学术操作系统（Academic Research Lab OS）。通过 6 阶段学术看板、投稿倒推排期生成器（Reverse DDL Planner）、AI 智能冷启动导入、四级科研权限隔离、数学与算力卡点闭环求助机制、无 PPT 组会投屏模式及名校学术主题系统，全面赋能顶尖实验室的高效协作与成果产出。
 
 ---
 
-## ⚖️ Why LabFlow vs. Jira & Notion? (对比分析)
+## ⚖️ Why LabFlow vs. Jira & Notion? (核心维度对比)
 
 | 核心维度 / Feature Dimension | Jira / Linear | Notion / Trello | **LabFlow (Academic OS)** |
 | :--- | :--- | :--- | :--- |
-| **工作流哲学 (Core Paradigm)** | 软件工程敏捷冲刺 (Sprint / Backlog) | 自由文档笔记 / 通用轻量看板 | **论文与课题导向 (Paper-Driven Pipeline)** |
-| **流转阶段 (Board Stages)** | Todo / In Progress / Done | 自定义列 (无学术语义) | **IDEATION → DATA_EXP → DRAFTING → PI_REVIEW → REVISION → ACCEPTED** |
-| **投稿倒排机制 (Reverse DDL)** | ❌ 无 (需手动计算工期) | ❌ 静态日历 (无法自动生成里程碑) | **⚡ 自动倒推生成 T-45/T-30/T-14/T-3 关键学术节点** |
-| **卡点求助 (Blocker Handling)** | 仅有简单 Flag 标记 | 评论区艾特 (极易淹没) | **🔥 细分卡点类型 (数学推导/算法收敛/算力瓶颈)，直接向 PI 求助** |
-| **资产快速直达 (Asset Links)** | 自定义字段 (折叠层级深) | 链接嵌入 | **Overleaf、GitHub、Zenodo/Dataset、Zotero 卡片一键直达** |
-| **组会汇报 (Group Standup)** | ❌ 无法直观投屏 | 需学生花费半天准备 PPT | **🖥️ 无 PPT 投屏模式：3 栏汇报视图 + 1 秒导出 Markdown 纪要** |
-| **算力资源协同 (Compute Slots)** | ❌ 无关联 | 需单独维护表格 | **内置 GPU/HPC 节点占用、剩余机时与一键认领 (Claim)** |
+| **工作流哲学 (Paradigm)** | 软件工程敏捷冲刺 (Sprint / Backlog) | 自由文档笔记 / 通用看板 | **论文与课题全生命周期导向 (Paper-Driven Pipeline)** |
+| **流转阶段 (Board Stages)** | Todo / In Progress / Done | 自定义列 (无学术语义) | **灵感文献 → 数据实验 → 初稿撰写 → 导师审阅 → 投稿返修 → 录用归档** |
+| **投稿倒排机制 (Reverse DDL)** | ❌ 无 (需手动计算工期) | ❌ 静态日历 (无法自动生成里程碑) | **⚡ 自动倒推生成 T-45/T-30/T-14/T-3 关键学术节点并注入看板** |
+| **冷启动导入 (Cold-Start)** | 需繁琐配置 CSV 导入 | 纯手动复制黏贴 | **✨ 专属 AI 提示词 + 自动化容错解析，文档秒变全组看板** |
+| **卡点求助 (Blocker Handling)** | 仅有简单 Flag 标记 | 评论区艾特 (极易淹没) | **🔥 细分卡点类型 (数学推导/算法收敛/算力瓶颈)，直接呼叫导师拍板** |
+| **科研资产直达 (Assets)** | 自定义字段 (折叠层级深) | 链接嵌入 | **统一低饱和度灰阶标签：Overleaf、GitHub、Zenodo、Zotero 一键直达** |
+| **科研权限制 (Academic RBAC)** | 企业级复杂权限树 | 全员可乱改或全员只读 | **👑 导师全权 + 🔬 骨干管课题 + 🧑‍💻 组员仅管自己 + 👁️ 访客只读** |
+| **组会汇报 (Group Standup)** | ❌ 无法直观投屏 | 需学生耗费半天准备 PPT | **🖥️ 无 PPT 投屏模式：3 栏汇报视图 + 1 秒导出 Markdown 周报与纪要** |
+| **算力资源调度 (Compute Strip)** | ❌ 无关联 | 需单独维护表格 | **内置 GPU/HPC 节点状态、占用者、剩余机时与防误释放保护** |
+| **学术排版审美 (Typography)** | 现代无衬线体 (UI 风) | 常见系统字体 | **标准学术 Times New Roman 衬线体、三级字号与名校经典主题配色** |
 
 ---
 
-## 🚀 Key Features Breakdown / 核心功能详解
+## 🚀 核心功能详解 (Core Features Breakdown)
 
-### 1. 📌 Paper-First Academic Pipeline Board (论文全生命周期学术看板)
-Generic boards use `Todo / Doing / Done`. LabFlow provides a **6-stage horizontal research pipeline**:
-1. `IDEATION` (Ideation & Lit Review / 灵感与文献): Hypotheses formulation, survey matrix, IRB clearance.
-2. `DATA_EXP` (Data & Modeling / 数据与实验): Empirical estimation, algorithm prototyping, benchmark runs.
-3. `DRAFTING` (Manuscript Drafting / 初稿撰写): Overleaf LaTeX drafting, high-DPI vector figure generation.
-4. `PI_REVIEW` (PI Review / 导师审阅): Structural critique, Theorem tightness check, advisor sign-off.
-5. `REVISION` (Submitted & R&R / 投稿与返修): Peer review rebuttal, placebo tests, track-changes revision diffs.
-6. `ACCEPTED` (Accepted & Archived / 录用归档): Camera-ready formatting, Zenodo code DOI minting, celebratory confetti!
+### 1. 📌 论文全生命周期学术看板 (Paper-First Academic Pipeline)
+提供贴合高校科研规律的 6 阶段学术研发流水线：
+1. `IDEATION` (灵感与文献): 假说构思、文献调研、创新点论证与实验方案设计；
+2. `DATA_EXP` (数据与实验): 数据清洗、模型训练、仿真调优与 SOTA 基线评测；
+3. `DRAFTING` (初稿撰写): Overleaf LaTeX 协作、高分辨率矢量图表绘制、附录整理；
+4. `PI_REVIEW` (导师审阅): 论文结构把关、定理严谨性核验、导师批注与修改；
+5. `REVISION` (投稿与返修): 审稿人意见回复 (Rebuttal)、补充安慰剂检验、差异对比排版；
+6. `ACCEPTED` (录用归档): 论文录用发表、代码开源归档、全屏庆祝彩带（Confetti）！
 
-**Card Visual Elements**:
-- **Project/Paper Tag** (`AAAI 2027`, `AEPP (R&R)`, `World Bank WP`) with **DDL Countdown Badges** (auto-color-coded: urgent pulsing red for $\le 3\text{d}$, amber for $\le 14\text{d}$, cyan for normal).
-- **Direct Asset Quick-Links**: Instant clickable pills for `Overleaf`, `GitHub`, `Dataset`, and `Zotero`.
-- **Author Badges**: Instant recognition of Lead Author (`[Lead: Kayn]`) and Principal Investigator (`[PI: Prof. Malone]`).
-- **Pulsing Blocker Highlight**: Highlighted in pulsing red border when blocked, with category tag and one-click unblock action.
+- **卡片关键学术要素**：课题标签 (`AAAI 2027`, `Nature Comm`, `青年基金`)、截止日期倒计时（3天内红脉冲警示）、统一纯净灰阶资源标签 (`Overleaf`, `GitHub`, `Dataset`, `Zotero`)、一作与导师徽标。
+- **项目详情下拉抽屉**：点击任务直接在当前板块下方优雅展开下拉抽屉，无需右侧弹窗，支持就地编辑实验方案、修改 DDL 与勾选双盲匿名合规清单。
 
 ---
 
-### 2. 🔥 The "Blocker Escalation" Modal & Filter (科研卡点上报与闭环求助)
-Academic projects frequently stall on domain-specific roadblocks. LabFlow turns hidden friction into explicit lab decisions:
-- **Top Toggle: "🔥 Only Show Blockers (仅看卡点)"**: Instantly isolate only blocked cards across the lab.
-- **Dedicated Blocker Categories**:
-  - `MATH_DERIVATION` (数学推导与证明): Contraction bounds, Lyapunov stability divergence, Lemma proofs.
-  - `ALGO_CONVERGENCE` (算法与模型收敛异常): Loss explosion, oscillating dual variables, NaN gradients.
-  - `COMPUTE_SHORTAGE` (算力与GPU瓶颈): OOM on 80GB VRAM, Slurm queue timeouts.
-  - `DATA_DEFICIT` (数据缺失与协议延迟): Missing survey response waves, API rate limits.
-  - `WAITING_REVIEW` (等待导师/共作审阅): Stalled Overleaf feedback.
-  - `REPLICATION_GAP` (经验复现差异): Baseline reproduction discrepancies.
-- **Structured Fields**: *Where is it stuck?* + *What has been tried?* + *Escalate to (PI, Postdoc, Senior PhD)*.
-- **One-Click Resolution**: Direct unblocking with instant visual feedback and celebratory confetti.
+### 2. ✨ AI 智能文档导入与系统冷启动 (AI Smart Document Importer)
+初次使用 LabFlow 时，老师或负责人无需手动一个个录入人员与任务：
+1. **一键复制 AI 提示词**：系统内置精心设计的学术架构师提取提示词，支持中英双语；
+2. **连接任意 AI**：将该提示词连同您手头现有的**实验室文档、周报、立项书、学生花名册或会议纪要**，一并粘贴给 ChatGPT、Claude、DeepSeek、Kimi 或 Gemini 等任意 AI；
+3. **自动化容错解析**：将 AI 返回的文段粘贴回 LabFlow，内置脚本自动清洗 Markdown 代码块、修复尾部多余逗号、智能映射学术阶段与身份角色；
+4. **双模式导入**：
+   - 🚀 **【覆盖并全新初始化】**：清空示例数据，直接生成老师团队的真实项目与名单；
+   - ➕ **【增量追加合并】**：保留现有卡片，仅将新提取的任务与课题无损追加进来。
 
 ---
 
-### 3. ⚡ Reverse DDL Scheduler (投稿倒推排期生成器)
-Top-tier conferences and journals (NeurIPS, AAAI, ICML, Management Science, AER) demand disciplined backwards planning.
-- Input: **Paper Title**, **Target Venue**, and **Submission Deadline (T-Day)**.
-- Automatically calculates and injects 4 coordinated milestone tasks onto the board:
-  - `T - 45 Days` (`DATA_EXP`): **Baseline & Core Empirical Results Freeze**
-  - `T - 30 Days` (`DRAFTING`): **Full Manuscript First Draft Ready (Overleaf)**
-  - `T - 14 Days` (`PI_REVIEW`): **Submit Polished PDF to PI for Internal Review**
-  - `T - 3 Days` (`PI_REVIEW`): **Camera Formatting, Double-Blind Anonymity & Code Check**
+### 3. 👑 四级科研权限体系与主密码保护 (4-Tier Academic RBAC)
+完全免除配置外部邮箱验证码或注册服务器的繁琐门槛，通过**管理员主密码 (默认: `admin888`)** 兼顾即开即用与团队防误改：
+- 👑 **导师 / 实验室管理员 (`ADMIN_PI`)**：全权掌控，可查阅绝密卡片、修改/删除任意成员任务、强制释放被死锁的 GPU 算力、调整阶段与系统初始化；
+- 🔬 **课题负责人 / 骨干 (`PROJECT_LEAD`)**：可创建并完全管理自己课题下的所有任务与里程碑，可推进论文至录用归档；
+- 🧑‍💻 **组内成员 / 研究生 (`STUDENT_RA`)**：**仅管自己**。只能编辑、拖拽自己为负责人或参与者的卡片；他人卡片强制加锁；若试图将卡片移入「录用归档」，系统会自动触发学术把关拦截提示（需导师核验）；只能释放自己登记占用的设备；
+- 👁️ **只读访客 / 旁听 (`AUDITOR_GUEST`)**：全局只读模式，禁用新建、拖拽与修改，适用于学术汇报、外部评审或新生旁听。
+- ⚡ **5 秒极速登记新成员**：在顶部身份栏直接点击「+ 登记新成员」，输入姓名即可立即开始协作。
 
 ---
 
-### 4. 🖥️ Group Meeting Standup Mode (无PPT组会投屏模式)
-Tired of students spending 6 hours making slides every week for a 10-minute update?
-- **High-contrast presenter dashboard** designed for conference room 4K projectors and Zoom screen sharing.
-- **Presenter Filter**: Easily cycle between All Members, PI, Postdoc, PhDs, and RAs.
-- **3-Column Executive Summary**:
-  1. *Completed Recently (近期进展)*: Archived publications & verified milestones.
-  2. *Active & In Progress (当前推进)*: Ongoing empirical and manuscript progress.
-  3. *Critical Blockers Requiring PI Decision (核心卡点与导师决断)*: High-priority roadblocks with what was tried and who must intervene.
-- **📋 Export Markdown Minutes (导出组会纪要)**: Automatically compiles clean, structured meeting minutes into clipboard, ready to paste into Slack, WeChat, Notion, or Email!
+### 4. 🔒 课题保密与可见性分级 (Confidentiality & Privacy Scope)
+创建任务、立项与排期时，支持自由配置保密级别：
+- 🌐 **全组公开 (`PUBLIC`)**：课题组全体成员均可查看；
+- 👥 **课题内可见 (`TEAM_ONLY`)**：仅课题参与成员与导师可见，避免不同研究方向互相打扰；
+- 🔒 **绝密 (`PI_ONLY`)**：仅导师与一作可见，用于未发表的核心创新点、高密基金本子或专利草案。
 
 ---
 
-### 5. 💻 Shared Compute & Lab Resource Widget (算力与公共设施状态栏)
-- Real-time status strip showing shared cluster utilization:
-  - `GPU Node-01 (4x NVIDIA A100-80G)`: Occupied by `@Alex Rivera` (ADMM 10k Graph Training - 12h left, 94% VRAM)
-  - `GPU Node-02 (8x RTX 4090 24GB)`: Idle / Available for ablation sweeps
-  - `Survey/Econometric Server (64-core AMD EPYC)`: Active (`@Elena Vance` - Stata Placebo runs)
-  - `DGX H100 SuperPOD (Node-Alpha)`: Reserved for Causal Pretraining
-- Interactive modal: **Claim an idle node** (specify job name, member, duration) or **Release an occupied node**.
+### 5. ⚡ 投稿反向排期生成器 (Reverse DDL Scheduler)
+顶级会议与期刊（NeurIPS, ICML, CVPR, AAAI, Nature 子刊, AER 等）需要极其严格的倒排工期计划：
+- 输入论文题目、目标会议和截稿日期（$T$ 日）；
+- 自动按科学工期生成并关联 4 大协同里程碑：
+  - $T - 45\text{ 天}$ (`DATA_EXP`): **基线锁定与实验评测冻结**
+  - $T - 30\text{ 天}$ (`DRAFTING`): **论文完整初稿完成 (Overleaf)**
+  - $T - 14\text{ 天}$ (`PI_REVIEW`): **提交导师深入审阅与组内把关**
+  - $T - 3\text{ 天}$ (`PI_REVIEW`): **双盲匿名复核、格式排版与可复现包核验**
+- 步长天数与步骤名称支持自由增加、删除与自定义。
 
 ---
 
-## 🛠️ Quick Start & Standalone App / 快速开始与免部署桌面端
-
-### Option 0: 🖥️ 1-Click Windows / Desktop Launcher (无需命令行，开箱即用)
-如果你不想敲命令行，从 GitHub 下载本项目后：
-1. **双击 `Start-LabFlow.bat`**（Windows 用户）或运行 `./Start-LabFlow.ps1`：
-   - 脚本将自动检测 Node.js，并在首次运行时自动安装依赖，随后自动唤起默认浏览器访问 `http://localhost:3000`。
-2. **免部署安装为独立桌面应用 (PWA Standalone App)**：
-   - 打开页面后，点击 Chrome 或 Edge 浏览器地址栏右侧的 **“安装 LabFlow” (或“应用” → “将此站点作为应用安装”)** 图标。
-   - 即可将 LabFlow 转化为完全独立的桌面应用窗口（无浏览器地址栏，具备独立任务栏图标与原生应用体验）。
-   - 全部数据保存在本地客户端，离线亦可流畅使用。
+### 6. 🔥 科研卡点上报与闭环决断 (Blocker Escalation)
+学术项目极易因某些技术暗礁导致停滞。LabFlow 将隐形阻力转化为公开协作决断：
+- 顶部支持一键筛选 **「🔥 仅看卡点」**，全组红灯任务一览无余；
+- 细分学术卡点类别：`数学推导卡点`、`算法模型收敛异常`、`算力与显存短缺`、`数据缺失`、`等待审阅`、`经验复现差异`；
+- 明确填写：*具体卡在哪里？* + *已尝试过的推导/解法* + *亟需谁介入决断 (导师/骨干)*；
+- 解决卡点后一键解除，自动更新状态并恢复顺畅推进。
 
 ---
 
-### Option A: Local Development (常规本地开发)
-LabFlow includes a pre-populated reactive mock store in `localStorage`, allowing immediate execution without configuring a database:
+### 7. 📊 学术项目进度甘特图 (Academic Gantt View)
+- 支持 **按周 (Weekly)** 和 **按月 (Monthly)** 时间轴粒度缩放；
+- 支持 **按课题分类筛选与分组**，避免全实验室几十个任务堆积过大；
+- 支持在时间轴上直接拖动滑块调整完成进度（0~100%），自主编辑工期起始与截止日期。
 
+---
+
+### 8. 🖥️ 无 PPT 组会投屏模式 (Group Standup Mode)
+告别全组学生每周花半天做 PPT 却只汇报 5 分钟的内卷痛点：
+- 专为会议室 4K 大屏与腾讯会议/Zoom 屏幕共享设计的高对比度投屏面板；
+- **三栏学术汇报看板**：
+  1. *近期进展与录用*：已录用论文与阶段成果；
+  2. *当前实验与初稿推进*：正在进行的模型调优、实证分析与初稿章节；
+  3. *核心卡点与导师决断*：亟需组会集体讨论或导师拍板的技术难点。
+- **一键导出纪要与个人周报**：自动生成格式工整的 Markdown 汇报周报，支持一键复制到剪贴板，秒发微信群或邮件！
+
+---
+
+### 9. 🎨 名校专属配色体系、色卡选择与 Times New Roman 学术排版
+- **名校经典配色预设**：
+  - 🦅 **普渡黑金 (Purdue Old Gold & Black, `#C28E0E`)**：浓郁工科底蕴，深黑底色与老金撞色；
+  - 🏛️ **牛津深蓝 (Oxford Navy, `#002147`)**：沉稳典雅的英伦名校深蓝；
+  - 🌲 **斯坦福红 (Stanford Cardinal, `#8C1515`)**：硅谷创新源泉的标志性主教红；
+  - 🎓 **剑桥青蓝 (Cambridge Teal, `#0D9488`)**：清爽深邃的剑桥青；
+  - 🔬 **麻省深红 (MIT Crimson, `#A31F34`)**：严谨扎实的工程圣地深红；
+  - 🌌 经典学术靛蓝、交叉计算青、自然生态绿、经管琥珀金、量子玫瑰红等。
+- **色卡与拾色器直接点选**：
+  - 内置常春藤名校标准色卡矩阵，点击色卡立即全局生效；
+  - 支持 HTML5 原生吸色笔 / 拾色器与 HEX 色值输入，任意色号皆可完美驱动界面。
+- **学术专业排版**：
+  - 英文字体全面统一为国际学术期刊通用 **Times New Roman** 衬线体；
+  - 支持 **紧凑小号**、**标准常规**、**舒适大号** 三级字号调节；
+  - **色调统一规范**：所有科研资源外链（GitHub, Overleaf, Zotero, Dataset）统一采用优雅低饱和度学术灰阶微胶囊，彻底去除多余花哨杂色。
+
+---
+
+## 🛠️ 快速安装与本地部署指南 (Installation & Setup)
+
+### 方案 A：从 GitHub 克隆部署（开发者 / 课题组内部服务器）
+
+#### 1. 前置依赖
+- [Node.js](https://nodejs.org/) (推荐 v18.17+ 或 v20+)
+- [Git](https://git-scm.com/)
+
+#### 2. 下载并安装依赖
 ```bash
-# 1. Clone repository
-git clone https://github.com/your-username/labflow.git
-cd labflow
+# 1. 克隆代码仓库
+git clone https://github.com/Sh1daKayn/LabFlow-Academic-Research-Lab-Kanban-Workflow-OS.git
 
-# 2. Install dependencies
+# 2. 进入项目目录
+cd LabFlow-Academic-Research-Lab-Kanban-Workflow-OS
+
+# 3. 安装依赖包
 npm install
+```
 
-# 3. Start local development server
+#### 3. 启动本地开发服务
+```bash
 npm run dev
 ```
+启动完成后，在浏览器访问 **`http://localhost:3000`** 即可开始使用。
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. All features (drag-and-drop, blocker escalation, reverse DDL, group meeting projection, resource claim) work interactively out of the box!
-
----
-
-### Option B: Docker Compose (Production Deployment)
-Deploy LabFlow alongside PostgreSQL with a single command:
-
+#### 4. 生产环境构建与打包
 ```bash
-docker compose up -d --build
-```
-
-Access the application at `http://localhost:3000`. PostgreSQL will automatically be provisioned on port `5432` with volume persistence.
-
----
-
-## 🗄️ Prisma Data Model Overview (`prisma/schema.prisma`)
-
-LabFlow includes an enterprise-ready PostgreSQL schema designed for multi-lab academic institutions:
-
-```mermaid
-erDiagram
-    LAB ||--o{ MEMBERSHIP : has
-    USER ||--o{ MEMBERSHIP : belongs_to
-    LAB ||--o{ PROJECT : conducts
-    LAB ||--o{ RESOURCE_SLOT : owns
-    PROJECT ||--o{ TASK : contains
-    USER ||--o{ TASK : assigned_to
-    TASK ||--o{ BLOCKER : logs
-
-    LAB {
-        string id PK
-        string name
-        string institution
-        string slug
-        string piName
-    }
-    USER {
-        string id PK
-        string email
-        string name
-        enum role "PI, POSTDOC, PHD_STUDENT, RA"
-    }
-    PROJECT {
-        string id PK
-        string title
-        string targetVenue
-        string tag
-        datetime submissionDeadline
-        enum status
-        string overleafUrl
-        string githubUrl
-    }
-    TASK {
-        string id PK
-        string title
-        enum stage "IDEATION, DATA_EXP, DRAFTING, PI_REVIEW, REVISION, ACCEPTED"
-        enum priority
-        datetime deadline
-        boolean isBlocked
-        enum blockerCategory
-        string blockerReason
-    }
-    RESOURCE_SLOT {
-        string id PK
-        string name
-        enum type "GPU, SERVER, CLUSTER"
-        enum status "IDLE, OCCUPIED, RESERVED"
-        string currentUser
-        int vramUtilPercent
-    }
+npm run build
+npm run start
 ```
 
 ---
 
-## 📁 Project Structure / 代码目录结构
-
-```
-labflow/
-├── prisma/
-│   └── schema.prisma            # Production PostgreSQL relational schema
-├── src/
-│   ├── app/
-│   │   ├── globals.css          # Tailwind CSS & custom scrollbar definitions
-│   │   ├── layout.tsx           # Root metadata & font declarations
-│   │   └── page.tsx             # Main application entry point
-│   ├── components/
-│   │   ├── icons/
-│   │   │   └── BrandIcons.tsx   # Pixel-perfect Overleaf & GitHub brand SVGs
-│   │   ├── BlockerModal.tsx     # Feature B: Blocker escalation & resolution modal
-│   │   ├── GanttView.tsx        # Project-grouped timeline Gantt with collapsible accordions
-│   │   ├── GroupMeetingView.tsx # Feature D: Group meeting standup presenter mode & personal weekly digest
-│   │   ├── Header.tsx           # Navigation bar, blocker filter, backup/restore & mode switcher
-│   │   ├── KanbanBoard.tsx      # Feature A: 6-stage academic board with stage filter & DDL sorting
-│   │   ├── KanbanCard.tsx       # Research card with DDL badges & asset quick-links
-│   │   ├── MainApp.tsx          # Dynamic view renderer
-│   │   ├── MemberManagerModal.tsx # Customizable lab roster & user identity center
-│   │   ├── NewTaskModal.tsx     # Ad-hoc task and milestone creator
-│   │   ├── ResourceModal.tsx    # Compute node claim & release manager
-│   │   ├── ResourceStrip.tsx    # Feature E: Live GPU & HPC resource status strip
-│   │   ├── ReverseDDLModal.tsx  # Feature C: Reverse DDL scheduler with custom venues & milestone offsets
-│   │   ├── StageSettingsModal.tsx # Customizable academic pipeline stages editor
-│   │   ├── TaskDetailDrawer.tsx # Task inspector, subtasks & top-tier rubric injection
-│   │   └── Toast.tsx            # Floating toast notification system
-│   ├── context/
-│   │   └── LabFlowContext.tsx   # Reactive state store with localStorage persistence
-│   ├── data/
-│   │   └── mockData.ts          # Realistic initial academic lab datasets
-│   ├── types/
-│   │   └── index.ts             # TypeScript definitions for academic workflows
-│   └── utils/
-│       ├── confetti.ts          # Celebratory milestone canvas confetti
-│       └── date.ts              # Reverse DDL math & meeting minutes compiler
-├── Dockerfile                   # Multi-stage optimized production Dockerfile
-├── docker-compose.yml           # App + PostgreSQL container orchestration
-├── tailwind.config.ts           # Tailwind typography & dark mode palette
-└── README.md                    # Bilingual documentation & architecture guide
-```
+### 方案 B：作为桌面本地独立应用免安装运行 (PWA Desktop App)
+LabFlow 深度集成了 Progressive Web App (PWA) 协议：
+1. 按照上述步骤在本地启动服务后，使用 **Google Chrome** 或 **Microsoft Edge** 访问 `http://localhost:3000`；
+2. 浏览器地址栏右侧会出现 **「安装应用」 (Install LabFlow)** 图标；
+3. 点击安装后，系统会自动在您的 Windows / macOS 桌面生成 **LabFlow 学术操作系统独立应用图标**，拥有原生应用级窗口体验，无需记端口号，双击即用！
 
 ---
 
-## 🧪 Built-in Realistic Mock Data
+## 📋 附录：AI 冷启动导入标准提示词 (Prompt Template)
 
-LabFlow loads with publication-grade academic projects pre-configured:
-1. **Digital Servitization & Producer Subscription Dynamics** (`Target: AEPP / IFAMR (Revise & Resubmit)`, Lead: Kayn Zhang, PI: Prof. Malone, Stata replication do-files, Zenodo dataset).
-2. **Inexact ADMM with MCR2 Constraints for Multi-Agent Consensus** (`Target: AAAI 2027 Oral`, Lead: Alex Rivera, marked as **BLOCKED** on `Math Derivation` Lemma 4.2 contraction proof, GPU Node-01 occupied).
-3. **Systematic PRISMA Meta-Regression on Regenerative Ag Adoption** (`Target: World Bank Working Paper`, Lead: Elena Vance, Zotero library with 2,400 screened citations).
-4. **Dynamic Factor Models for High-Frequency Carbon Pricing** (`Target: Energy Economics`, Status: `PI_REVIEW`).
-5. **Federated Causal Trees in Public Health** (`Target: Nature Communications`, Status: `ACCEPTED`, DOI minted).
+如果需要从已有的实验室文档一次性生成全套课题组看板，将以下提示词与您的文档一起发给任意 AI：
 
----
+```markdown
+你是一位顶尖的高校与科研实验室管理架构师。
+请仔细阅读我提供的【课题组文档 / 周报 / 项目立项书 / 人员名单 / 论文规划 / 会议纪要】。
+请将提取出的课题组成员、科研课题、学术推进任务以及计算设施，整理成符合 LabFlow 学术操作系统规范的 JSON 数据格式。
 
-## 📜 License & Citation
+【输出规范】：
+1. 只能输出一个包含合法 JSON 的 markdown 代码块（以 ```json 开头，以 ``` 结尾），不要输出任何多余的寒暄或解释。
+2. 即使我提供的文档信息不完整，也请根据常识合理推断并补全（如根据人名生成英文名、根据任务推进状态推测其所属学术阶段与截止日期）。
+3. JSON 格式字段必须严格遵循以下结构：
 
-LabFlow is open-sourced under the **MIT License**.
-
-If you use LabFlow to coordinate your research group or paper submissions, please feel free to star the repository and cite:
-
-```bibtex
-@software{labflow2026,
-  author = {LabFlow Open Source Contributors},
-  title = {LabFlow: Paper-Driven & Blocker-Aware Workflow OS for Academic Research Labs},
-  year = {2026},
-  url = {https://github.com/your-username/labflow}
+```json
+{
+  "members": [
+    {
+      "nameZh": "中文名（如：王伟）",
+      "nameEn": "英文或拼音（如：Wei Wang）",
+      "role": "PI | POSTDOC | SENIOR_PHD | PHD_CANDIDATE | RA | VISITING_SCHOLAR",
+      "accessRole": "ADMIN_PI | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
+      "titleZh": "身份或研究方向（如：副教授 / 具身智能方向）",
+      "email": "工作邮箱（如无写空字符串）"
+    }
+  ],
+  "projects": [
+    {
+      "title": "项目或论文完整标题",
+      "targetVenue": "目标会议或期刊（如：CVPR 2027, Nature Machine Intelligence, 青年基金）",
+      "tag": "简写代号标签（如：CVPR'27, NMI, NSFC）",
+      "abstract": "核心创新点或目标简述",
+      "leadAuthorName": "第一作者或负责人的中文姓名"
+    }
+  ],
+  "tasks": [
+    {
+      "title": "具体任务或里程碑名称（如：SOTA模型基准评测跑通）",
+      "description": "任务实施方案与交付要求",
+      "stage": "IDEATION | DATA_EXP | DRAFTING | PI_REVIEW | REVISION | ACCEPTED",
+      "projectName": "所属项目的完整标题",
+      "leadAuthorName": "负责人姓名",
+      "priority": "LOW | MEDIUM | HIGH | URGENT",
+      "visibility": "PUBLIC | TEAM_ONLY | PI_ONLY",
+      "deadline": "YYYY-MM-DD",
+      "progress": 60
+    }
+  ],
+  "resources": [
+    {
+      "nameZh": "算力节点或设施名称（如：DGX H100 8卡计算节点）",
+      "nameEn": "DGX H100 Node 01",
+      "type": "GPU | SERVER | CLUSTER | EQUIPMENT",
+      "specs": "8x NVIDIA H100 80GB SXM5, 512GB RAM"
+    }
+  ]
 }
 ```
+
+【学术阶段(stage)候选值】：
+- IDEATION: 灵感与文献调研、假说构思、可行性论证
+- DATA_EXP: 数据清洗、模型训练、仿真调优、核心实验评测
+- DRAFTING: 论文初稿撰写、图表绘制、附录整理
+- PI_REVIEW: 提交导师修改、组内深入审阅把关
+- REVISION: 审稿意见回复(Rebuttal)、修改返修
+- ACCEPTED: 论文已录用发表、代码开源、结项归档
+```
+
+---
+
+## 🏛️ 技术栈 (Technology Stack)
+
+- **核心框架**: [Next.js 14](https://nextjs.org/) (React 18, App Router)
+- **开发语言**: [TypeScript 5](https://www.typescriptlang.org/) (全静态严格类型定义)
+- **样式系统**: [Tailwind CSS 3.4](https://tailwindcss.com/) (含实时 CSS 变量全局动态注入)
+- **交互拖拽**: [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (流畅丝滑的拖拽排序与跨阶段流转)
+- **学术图标**: [Lucide React](https://lucide.dev/)
+- **数据持久化**: LocalStorage 增量安全镜像，内置 JSON 完整快照导出与容错灾备恢复
+- **字体标准**: 学术标准 Times New Roman 衬线字体族
+
+---
+
+## 📄 开源许可证 (License)
+
+本项目采用 [MIT License](LICENSE) 开源许可证。欢迎全球高校科研人员、导师、博士生与实验室管理员免费使用、二次开发与定制推广！

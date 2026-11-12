@@ -38,162 +38,60 @@ html[data-font-size="large"] {
 }
 
 /* ========================================================================= */
-/* GLOBAL REAL-TIME ACCENT COLOR SYSTEM */
+/* GLOBAL REAL-TIME ACCENT COLOR SYSTEM (Presets & Color Picker Swatches) */
 /* ========================================================================= */
 
-/* 1. CYAN ACCENT */
-html[data-accent="cyan"] button.bg-indigo-600,
-html[data-accent="cyan"] .bg-indigo-600,
-html[data-accent="cyan"] [class*="bg-indigo-600"] {
-  background-color: #0891b2 !important;
-}
-html[data-accent="cyan"] button.bg-indigo-600:hover,
-html[data-accent="cyan"] [class*="hover:bg-indigo-500"]:hover {
-  background-color: #06b6d4 !important;
-}
-html[data-accent="cyan"] [class*="text-indigo-400"],
-html[data-accent="cyan"] [class*="text-indigo-600"],
-html[data-accent="cyan"] [class*="text-indigo-500"] {
-  color: #06b6d4 !important;
-}
-html[data-accent="cyan"] [class*="border-indigo-500"],
-html[data-accent="cyan"] [class*="border-indigo-600"] {
-  border-color: #0891b2 !important;
-}
-html[data-accent="cyan"] [class*="ring-indigo-500"] {
-  --tw-ring-color: #06b6d4 !important;
-}
-html[data-accent="cyan"] [class*="bg-indigo-500/10"],
-html[data-accent="cyan"] [class*="bg-indigo-50/"] {
-  background-color: rgba(6, 182, 212, 0.12) !important;
-}
-html[data-accent="cyan"] [class*="bg-indigo-500/20"],
-html[data-accent="cyan"] [class*="bg-indigo-950/20"] {
-  background-color: rgba(8, 145, 178, 0.2) !important;
+:root {
+  --lab-accent: #6366f1;
+  --lab-accent-hover: #4f46e5;
+  --lab-accent-light: rgba(99, 102, 241, 0.12);
+  --lab-accent-border: rgba(99, 102, 241, 0.35);
 }
 
-/* 2. EMERALD ACCENT */
-html[data-accent="emerald"] button.bg-indigo-600,
-html[data-accent="emerald"] .bg-indigo-600,
-html[data-accent="emerald"] [class*="bg-indigo-600"] {
-  background-color: #059669 !important;
+/* Universal dynamic accent styling for any selected color or custom picker */
+button.bg-indigo-600,
+.bg-indigo-600,
+[class*="bg-indigo-600"] {
+  background-color: var(--lab-accent) !important;
 }
-html[data-accent="emerald"] button.bg-indigo-600:hover,
-html[data-accent="emerald"] [class*="hover:bg-indigo-500"]:hover {
-  background-color: #10b981 !important;
+button.bg-indigo-600:hover,
+[class*="hover:bg-indigo-500"]:hover {
+  background-color: var(--lab-accent-hover) !important;
 }
-html[data-accent="emerald"] [class*="text-indigo-400"],
-html[data-accent="emerald"] [class*="text-indigo-600"],
-html[data-accent="emerald"] [class*="text-indigo-500"] {
-  color: #10b981 !important;
+[class*="text-indigo-400"],
+[class*="text-indigo-500"],
+[class*="text-indigo-600"] {
+  color: var(--lab-accent) !important;
 }
-html[data-accent="emerald"] [class*="border-indigo-500"],
-html[data-accent="emerald"] [class*="border-indigo-600"] {
-  border-color: #059669 !important;
+[class*="border-indigo-500"],
+[class*="border-indigo-600"] {
+  border-color: var(--lab-accent-border) !important;
 }
-html[data-accent="emerald"] [class*="ring-indigo-500"] {
-  --tw-ring-color: #10b981 !important;
+[class*="ring-indigo-500"] {
+  --tw-ring-color: var(--lab-accent) !important;
 }
-html[data-accent="emerald"] [class*="bg-indigo-500/10"],
-html[data-accent="emerald"] [class*="bg-indigo-50/"] {
-  background-color: rgba(16, 185, 129, 0.12) !important;
+[class*="bg-indigo-500/10"],
+[class*="bg-indigo-50/"] {
+  background-color: var(--lab-accent-light) !important;
 }
-html[data-accent="emerald"] [class*="bg-indigo-500/20"],
-html[data-accent="emerald"] [class*="bg-indigo-950/20"] {
-  background-color: rgba(5, 150, 105, 0.2) !important;
-}
-
-/* 3. AMBER ACCENT */
-html[data-accent="amber"] button.bg-indigo-600,
-html[data-accent="amber"] .bg-indigo-600,
-html[data-accent="amber"] [class*="bg-indigo-600"] {
-  background-color: #d97706 !important;
-}
-html[data-accent="amber"] button.bg-indigo-600:hover,
-html[data-accent="amber"] [class*="hover:bg-indigo-500"]:hover {
-  background-color: #f59e0b !important;
-}
-html[data-accent="amber"] [class*="text-indigo-400"],
-html[data-accent="amber"] [class*="text-indigo-600"],
-html[data-accent="amber"] [class*="text-indigo-500"] {
-  color: #f59e0b !important;
-}
-html[data-accent="amber"] [class*="border-indigo-500"],
-html[data-accent="amber"] [class*="border-indigo-600"] {
-  border-color: #d97706 !important;
-}
-html[data-accent="amber"] [class*="ring-indigo-500"] {
-  --tw-ring-color: #f59e0b !important;
-}
-html[data-accent="amber"] [class*="bg-indigo-500/10"],
-html[data-accent="amber"] [class*="bg-indigo-50/"] {
-  background-color: rgba(245, 158, 11, 0.12) !important;
-}
-html[data-accent="amber"] [class*="bg-indigo-500/20"],
-html[data-accent="amber"] [class*="bg-indigo-950/20"] {
-  background-color: rgba(217, 119, 6, 0.2) !important;
+[class*="bg-indigo-500/15"],
+[class*="bg-indigo-500/20"],
+[class*="bg-indigo-950/20"] {
+  background-color: var(--lab-accent-light) !important;
 }
 
-/* 4. ROSE ACCENT */
-html[data-accent="rose"] button.bg-indigo-600,
-html[data-accent="rose"] .bg-indigo-600,
-html[data-accent="rose"] [class*="bg-indigo-600"] {
-  background-color: #e11d48 !important;
+/* SPECIAL PURDUE UNIVERSITY OLD GOLD & BLACK AESTHETIC */
+html[data-accent="purdue"].dark body,
+html[data-accent="purdue"].dark .min-h-screen {
+  background-color: #070707 !important;
 }
-html[data-accent="rose"] button.bg-indigo-600:hover,
-html[data-accent="rose"] [class*="hover:bg-indigo-500"]:hover {
-  background-color: #f43f5e !important;
+html[data-accent="purdue"].dark header {
+  background-color: rgba(10, 10, 10, 0.96) !important;
+  border-color: rgba(194, 142, 14, 0.25) !important;
 }
-html[data-accent="rose"] [class*="text-indigo-400"],
-html[data-accent="rose"] [class*="text-indigo-600"],
-html[data-accent="rose"] [class*="text-indigo-500"] {
-  color: #f43f5e !important;
-}
-html[data-accent="rose"] [class*="border-indigo-500"],
-html[data-accent="rose"] [class*="border-indigo-600"] {
-  border-color: #e11d48 !important;
-}
-html[data-accent="rose"] [class*="ring-indigo-500"] {
-  --tw-ring-color: #f43f5e !important;
-}
-html[data-accent="rose"] [class*="bg-indigo-500/10"],
-html[data-accent="rose"] [class*="bg-indigo-50/"] {
-  background-color: rgba(244, 63, 94, 0.12) !important;
-}
-html[data-accent="rose"] [class*="bg-indigo-500/20"],
-html[data-accent="rose"] [class*="bg-indigo-950/20"] {
-  background-color: rgba(225, 29, 72, 0.2) !important;
-}
-
-/* 5. VIOLET ACCENT */
-html[data-accent="violet"] button.bg-indigo-600,
-html[data-accent="violet"] .bg-indigo-600,
-html[data-accent="violet"] [class*="bg-indigo-600"] {
-  background-color: #7c3aed !important;
-}
-html[data-accent="violet"] button.bg-indigo-600:hover,
-html[data-accent="violet"] [class*="hover:bg-indigo-500"]:hover {
-  background-color: #8b5cf6 !important;
-}
-html[data-accent="violet"] [class*="text-indigo-400"],
-html[data-accent="violet"] [class*="text-indigo-600"],
-html[data-accent="violet"] [class*="text-indigo-500"] {
-  color: #8b5cf6 !important;
-}
-html[data-accent="violet"] [class*="border-indigo-500"],
-html[data-accent="violet"] [class*="border-indigo-600"] {
-  border-color: #7c3aed !important;
-}
-html[data-accent="violet"] [class*="ring-indigo-500"] {
-  --tw-ring-color: #8b5cf6 !important;
-}
-html[data-accent="violet"] [class*="bg-indigo-500/10"],
-html[data-accent="violet"] [class*="bg-indigo-50/"] {
-  background-color: rgba(139, 92, 246, 0.12) !important;
-}
-html[data-accent="violet"] [class*="bg-indigo-500/20"],
-html[data-accent="violet"] [class*="bg-indigo-950/20"] {
-  background-color: rgba(124, 58, 237, 0.2) !important;
+html[data-accent="purdue"] [class*="text-cyan-500"],
+html[data-accent="purdue"] [class*="text-cyan-400"] {
+  color: #c28e0e !important;
 }
 
 /* ========================================================================= */

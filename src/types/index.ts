@@ -1,6 +1,18 @@
 export type Language = 'zh' | 'en';
 
-export type AccentColor = 'indigo' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'violet';
+export type AccentColor =
+  | 'purdue'
+  | 'oxford'
+  | 'cardinal'
+  | 'cambridge'
+  | 'crimson'
+  | 'indigo'
+  | 'cyan'
+  | 'emerald'
+  | 'amber'
+  | 'rose'
+  | 'violet'
+  | string;
 export type BgTheme = 'default' | 'oled' | 'warm';
 export type FontSize = 'compact' | 'standard' | 'large';
 export type SettingsTab = 'appearance' | 'members' | 'resources' | 'stages' | 'venues' | 'backup';

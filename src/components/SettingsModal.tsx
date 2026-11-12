@@ -26,6 +26,7 @@ import {
   Lock,
   KeyRound,
   Sparkles,
+  Pipette,
 } from 'lucide-react';
 import {
   AccentColor,
@@ -38,12 +39,34 @@ import {
 } from '@/types';
 
 const ACCENT_OPTIONS: { id: AccentColor; nameZh: string; nameEn: string; color: string; border: string; bg: string }[] = [
+  { id: 'purdue', nameZh: '普渡黑金', nameEn: 'Purdue Old Gold', color: '#C28E0E', border: 'border-amber-600', bg: 'bg-[#C28E0E]' },
+  { id: 'oxford', nameZh: '牛津深蓝', nameEn: 'Oxford Navy', color: '#1e40af', border: 'border-blue-700', bg: 'bg-blue-800' },
+  { id: 'cardinal', nameZh: '斯坦福红', nameEn: 'Stanford Cardinal', color: '#8c1515', border: 'border-red-800', bg: 'bg-[#8c1515]' },
+  { id: 'cambridge', nameZh: '剑桥青蓝', nameEn: 'Cambridge Teal', color: '#0f766e', border: 'border-teal-700', bg: 'bg-teal-700' },
+  { id: 'crimson', nameZh: '麻省深红', nameEn: 'MIT Crimson', color: '#991b1b', border: 'border-red-900', bg: 'bg-[#991b1b]' },
   { id: 'indigo', nameZh: '经典学术蓝紫', nameEn: 'Academic Indigo', color: '#6366f1', border: 'border-indigo-500', bg: 'bg-indigo-600' },
   { id: 'cyan', nameZh: '交叉计算青', nameEn: 'Computational Cyan', color: '#06b6d4', border: 'border-cyan-500', bg: 'bg-cyan-600' },
   { id: 'emerald', nameZh: '自然与生态绿', nameEn: 'Nature Emerald', color: '#10b981', border: 'border-emerald-500', bg: 'bg-emerald-600' },
   { id: 'amber', nameZh: '经管与金融金', nameEn: 'Economics Amber', color: '#f59e0b', border: 'border-amber-500', bg: 'bg-amber-600' },
   { id: 'rose', nameZh: '量子与物理红', nameEn: 'Quantum Rose', color: '#f43f5e', border: 'border-rose-500', bg: 'bg-rose-600' },
   { id: 'violet', nameZh: '基础理论深紫', nameEn: 'Pure Theory Violet', color: '#8b5cf6', border: 'border-violet-500', bg: 'bg-violet-600' },
+];
+
+const COLOR_SWATCHES = [
+  { hex: '#C28E0E', nameZh: '普渡金', nameEn: 'Purdue Gold' },
+  { hex: '#002147', nameZh: '牛津深蓝', nameEn: 'Oxford Navy' },
+  { hex: '#8C1515', nameZh: '斯坦福红', nameEn: 'Stanford Cardinal' },
+  { hex: '#A51C30', nameZh: '哈佛绯红', nameEn: 'Harvard Crimson' },
+  { hex: '#00356B', nameZh: '耶鲁深蓝', nameEn: 'Yale Blue' },
+  { hex: '#E77500', nameZh: '普林斯顿橙', nameEn: 'Princeton Orange' },
+  { hex: '#003262', nameZh: '伯克利蓝', nameEn: 'Berkeley Blue' },
+  { hex: '#0F766E', nameZh: '剑桥青', nameEn: 'Cambridge Teal' },
+  { hex: '#6366F1', nameZh: '学术靛蓝', nameEn: 'Academic Indigo' },
+  { hex: '#06B6D4', nameZh: '极客青', nameEn: 'Cyber Cyan' },
+  { hex: '#059669', nameZh: '常春藤绿', nameEn: 'Ivy Emerald' },
+  { hex: '#D97706', nameZh: '暖调琥珀', nameEn: 'Warm Amber' },
+  { hex: '#E11D48', nameZh: '雅致茜红', nameEn: 'Noble Rose' },
+  { hex: '#7C3AED', nameZh: '深邃紫', nameEn: 'Royal Violet' },
 ];
 
 const BG_OPTIONS: { id: BgTheme; nameZh: string; nameEn: string; descZh: string; descEn: string }[] = [
@@ -348,6 +371,69 @@ export const SettingsModal: React.FC = () => {
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Direct Color Swatches Palette (色卡选择与自定义拾色器) */}
+                  <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-indigo-500" />
+                        {language === 'zh' ? '高校科研专属色卡直接点选' : 'University & Academic Color Swatches'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {accentColor}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {COLOR_SWATCHES.map((swatch) => {
+                        const isMatch =
+                          accentColor.toLowerCase() === swatch.hex.toLowerCase();
+                        return (
+                          <button
+                            key={swatch.hex}
+                            type="button"
+                            onClick={() => setAccentColor(swatch.hex)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                              isMatch
+                                ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-slate-900 scale-110 shadow-sm'
+                                : 'hover:scale-105 opacity-90 hover:opacity-100'
+                            }`}
+                            style={{ backgroundColor: swatch.hex }}
+                            title={`${language === 'zh' ? swatch.nameZh : swatch.nameEn} (${swatch.hex})`}
+                          >
+                            {isMatch && <Check className="w-3 h-3 text-white drop-shadow" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Hex Color Dropper / Picker */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                      <div className="relative flex items-center">
+                        <input
+                          type="color"
+                          id="custom-accent-color-picker"
+                          value={accentColor.startsWith('#') ? accentColor : '#6366f1'}
+                          onChange={(e) => setAccentColor(e.target.value)}
+                          className="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                      </div>
+                      <label
+                        htmlFor="custom-accent-color-picker"
+                        className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 cursor-pointer flex items-center gap-1 font-medium"
+                      >
+                        <Pipette className="w-3.5 h-3.5" />
+                        <span>{language === 'zh' ? '打开拾色器自定义' : 'Custom Color Dropper'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        placeholder="#C28E0E"
+                        className="w-24 ml-auto text-xs font-mono uppercase bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
                   </div>
                 </div>
 
