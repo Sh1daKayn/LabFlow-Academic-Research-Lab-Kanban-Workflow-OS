@@ -6,6 +6,10 @@ import { AcademicStage, LabMember, ProjectItem, StageConfig, TaskItem } from '@/
 import { formatCountdownBadge } from '@/utils/date';
 import { canAdvanceToStage } from '@/utils/rbac';
 import { getProjectMembers } from '@/utils/projectAnalytics';
+import {
+  getWorkCategoryLabel,
+  resolveProjectWorkCategory,
+} from '@/utils/workCategory';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import {
   ArrowLeft,
@@ -418,6 +422,7 @@ export const StageDragMatrix: React.FC<StageDragMatrixProps> = ({ filteredTasks 
     language,
     searchQuery,
     selectedProjectFilter,
+    workCategoryFilter,
     moveTask,
     updateProject,
     canEditTask,
@@ -437,6 +442,12 @@ export const StageDragMatrix: React.FC<StageDragMatrixProps> = ({ filteredTasks 
     return projects
       .filter((p: ProjectItem) => {
         if (selectedProjectFilter !== 'all' && p.id !== selectedProjectFilter) return false;
+        if (
+          workCategoryFilter !== 'ALL' &&
+          resolveProjectWorkCategory(p) !== workCategoryFilter
+        ) {
+          return false;
+        }
         if (!q) return true;
         return (
           p.title.toLowerCase().includes(q) ||
@@ -447,20 +458,22 @@ export const StageDragMatrix: React.FC<StageDragMatrixProps> = ({ filteredTasks 
       .map((p) => {
         const pMembers = getProjectMembers(p, tasks, members);
         const pTaskCount = tasks.filter((t) => t.projectId === p.id).length;
+        const wCat = resolveProjectWorkCategory(p);
+        const catShort = getWorkCategoryLabel(wCat, language, true);
         return {
           kind: 'project',
           id: p.id,
           tag: p.tag,
           title: p.title,
-          subtitle: `${p.targetVenue} · ${pMembers.length}${isZh ? '人' : ' mem'} · ${pTaskCount}${isZh ? '任务' : ' tasks'}`,
+          subtitle: `${p.partnerOrg || p.targetVenue} · ${pMembers.length}${isZh ? '人' : ' mem'} · ${pTaskCount}${isZh ? '任务' : ' tasks'}`,
           currentStage: p.status,
           canDrag: canMoveProject,
-          badgeText: p.category || undefined,
+          badgeText: catShort,
           badgeClassName:
             'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
         };
       });
-  }, [projects, tasks, members, selectedProjectFilter, searchQuery, canMoveProject, isZh]);
+  }, [projects, tasks, members, selectedProjectFilter, workCategoryFilter, searchQuery, canMoveProject, isZh, language]);
 
   const taskRows: MatrixRowItem[] = useMemo(() => {
     return filteredTasks.map((task) => {

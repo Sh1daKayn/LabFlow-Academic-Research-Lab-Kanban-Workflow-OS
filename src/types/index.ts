@@ -43,8 +43,12 @@ export type ChineseFontPreset =
   | 'dengxian'
   | 'system-zh'
   | 'custom';
-export type ViewMode = 'kanban' | 'gantt' | 'architecture' | 'todos' | 'meeting';
+export type ViewMode = 'kanban' | 'gantt' | 'architecture' | 'todos' | 'requests' | 'meeting';
 export type SettingsTab = 'appearance' | 'members' | 'resources' | 'stages' | 'venues' | 'backup';
+
+export type WorkspaceScope = 'MINE' | 'PUBLIC_LAB';
+
+export type WorkCategory = 'PAPER' | 'VERTICAL_PROJECT' | 'HORIZONTAL_PROJECT';
 
 export type AcademicStage = string;
 
@@ -100,6 +104,8 @@ export interface LabMember {
   avatar: string;
   email: string;
   pin?: string;
+  preferredViews?: ViewMode[];
+  defaultView?: ViewMode;
 }
 
 export interface AssetLinks {
@@ -114,6 +120,7 @@ export interface BlockerInfo {
   details: string;
   tried: string;
   escalatedTo: string;
+  escalatedToId?: string;
   reportedAt: string;
 }
 
@@ -165,6 +172,9 @@ export interface TaskItem {
   id: string;
   title: string;
   description?: string;
+  workCategory?: WorkCategory;
+  partnerOrg?: string;
+  milestoneNode?: string;
   stage: AcademicStage;
   projectId: string;
   projectTag: string; // e.g. "AAAI 2027", "AEPP"
@@ -192,6 +202,9 @@ export interface ProjectItem {
   id: string;
   title: string;
   abstract?: string;
+  workCategory?: WorkCategory;
+  partnerOrg?: string;
+  milestoneNode?: string;
   category?: string;
   categoryColor?: string;
   memberIds?: string[];
@@ -203,6 +216,42 @@ export interface ProjectItem {
   piId: string;
   assets: AssetLinks;
   visibility?: VisibilityLevel;
+}
+
+export type DirectRequestKind =
+  | 'REVIEW'
+  | 'BLOCKER_HELP'
+  | 'RESOURCE'
+  | 'PROJECT_SYNC'
+  | 'CHAT';
+
+export type RequestVisibility = 'PRIVATE' | 'PUBLIC';
+
+export type DirectRequestStatus = 'OPEN' | 'REPLIED' | 'RESOLVED';
+
+export interface DirectRequestReply {
+  id: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface DirectRequest {
+  id: string;
+  kind: DirectRequestKind;
+  title: string;
+  content: string;
+  senderId: string;
+  recipientId: string;
+  visibility: RequestVisibility;
+  status: DirectRequestStatus;
+  workCategory?: WorkCategory;
+  projectId?: string;
+  taskId?: string;
+  dueDate?: string;
+  replies: DirectRequestReply[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type WeeklyTodoAcceptanceStatus =
@@ -223,6 +272,7 @@ export interface WeeklyTodoItem {
   checklistItemId?: string;
   acceptanceCriteria?: string;
   acceptanceStatus: WeeklyTodoAcceptanceStatus;
+  assignedById?: string;
   acceptedById?: string;
   acceptedAt?: string;
   notes?: string;
@@ -264,6 +314,9 @@ export interface VenuePreset {
 
 export interface ReverseDDLForm {
   title: string;
+  workCategory?: WorkCategory;
+  partnerOrg?: string;
+  milestoneNode?: string;
   category?: string;
   targetVenue: string;
   deadlineDate: string;
@@ -288,6 +341,7 @@ export interface LabWorkspaceData {
   venues: VenuePreset[];
   resources: LabResource[];
   weeklyTodos?: WeeklyTodoItem[];
+  directRequests?: DirectRequest[];
   allowPeerAcceptance?: boolean;
   checklistTemplates?: ChecklistAcceptanceTemplate[];
 }

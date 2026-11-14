@@ -1,6 +1,11 @@
 'use client';
 
 import React from 'react';
+import { FlaskConical } from 'lucide-react';
+import { AccountGate } from '@/components/AccountGate';
+import { RequestsView } from '@/components/RequestsView';
+import { DirectRequestModal } from '@/components/DirectRequestModal';
+import { ViewCustomizerModal } from '@/components/ViewCustomizerModal';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { Header } from '@/components/Header';
 import { ResourceStrip } from '@/components/ResourceStrip';
@@ -25,7 +30,41 @@ import { ChecklistTemplateModal } from '@/components/ChecklistTemplateModal';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
-  const { viewMode, enableComputeStrip } = useLabFlow();
+  const {
+    viewMode,
+    enableComputeStrip,
+    isHydrated,
+    isAuthenticatedSession,
+    t,
+  } = useLabFlow();
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 gap-3">
+        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-sm text-white">
+          <FlaskConical className="w-5 h-5" />
+        </div>
+        <div className="text-center">
+          <div className="font-bold text-lg tracking-tight">
+            Lab<span className="text-cyan-500">Flow</span>
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {t.labTitle}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticatedSession) {
+    return (
+      <>
+        <AccountGate />
+        <AdminPasswordModal />
+        <ToastContainer />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200">
@@ -35,7 +74,7 @@ export const MainApp: React.FC = () => {
       {/* Slim Foldable Compute Strip */}
       {enableComputeStrip && <ResourceStrip />}
 
-      {/* Main View Area: Kanban | Gantt | Architecture & Cloud | Weekly Todos | Group Meeting */}
+      {/* Main View Area: Kanban | Gantt | Architecture & Cloud | Weekly Todos | Requests | Group Meeting */}
       <main className="flex-1 flex flex-col">
         {viewMode === 'kanban' ? (
           <KanbanBoard />
@@ -45,6 +84,8 @@ export const MainApp: React.FC = () => {
           <ArchitectureCloudView />
         ) : viewMode === 'todos' ? (
           <WeeklyTodosView />
+        ) : viewMode === 'requests' ? (
+          <RequestsView />
         ) : (
           <GroupMeetingView />
         )}
@@ -54,6 +95,8 @@ export const MainApp: React.FC = () => {
       <BlockerModal />
       <ReverseDDLModal />
       <NewTaskModal />
+      <DirectRequestModal />
+      <ViewCustomizerModal />
       <ResourceModal />
       <SettingsModal />
       <AdminPasswordModal />
@@ -63,7 +106,7 @@ export const MainApp: React.FC = () => {
       <TaskLogicTreeModal />
       <FeatureGuideModal />
       <ChecklistTemplateModal />
-      {viewMode !== 'kanban' && <TaskDetailDrawer />}
+      {viewMode !== 'kanban' && viewMode !== 'requests' && <TaskDetailDrawer />}
 
       {/* Toast Notification Layer */}
       <ToastContainer />

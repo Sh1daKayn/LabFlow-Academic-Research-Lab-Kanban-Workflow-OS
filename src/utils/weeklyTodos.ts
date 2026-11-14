@@ -124,6 +124,18 @@ export function canAcceptWeeklyTodo({
 }
 
 /**
+ * Evaluates whether the active session user can assign weekly To-Do tasks to other members (e.g. advisor -> students).
+ */
+export function canAssignWeeklyTodos(role: AccessRole, isAdminUnlocked: boolean): boolean {
+  return (
+    isAdminUnlocked ||
+    role === 'ADMIN_PI' ||
+    role === 'SYS_ADMIN' ||
+    role === 'PROJECT_LEAD'
+  );
+}
+
+/**
  * Synchronizes a weekly todo toggle (`done`) back into the linked TaskItem checklist & progress.
  */
 export function applyTodoToggleToTasks(
@@ -212,6 +224,7 @@ export function sanitizeWeeklyTodos(input: unknown): WeeklyTodoItem[] {
           : obj.done
           ? 'SUBMITTED'
           : 'PENDING',
+      assignedById: obj.assignedById ? String(obj.assignedById) : undefined,
       acceptedById: obj.acceptedById || undefined,
       acceptedAt: obj.acceptedAt || undefined,
       notes: obj.notes || undefined,

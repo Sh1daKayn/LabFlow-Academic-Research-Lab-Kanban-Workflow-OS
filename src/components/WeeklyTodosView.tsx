@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   Circle,
@@ -22,6 +22,7 @@ import {
   AlertCircle,
   BookmarkPlus,
   Settings2,
+  GraduationCap,
 } from 'lucide-react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { Priority, WeeklyTodoAcceptanceStatus, WeeklyTodoItem } from '@/types';
@@ -64,14 +65,17 @@ export const WeeklyTodosView: React.FC = () => {
     t,
     members,
     currentUserId,
+    workspaceScope,
     projects,
     tasks,
     weeklyTodos,
     checklistTemplates,
     allowPeerAcceptance,
     isAdminUnlocked,
+    canAssignWeeklyTodo,
     setWorkspacePeerAcceptance,
     addWeeklyTodo,
+    assignWeeklyTodos,
     updateWeeklyTodo,
     deleteWeeklyTodo,
     acceptWeeklyTodo,
@@ -103,11 +107,51 @@ export const WeeklyTodosView: React.FC = () => {
   const [reviewNotesMap, setReviewNotesMap] = useState<Record<string, string>>({});
   const [activeNoteTodoId, setActiveNoteTodoId] = useState<string | null>(null);
 
-  const activeMember = useMemo(
-    () => members.find((m) => m.id === selectedMemberId) || members[0],
-    [members, selectedMemberId]
-  );
+  const activeMember = useMemo(() => {
+    if (workspaceScope === 'MINE') {
+      return members.find((m) => m.id === currentUserId) || members[0];
+    }
+    return members.find((m) => m.id === selectedMemberId) || members[0];
+  }, [members, selectedMemberId, currentUserId, workspaceScope]);
   const resolvedMemberId = activeMember?.id || '';
+
+  const [assignTargetIds, setAssignTargetIds] = useState<string[]>(() =>
+    resolvedMemberId ? [resolvedMemberId] : []
+  );
+
+  useEffect(() => {
+    setAssignTargetIds(resolvedMemberId ? [resolvedMemberId] : []);
+  }, [resolvedMemberId]);
+
+  const studentMembers = useMemo(
+    () =>
+      members.filter(
+        (m) =>
+          m.accessRole !== 'ADMIN_PI' &&
+          m.accessRole !== 'AUDITOR_GUEST' &&
+          m.role !== 'PI' &&
+          m.role !== 'VISITING_SCHOLAR'
+      ),
+    [members]
+  );
+
+  const effectiveAssignTargets = useMemo(() => {
+    if (workspaceScope === 'MINE' || !canAssignWeeklyTodo) {
+      return resolvedMemberId ? [resolvedMemberId] : [];
+    }
+    const validIds = assignTargetIds.filter((id) => members.some((m) => m.id === id));
+    if (validIds.length > 0) return validIds;
+    return resolvedMemberId ? [resolvedMemberId] : [];
+  }, [workspaceScope, canAssignWeeklyTodo, assignTargetIds, members, resolvedMemberId]);
+
+  const isAssigningToOthers = effectiveAssignTargets.some((id) => id !== currentUserId);
+  const canEditCurrentMemberWeek = canAssignWeeklyTodo || resolvedMemberId === currentUserId;
+
+  const toggleAssignTarget = (memberId: string) => {
+    setAssignTargetIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
+    );
+  };
 
   const activeTemplate = useMemo(
     () => checklistTemplates.find((tpl) => tpl.id === selectedTemplateId) || checklistTemplates[0],
@@ -218,17 +262,30 @@ export const WeeklyTodosView: React.FC = () => {
     e.preventDefault();
     if (!newTitle.trim() || !resolvedMemberId) return;
 
-    addWeeklyTodo({
-      memberId: resolvedMemberId,
-      weekKey,
-      title: newTitle.trim(),
-      done: false,
-      priority: newPriority,
-      projectId: newProjectId || selectedFormTask?.projectId || undefined,
-      taskId: newTaskId || undefined,
-      checklistItemId: newChecklistItemId || undefined,
-      acceptanceCriteria: newCriteria.trim() || undefined,
-    });
+    if (canAssignWeeklyTodo) {
+      assignWeeklyTodos({
+        memberIds: effectiveAssignTargets,
+        weekKey,
+        title: newTitle.trim(),
+        priority: newPriority,
+        projectId: newProjectId || selectedFormTask?.projectId || undefined,
+        taskId: newTaskId || undefined,
+        checklistItemId: newChecklistItemId || undefined,
+        acceptanceCriteria: newCriteria.trim() || undefined,
+      });
+    } else {
+      addWeeklyTodo({
+        memberId: resolvedMemberId,
+        weekKey,
+        title: newTitle.trim(),
+        done: false,
+        priority: newPriority,
+        projectId: newProjectId || selectedFormTask?.projectId || undefined,
+        taskId: newTaskId || undefined,
+        checklistItemId: newChecklistItemId || undefined,
+        acceptanceCriteria: newCriteria.trim() || undefined,
+      });
+    }
 
     setNewTitle('');
     setNewChecklistItemId('');
@@ -293,7 +350,6 @@ export const WeeklyTodosView: React.FC = () => {
             <ListChecks className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
             <span>{t.weeklyTodosTitle}</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t.weeklyTodosDesc}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -355,7 +411,8 @@ export const WeeklyTodosView: React.FC = () => {
         </div>
       </div>
 
-      {/* Member Cards Strip: Avatar + Under-Avatar Weekly To-Do Summary */}
+      {/* Member Cards Strip (Only visible in Group Public scope to keep personal view focused) */}
+      {workspaceScope === 'PUBLIC_LAB' && (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {members.map((member) => {
           const isSelected = member.id === resolvedMemberId;
@@ -441,7 +498,7 @@ export const WeeklyTodosView: React.FC = () => {
                         ? '本周待办均已推进完成'
                         : 'All checked off'
                       : isZh
-                      ? '暂无排期 To-Do'
+                      ? '暂无排期'
                       : 'No To-Dos yet'}
                   </div>
                 )}
@@ -450,6 +507,7 @@ export const WeeklyTodosView: React.FC = () => {
           );
         })}
       </div>
+      )}
 
       {/* Main Split Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -466,34 +524,109 @@ export const WeeklyTodosView: React.FC = () => {
                 <span className="text-sm font-bold text-slate-900 dark:text-white">
                   {activeMember ? (isZh ? activeMember.nameZh : activeMember.nameEn) : ''}{' '}
                   <span className="text-slate-400 font-normal">·</span>{' '}
-                  <span className="text-xs font-medium text-cyan-600 dark:text-cyan-400">
-                    {isZh ? '新增本周 To-Do 与验收项' : 'Add Weekly To-Do & Acceptance Item'}
+                  <span
+                    className={`text-xs font-medium ${
+                      isAssigningToOthers
+                        ? 'text-indigo-600 dark:text-indigo-400'
+                        : 'text-cyan-600 dark:text-cyan-400'
+                    }`}
+                  >
+                    {isAssigningToOthers
+                      ? isZh
+                        ? '导师布置本周任务'
+                        : 'Assign Weekly Task to Student(s)'
+                      : isZh
+                      ? '新增本周 To-Do 与验收项'
+                      : 'Add Weekly To-Do & Acceptance Item'}
                   </span>
                 </span>
               </div>
-              <span className="text-[11px] text-slate-400">
-                {isZh
-                  ? '可关联项目、任务卡及执行清单，勾选将双向实时同步'
-                  : 'Optionally link a Project, Task & Checklist item for 2-way sync'}
-              </span>
             </div>
+
+            {canAssignWeeklyTodo && workspaceScope === 'PUBLIC_LAB' && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 mr-1">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>{isZh ? '布置对象' : 'Assign to'}:</span>
+                </span>
+
+                {members
+                  .filter((m) => m.accessRole !== 'AUDITOR_GUEST' && m.role !== 'VISITING_SCHOLAR')
+                  .map((m) => {
+                    const checked = effectiveAssignTargets.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => toggleAssignTarget(m.id)}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                          checked
+                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
+                        }`}
+                      >
+                        <span>{isZh ? m.nameZh : m.nameEn}</span>
+                      </button>
+                    );
+                  })}
+
+                {studentMembers.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setAssignTargetIds(studentMembers.map((m) => m.id))}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                  >
+                    {isZh ? '全选学生' : 'All Students'}
+                  </button>
+                )}
+
+                {effectiveAssignTargets.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setAssignTargetIds(resolvedMemberId ? [resolvedMemberId] : [])}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  >
+                    {isZh ? '仅选当前' : 'Reset'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!canEditCurrentMemberWeek && (
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-700 dark:text-amber-300">
+                <span>
+                  {isZh
+                    ? '仅支持添加本人待办'
+                    : 'Self-add only for other members'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberId(currentUserId)}
+                  className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-semibold transition-colors"
+                >
+                  {isZh ? '回到我的待办' : 'My To-Dos'}
+                </button>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
+                disabled={!canEditCurrentMemberWeek}
                 placeholder={
                   isZh
-                    ? '输入本周需完成的具体工作事项（如：跑完消融实验并补全误差棒图表）...'
+                    ? '输入本周需完成的具体工作事项...'
                     : 'Describe weekly To-Do item...'
                 }
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-cyan-500"
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-cyan-500 disabled:opacity-50"
               />
               <select
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value as Priority)}
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500"
+                disabled={!canEditCurrentMemberWeek}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-50"
               >
                 <option value="URGENT">{isZh ? '紧急' : 'Urgent'}</option>
                 <option value="HIGH">{isZh ? '高优先级' : 'High'}</option>
@@ -502,11 +635,25 @@ export const WeeklyTodosView: React.FC = () => {
               </select>
               <button
                 type="submit"
-                disabled={!newTitle.trim()}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-45 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
+                disabled={!newTitle.trim() || !canEditCurrentMemberWeek}
+                className={`px-4 py-2 rounded-xl disabled:opacity-45 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0 ${
+                  isAssigningToOthers
+                    ? 'bg-indigo-600 hover:bg-indigo-500'
+                    : 'bg-cyan-600 hover:bg-cyan-500'
+                }`}
               >
                 <Plus className="w-4 h-4" />
-                <span>{isZh ? '添加到本周' : 'Add To-Do'}</span>
+                <span>
+                  {isAssigningToOthers
+                    ? isZh
+                      ? effectiveAssignTargets.length > 1
+                        ? `布置给 ${effectiveAssignTargets.length} 人`
+                        : '布置本周任务'
+                      : `Assign (${effectiveAssignTargets.length})`
+                    : isZh
+                    ? '添加到本周'
+                    : 'Add To-Do'}
+                </span>
               </button>
             </div>
 
@@ -515,7 +662,8 @@ export const WeeklyTodosView: React.FC = () => {
               <select
                 value={newProjectId}
                 onChange={(e) => handleProjectChange(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500"
+                disabled={!canEditCurrentMemberWeek}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500 disabled:opacity-50"
               >
                 <option value="">{isZh ? '关联项目（可选）' : 'Link Project (optional)'}</option>
                 {projects.map((p) => (
@@ -528,7 +676,8 @@ export const WeeklyTodosView: React.FC = () => {
               <select
                 value={newTaskId}
                 onChange={(e) => handleTaskChange(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500"
+                disabled={!canEditCurrentMemberWeek}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500 disabled:opacity-50"
               >
                 <option value="">{isZh ? '关联任务卡（可选）' : 'Link Task (optional)'}</option>
                 {selectableTasks.map((tk) => (
@@ -541,7 +690,7 @@ export const WeeklyTodosView: React.FC = () => {
               <select
                 value={newChecklistItemId}
                 onChange={(e) => handleChecklistChange(e.target.value)}
-                disabled={!selectedFormTask?.checklist?.length}
+                disabled={!canEditCurrentMemberWeek || !selectedFormTask?.checklist?.length}
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500 disabled:opacity-50"
               >
                 <option value="">
@@ -565,8 +714,9 @@ export const WeeklyTodosView: React.FC = () => {
                 type="text"
                 value={newCriteria}
                 onChange={(e) => setNewCriteria(e.target.value)}
-                placeholder={isZh ? '项验收标准（可选，如：附对比表）' : 'Acceptance criteria (optional)'}
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500"
+                disabled={!canEditCurrentMemberWeek}
+                placeholder={isZh ? '项验收标准（可选）' : 'Acceptance criteria (optional)'}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 dark:text-slate-300 outline-none focus:border-cyan-500 disabled:opacity-50"
               />
             </div>
 
@@ -596,12 +746,13 @@ export const WeeklyTodosView: React.FC = () => {
 
               <button
                 type="button"
-                disabled={!activeTemplate || !resolvedMemberId}
+                disabled={!activeTemplate || !resolvedMemberId || !canEditCurrentMemberWeek}
                 onClick={() => {
                   if (!activeTemplate || !resolvedMemberId) return;
                   const count = injectTemplateToWeeklyTodos({
                     templateId: activeTemplate.id,
                     memberId: resolvedMemberId,
+                    memberIds: effectiveAssignTargets,
                     weekKey,
                     projectId: newProjectId || undefined,
                     taskId: newTaskId || undefined,
@@ -620,7 +771,7 @@ export const WeeklyTodosView: React.FC = () => {
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 dark:disabled:bg-slate-700 text-white text-[11px] font-bold transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-3 h-3" />
-                <span>{isZh ? '一键生成本周待办与验收项' : 'Inject into This Week'}</span>
+                <span>{isZh ? '生成本周' : 'Inject'}</span>
               </button>
 
               <button
@@ -647,7 +798,7 @@ export const WeeklyTodosView: React.FC = () => {
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-40 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 <BookmarkPlus className="w-3 h-3" />
-                <span>{isZh ? '本周待办存为模板' : 'Save Week as Template'}</span>
+                <span>{isZh ? '存为模板' : 'Save'}</span>
               </button>
 
               <button
@@ -661,7 +812,7 @@ export const WeeklyTodosView: React.FC = () => {
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-indigo-500/50 text-slate-600 dark:text-slate-300 text-[11px] font-semibold transition-colors cursor-pointer"
               >
                 <Settings2 className="w-3 h-3" />
-                <span>{isZh ? '管理模板库' : 'Manage Templates'}</span>
+                <span>{isZh ? '管理' : 'Manage'}</span>
               </button>
 
               {templateFeedback && (
@@ -722,8 +873,8 @@ export const WeeklyTodosView: React.FC = () => {
                 <Sparkles className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700" />
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   {isZh
-                    ? '当前筛选下暂无周待办条目，可在上方新建或从右侧课题执行清单导入'
-                    : 'No weekly To-Do items match this filter yet'}
+                    ? '暂无本周待办'
+                    : 'No weekly To-Dos'}
                 </p>
               </div>
             ) : (
@@ -736,6 +887,9 @@ export const WeeklyTodosView: React.FC = () => {
                   );
                   const verifier = todo.acceptedById
                     ? members.find((m) => m.id === todo.acceptedById)
+                    : undefined;
+                  const assigner = todo.assignedById
+                    ? members.find((m) => m.id === todo.assignedById)
                     : undefined;
                   const canVerify = canAcceptTodo(todo);
                   const priorityMeta = PRIORITY_BADGES[todo.priority || 'MEDIUM'];
@@ -792,6 +946,26 @@ export const WeeklyTodosView: React.FC = () => {
                               {isZh ? priorityMeta.labelZh : priorityMeta.labelEn}
                             </span>
 
+                            {assigner && todo.assignedById !== todo.memberId && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30"
+                                title={
+                                  isZh
+                                    ? `由 ${assigner.nameZh} 布置`
+                                    : `Assigned by ${assigner.nameEn}`
+                                }
+                              >
+                                <GraduationCap className="w-3 h-3" />
+                                {assigner.accessRole === 'ADMIN_PI' || assigner.role === 'PI'
+                                  ? isZh
+                                    ? '导师布置'
+                                    : 'Advisor Assigned'
+                                  : isZh
+                                  ? `${assigner.nameZh} 布置`
+                                  : `By ${assigner.nameEn}`}
+                              </span>
+                            )}
+
                             {renderStatusBadge(todo.acceptanceStatus)}
                           </div>
 
@@ -831,7 +1005,7 @@ export const WeeklyTodosView: React.FC = () => {
                             {linkedChecklistItem && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
                                 <ListChecks className="w-3 h-3" />
-                                {isZh ? '双向同步执行项' : 'Synced Checklist'}
+                                {isZh ? '已关联清单' : 'Checklist'}
                               </span>
                             )}
                           </div>
@@ -881,8 +1055,8 @@ export const WeeklyTodosView: React.FC = () => {
                                 }
                                 placeholder={
                                   isZh
-                                    ? '填写验收意见 / 修改建议（可选）...'
-                                    : 'Add acceptance review notes (optional)...'
+                                    ? '填写验收意见 / 修改建议...'
+                                    : 'Add acceptance review notes...'
                                 }
                                 className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white outline-none focus:border-cyan-500"
                               />
@@ -1000,8 +1174,8 @@ export const WeeklyTodosView: React.FC = () => {
             {dueThisWeekTasks.length === 0 ? (
               <p className="text-xs text-slate-500 dark:text-slate-400 py-4 text-center">
                 {isZh
-                  ? '该成员名下暂无需导入的活跃任务执行清单'
-                  : 'No active task checklists found for this member'}
+                  ? '暂无关联任务清单'
+                  : 'No linked task checklists'}
               </p>
             ) : (
               <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1 custom-scrollbar">
@@ -1068,7 +1242,7 @@ export const WeeklyTodosView: React.FC = () => {
                                 </span>
                                 <button
                                   type="button"
-                                  disabled={isAdded}
+                                  disabled={isAdded || !canEditCurrentMemberWeek}
                                   onClick={() =>
                                     pushChecklistItemToWeeklyTodo({
                                       task,
@@ -1080,6 +1254,8 @@ export const WeeklyTodosView: React.FC = () => {
                                   className={`px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 transition-colors ${
                                     isAdded
                                       ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 cursor-default'
+                                      : !canEditCurrentMemberWeek
+                                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                                       : 'bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300'
                                   }`}
                                 >
@@ -1087,6 +1263,10 @@ export const WeeklyTodosView: React.FC = () => {
                                     ? isZh
                                       ? '已排入'
                                       : 'Added'
+                                    : isAssigningToOthers || (canAssignWeeklyTodo && resolvedMemberId !== currentUserId)
+                                    ? isZh
+                                      ? '+ 布置给TA'
+                                      : '+ Assign'
                                     : isZh
                                     ? '+ 排入本周'
                                     : '+ Pull'}

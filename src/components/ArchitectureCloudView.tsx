@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { LabMember, ProjectItem, TaskItem } from '@/types';
+import { LabMember, ProjectItem, TaskItem, VisibilityLevel, WorkCategory } from '@/types';
 import {
   aggregateProjectsByCategory,
   buildWordCloudTerms,
@@ -10,6 +10,12 @@ import {
   getProjectMembers,
   WordCloudTerm,
 } from '@/utils/projectAnalytics';
+import {
+  WORK_CATEGORIES,
+  WORK_CATEGORY_META,
+  getWorkCategoryLabel,
+  resolveProjectWorkCategory,
+} from '@/utils/workCategory';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import {
   ArrowLeft,
@@ -56,6 +62,14 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
   const isZh = language === 'zh';
 
   const [title, setTitle] = useState(initialProject?.title || '');
+  const [workCategory, setWorkCategory] = useState<WorkCategory>(
+    resolveProjectWorkCategory(initialProject || undefined)
+  );
+  const [partnerOrg, setPartnerOrg] = useState(initialProject?.partnerOrg || '');
+  const [milestoneNode, setMilestoneNode] = useState(initialProject?.milestoneNode || '');
+  const [visibility, setVisibility] = useState<VisibilityLevel>(
+    initialProject?.visibility || 'PUBLIC'
+  );
   const [tag, setTag] = useState(initialProject?.tag || '');
   const [category, setCategory] = useState(initialProject?.category || existingCategories[0] || '');
   const [categoryColor, setCategoryColor] = useState(
@@ -95,18 +109,27 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
     );
     const payload = {
       title: title.trim(),
+      workCategory,
+      partnerOrg: partnerOrg.trim() || undefined,
+      milestoneNode: milestoneNode.trim() || undefined,
       tag: tag.trim() || title.trim().split(/\s+/)[0]?.slice(0, 14) || 'Project',
       category: category.trim() || undefined,
       categoryColor,
       memberIds: normalizedMembers,
-      targetVenue: targetVenue.trim() || 'Target Venue',
+      targetVenue:
+        targetVenue.trim() ||
+        (workCategory === 'HORIZONTAL_PROJECT'
+          ? 'Enterprise Delivery'
+          : workCategory === 'VERTICAL_PROJECT'
+            ? 'Grant Milestone'
+            : 'Target Venue'),
       submissionDeadline: submissionDeadline || undefined,
       status,
       leadAuthorId,
       piId,
       abstract: abstract.trim() || undefined,
       assets: initialProject?.assets || {},
-      visibility: initialProject?.visibility || 'PUBLIC',
+      visibility,
     };
 
     if (initialProject) {
@@ -154,19 +177,131 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Work Category Selector (Paper vs Vertical vs Horizontal) */}
+          <div>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+              {isZh ? '业务类别 *' : 'Work Category *'}
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {WORK_CATEGORIES.map((cat) => {
+                const meta = WORK_CATEGORY_META[cat];
+                const active = workCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setWorkCategory(cat);
+                      if (!initialProject && cat === 'HORIZONTAL_PROJECT' && visibility === 'PUBLIC') {
+                        setVisibility('TEAM_ONLY');
+                      }
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-colors ${
+                      active
+                        ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-200'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">
+                      {isZh ? meta.labelZh : meta.labelEn}
+                    </div>
+                    <div className="text-[10px] opacity-75 mt-0.5 line-clamp-1">
+                      {isZh ? meta.descZh : meta.descEn}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-              {isZh ? '课题 / 论文完整名称 *' : 'Project / Paper Title *'}
+              {workCategory === 'PAPER'
+                ? isZh
+                  ? '学术论文完整题目 *'
+                  : 'Paper Title *'
+                : isZh
+                  ? '科研 / 合作项目名称 *'
+                  : 'Project Title *'}
             </label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={isZh ? '例如：基于多智能体共识的具身调度算法研究' : 'Project title'}
+              placeholder={
+                workCategory === 'HORIZONTAL_PROJECT'
+                  ? isZh
+                    ? '例如：XX 企业产线视觉质检系统研发项目'
+                    : 'Enterprise project title'
+                  : workCategory === 'VERTICAL_PROJECT'
+                    ? isZh
+                      ? '例如：国家自然科学基金面上项目子课题'
+                      : 'Vertical grant project title'
+                    : isZh
+                      ? '例如：基于多智能体共识的具身调度算法研究'
+                      : 'Paper title'
+              }
               className={inputClass}
             />
           </div>
+
+          {workCategory !== 'PAPER' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 p-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {workCategory === 'HORIZONTAL_PROJECT'
+                    ? isZh
+                      ? '合作企业 / 甲方单位'
+                      : 'Enterprise Partner / Client'
+                    : isZh
+                      ? '立项资助单位 / 计划来源'
+                      : 'Funding Agency / Sponsor'}
+                </label>
+                <input
+                  type="text"
+                  value={partnerOrg}
+                  onChange={(e) => setPartnerOrg(e.target.value)}
+                  placeholder={
+                    workCategory === 'HORIZONTAL_PROJECT'
+                      ? isZh
+                        ? '例如：XX 智造科技有限公司'
+                        : 'e.g. Acme Robotics Co.'
+                      : isZh
+                        ? '例如：国家自然科学基金委 / 科技部'
+                        : 'e.g. NSFC / MOST'
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {workCategory === 'HORIZONTAL_PROJECT'
+                    ? isZh
+                      ? '合同时间节点 / 阶段交付要求'
+                      : 'Strict Time-Node / Delivery Requirement'
+                    : isZh
+                      ? '核心考核节点 / 验收要求'
+                      : 'Grant Milestone / Review Requirement'}
+                </label>
+                <input
+                  type="text"
+                  value={milestoneNode}
+                  onChange={(e) => setMilestoneNode(e.target.value)}
+                  placeholder={
+                    workCategory === 'HORIZONTAL_PROJECT'
+                      ? isZh
+                        ? '例如：Q3 完成现场联调验收并交付原型包'
+                        : 'e.g. On-site acceptance test by Q3'
+                      : isZh
+                        ? '例如：年度进展报告与原型指标考核'
+                        : 'e.g. Annual review & milestone report'
+                  }
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
@@ -224,13 +359,19 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                {isZh ? '目标期刊 / 会议' : 'Target Venue'}
+                {workCategory === 'PAPER'
+                  ? isZh
+                    ? '目标期刊 / 会议'
+                    : 'Target Venue'
+                  : isZh
+                    ? '项目编号 / 对接标识'
+                    : 'Grant / Delivery Code'}
               </label>
               <input
                 type="text"
                 value={targetVenue}
                 onChange={(e) => setTargetVenue(e.target.value)}
-                placeholder="NeurIPS 2027"
+                placeholder={workCategory === 'PAPER' ? 'NeurIPS 2027' : '2026-Q3'}
                 className={inputClass}
               />
             </div>
@@ -254,7 +395,17 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                {isZh ? '投稿截稿日' : 'Deadline'}
+                {workCategory === 'HORIZONTAL_PROJECT'
+                  ? isZh
+                    ? '刚性交付节点日'
+                    : 'Delivery DDL'
+                  : workCategory === 'VERTICAL_PROJECT'
+                    ? isZh
+                      ? '结题 / 节点截止日'
+                      : 'Grant DDL'
+                    : isZh
+                      ? '投稿截稿日'
+                      : 'Deadline'}
               </label>
               <input
                 type="date"
@@ -265,7 +416,21 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                {isZh ? '可见范围' : 'Visibility'}
+              </label>
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as VisibilityLevel)}
+                className={inputClass}
+              >
+                <option value="PUBLIC">{isZh ? '🌐 公开（组内可见）' : 'Public'}</option>
+                <option value="TEAM_ONLY">{isZh ? '👥 仅项目成员' : 'Team Only'}</option>
+                <option value="PI_ONLY">{isZh ? '🔒 隐私（仅自己与导师）' : 'Private (Self & PI)'}</option>
+              </select>
+            </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 {isZh ? '第一作者 / 主责人' : 'Lead Author'}
@@ -491,6 +656,8 @@ export const ArchitectureCloudView: React.FC = () => {
     setViewMode,
     updateProject,
     searchQuery,
+    workCategoryFilter,
+    setWorkCategoryFilter,
   } = useLabFlow();
 
   const isZh = language === 'zh';
@@ -500,9 +667,17 @@ export const ArchitectureCloudView: React.FC = () => {
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
   const [treeOrientation, setTreeOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
 
+  const filteredProjects = useMemo(
+    () =>
+      workCategoryFilter === 'ALL'
+        ? projects
+        : projects.filter((p) => resolveProjectWorkCategory(p) === workCategoryFilter),
+    [projects, workCategoryFilter]
+  );
+
   const categorySummaries = useMemo(
-    () => aggregateProjectsByCategory(projects, tasks, members, language),
-    [projects, tasks, members, language]
+    () => aggregateProjectsByCategory(filteredProjects, tasks, members, language),
+    [filteredProjects, tasks, members, language]
   );
 
   const existingCategories = useMemo(
@@ -651,6 +826,56 @@ export const ArchitectureCloudView: React.FC = () => {
         </div>
       </div>
 
+      {/* Three-Category Project Grouping Strip (论文 / 纵向科研项目 / 横向企业项目) */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {WORK_CATEGORIES.map((cat) => {
+          const meta = WORK_CATEGORY_META[cat];
+          const bucketProjects = projects.filter((p) => resolveProjectWorkCategory(p) === cat);
+          const isSelected = workCategoryFilter === cat;
+          return (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setWorkCategoryFilter(isSelected ? 'ALL' : cat)}
+              className={`rounded-2xl border p-4 text-left transition-all ${
+                isSelected
+                  ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/35 ring-1 ring-indigo-500/40'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-lg border ${meta.badgeClass}`}
+                >
+                  {isZh ? meta.labelZh : meta.labelEn}
+                </span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  {bucketProjects.length} {isZh ? '项' : 'items'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 line-clamp-1">
+                {isZh ? meta.descZh : meta.descEn}
+              </p>
+              {bucketProjects.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1">
+                  {bucketProjects.slice(0, 3).map((bp) => (
+                    <span
+                      key={bp.id}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 truncate max-w-[140px]"
+                    >
+                      {bp.tag}
+                    </span>
+                  ))}
+                  {bucketProjects.length > 3 && (
+                    <span className="text-[10px] text-slate-400">+{bucketProjects.length - 3}</span>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </section>
+
       {/* Section 1: Project Category Summary Cards */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
@@ -755,6 +980,13 @@ export const ArchitectureCloudView: React.FC = () => {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={`text-[10px] font-semibold px-1.5 py-0.2 rounded border ${
+                                    WORK_CATEGORY_META[resolveProjectWorkCategory(proj)].badgeClass
+                                  }`}
+                                >
+                                  {getWorkCategoryLabel(resolveProjectWorkCategory(proj), language, true)}
+                                </span>
                                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
                                   {proj.tag}
                                 </span>
@@ -766,12 +998,18 @@ export const ArchitectureCloudView: React.FC = () => {
                                   </span>
                                 )}
                                 <span className="text-[10px] text-slate-400">
+                                  {proj.partnerOrg ? `${proj.partnerOrg} · ` : ''}
                                   {proj.targetVenue}
                                 </span>
                               </div>
                               <div className="font-semibold text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">
                                 {proj.title}
                               </div>
+                              {proj.milestoneNode && (
+                                <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 truncate">
+                                  🎯 {proj.milestoneNode}
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-1 shrink-0">

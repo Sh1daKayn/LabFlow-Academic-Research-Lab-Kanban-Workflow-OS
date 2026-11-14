@@ -16,21 +16,29 @@ import {
   ChecklistAcceptanceTemplate,
   ChecklistItem,
   ChecklistTemplateEntry,
+  DirectRequest,
+  DirectRequestKind,
+  DirectRequestStatus,
   LabMember,
   LabResource,
   LabWorkspaceData,
   Language,
+  Priority,
   ProjectItem,
+  RequestVisibility,
   ReverseDDLForm,
   StageConfig,
   StorageMode,
   TaskItem,
   VenuePreset,
+  ViewMode,
   VisibilityLevel,
   WeeklyTodoAcceptanceStatus,
   WeeklyTodoItem,
+  WorkCategory,
 } from '@/types';
 import {
+  createInitialDirectRequests,
   createInitialWeeklyTodos,
   DEFAULT_STAGES,
   DEFAULT_VENUES,
@@ -44,9 +52,13 @@ import { zh } from '@/locales/zh';
 import { triggerConfetti } from '@/utils/confetti';
 import { ParsedAIData } from '@/utils/aiDocumentParser';
 import { generateInitialsAvatar } from '@/utils/avatar';
+import { canViewDirectRequest, sanitizeDirectRequests } from '@/utils/directRequests';
+import { hashMemberPin, hasMemberPin, verifyMemberPin } from '@/utils/pin';
+import { resolveMemberDefaultView, sanitizePreferredViews } from '@/utils/viewPreferences';
 import {
   applyTodoToggleToTasks,
   canAcceptWeeklyTodo,
+  canAssignWeeklyTodos,
   getWeekKey,
   sanitizeWeeklyTodos,
   syncTaskChecklistChangesToTodos,
@@ -111,6 +123,18 @@ interface LabDataContextType {
   members: LabMember[];
   currentUserId: string;
   setCurrentUserId: (id: string) => void;
+  isHydrated: boolean;
+  isAuthenticatedSession: boolean;
+  loginAsMember: (
+    memberId: string,
+    pin: string,
+    newPinIfUnset?: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  logoutMember: () => void;
+  preferredViews: ViewMode[];
+  defaultView: ViewMode;
+  updateMyViewPreferences: (views: ViewMode[], defaultView: ViewMode) => void;
+  updateMyPin: (currentPin: string, nextPin: string) => { ok: boolean; error?: string };
   addMember: (member: LabMember) => void;
   updateMember: (id: string, updates: Partial<LabMember>) => void;
   deleteMember: (id: string) => void;
@@ -121,18 +145,48 @@ interface LabDataContextType {
   projects: ProjectItem[];
   resources: LabResource[];
   weeklyTodos: WeeklyTodoItem[];
+  directRequests: DirectRequest[];
+  pendingRequestsForMeCount: number;
   allowPeerAcceptance: boolean;
   checklistTemplates: ChecklistAcceptanceTemplate[];
   addProject: (project: Omit<ProjectItem, 'id'> & { id?: string }) => ProjectItem;
   updateProject: (projectId: string, updates: Partial<ProjectItem>) => void;
   deleteProject: (projectId: string) => void;
 
+  // 1-on-1 Direct Requests & Communication
+  sendDirectRequest: (input: {
+    kind: DirectRequestKind;
+    title: string;
+    content: string;
+    recipientId: string;
+    visibility: RequestVisibility;
+    workCategory?: WorkCategory;
+    projectId?: string;
+    taskId?: string;
+    dueDate?: string;
+  }) => DirectRequest | null;
+  replyDirectRequest: (requestId: string, content: string) => void;
+  updateDirectRequestStatus: (requestId: string, status: DirectRequestStatus) => void;
+  updateDirectRequestVisibility: (requestId: string, visibility: RequestVisibility) => void;
+  deleteDirectRequest: (requestId: string) => void;
+
   // Weekly To-Do & Acceptance Actions
+  canAssignWeeklyTodo: boolean;
   addWeeklyTodo: (
     todo: Omit<WeeklyTodoItem, 'id' | 'createdAt' | 'updatedAt' | 'acceptanceStatus'> & {
       acceptanceStatus?: WeeklyTodoAcceptanceStatus;
     }
   ) => WeeklyTodoItem | null;
+  assignWeeklyTodos: (params: {
+    memberIds: string[];
+    weekKey: string;
+    title: string;
+    priority?: Priority;
+    projectId?: string;
+    taskId?: string;
+    checklistItemId?: string;
+    acceptanceCriteria?: string;
+  }) => number;
   updateWeeklyTodo: (todoId: string, updates: Partial<WeeklyTodoItem>) => void;
   deleteWeeklyTodo: (todoId: string) => void;
   acceptWeeklyTodo: (
@@ -168,7 +222,8 @@ interface LabDataContextType {
   }) => ChecklistItem[] | null;
   injectTemplateToWeeklyTodos: (params: {
     templateId: string;
-    memberId: string;
+    memberId?: string;
+    memberIds?: string[];
     weekKey: string;
     projectId?: string;
     taskId?: string;
@@ -185,7 +240,11 @@ interface LabDataContextType {
     destinationIndex: number,
     visibleStageTaskIds?: string[]
   ) => void;
-  reportBlocker: (taskId: string, blocker: BlockerInfo) => void;
+  reportBlocker: (
+    taskId: string,
+    blocker: BlockerInfo,
+    requestVisibility?: RequestVisibility
+  ) => void;
   resolveBlocker: (taskId: string) => void;
   addTask: (task: Omit<TaskItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
@@ -224,6 +283,9 @@ interface LabDataContextType {
     nameEn: string;
     role: LabMember['role'];
     email: string;
+    pin?: string;
+    preferredViews?: ViewMode[];
+    defaultView?: ViewMode;
     accessRole?: AccessRole;
   }) => LabMember;
 }
@@ -242,6 +304,7 @@ const CACHE_KEYS = {
   VENUES: 'labflow_venues_v3',
   RESOURCES: 'labflow_resources_v3',
   WEEKLY_TODOS: 'labflow_weekly_todos_v3',
+  DIRECT_REQUESTS: 'labflow_direct_requests_v3',
   ALLOW_PEER_ACCEPTANCE: 'labflow_peer_acceptance_v3',
   CHECKLIST_TEMPLATES: 'labflow_checklist_templates_v3',
   PENDING_OFFLINE_SYNC: 'labflow_pending_offline_sync_v3',
@@ -258,6 +321,7 @@ function serializeWorkspace(workspace: LabWorkspaceData): string {
     venues: workspace.venues,
     resources: workspace.resources,
     weeklyTodos: workspace.weeklyTodos || [],
+    directRequests: sanitizeDirectRequests(workspace.directRequests),
     allowPeerAcceptance: Boolean(workspace.allowPeerAcceptance),
     checklistTemplates: sanitizeChecklistTemplates(workspace.checklistTemplates),
   });
@@ -272,6 +336,9 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setSelectedStageFilter,
     setSelectedProjectFilter,
     setViewMode,
+    workspaceScope,
+    setWorkspaceScope,
+    setWorkCategoryFilter,
     selectedTask,
     setSelectedTask,
     setIsPasswordModalOpen,
@@ -283,10 +350,14 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
   const [members, setMembers] = useState<LabMember[]>(LAB_MEMBERS);
   const [venues, setVenues] = useState<VenuePreset[]>(DEFAULT_VENUES);
-  const [currentUserId, setCurrentUserId] = useState<string>('member-student1');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [isAuthenticatedSession, setIsAuthenticatedSession] = useState<boolean>(false);
   const [resources, setResources] = useState<LabResource[]>(INITIAL_RESOURCES);
   const [weeklyTodos, setWeeklyTodos] = useState<WeeklyTodoItem[]>(() =>
     createInitialWeeklyTodos()
+  );
+  const [directRequests, setDirectRequests] = useState<DirectRequest[]>(() =>
+    createInitialDirectRequests()
   );
   const [allowPeerAcceptance, setAllowPeerAcceptance] = useState<boolean>(false);
   const [checklistTemplates, setChecklistTemplates] = useState<ChecklistAcceptanceTemplate[]>(() =>
@@ -320,6 +391,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     venues: DEFAULT_VENUES,
     resources: INITIAL_RESOURCES,
     weeklyTodos: [],
+    directRequests: [],
     allowPeerAcceptance: false,
     checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
   });
@@ -332,6 +404,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     venues,
     resources,
     weeklyTodos,
+    directRequests,
     allowPeerAcceptance,
     checklistTemplates,
   };
@@ -347,6 +420,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setVenues(snapshot.venues);
     setResources(snapshot.resources);
     setWeeklyTodos(sanitizeWeeklyTodos(snapshot.weeklyTodos));
+    setDirectRequests(sanitizeDirectRequests(snapshot.directRequests));
     setAllowPeerAcceptance(Boolean(snapshot.allowPeerAcceptance));
     setChecklistTemplates(sanitizeChecklistTemplates(snapshot.checklistTemplates));
   }, []);
@@ -375,6 +449,8 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     const hydrate = async () => {
       let hasCachedWorkspace = false;
       let hasPendingOfflineSync = false;
+      let savedUserId: string | null = null;
+      let offlineMembers: LabMember[] = LAB_MEMBERS;
 
       try {
         // Purge legacy plain-text credential keys from browser storage
@@ -382,9 +458,9 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         sessionStorage.removeItem(CACHE_KEYS.LEGACY_ADMIN_UNLOCKED);
 
         const savedLang = localStorage.getItem(CACHE_KEYS.LANG) as Language | null;
-        const savedUser = localStorage.getItem(CACHE_KEYS.CURRENT_USER);
+        savedUserId = localStorage.getItem(CACHE_KEYS.CURRENT_USER);
         if (savedLang === 'zh' || savedLang === 'en') setLanguage(savedLang);
-        if (savedUser) setCurrentUserId(savedUser);
+        if (savedUserId) setCurrentUserId(savedUserId);
         hasPendingOfflineSync = localStorage.getItem(CACHE_KEYS.PENDING_OFFLINE_SYNC) === '1';
 
         // Apply cached offline copy initially before server response arrives
@@ -395,16 +471,21 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         const cachedVenues = localStorage.getItem(CACHE_KEYS.VENUES);
         const cachedResources = localStorage.getItem(CACHE_KEYS.RESOURCES);
         const cachedTodos = localStorage.getItem(CACHE_KEYS.WEEKLY_TODOS);
+        const cachedRequests = localStorage.getItem(CACHE_KEYS.DIRECT_REQUESTS);
         const cachedPeerAcc = localStorage.getItem(CACHE_KEYS.ALLOW_PEER_ACCEPTANCE);
         const cachedTemplates = localStorage.getItem(CACHE_KEYS.CHECKLIST_TEMPLATES);
 
         if (cachedStages) setStages(JSON.parse(cachedStages));
         if (cachedTasks) setTasks(JSON.parse(cachedTasks));
         if (cachedProjects) setProjects(JSON.parse(cachedProjects));
-        if (cachedMembers) setMembers(JSON.parse(cachedMembers));
+        if (cachedMembers) {
+          offlineMembers = JSON.parse(cachedMembers);
+          setMembers(offlineMembers);
+        }
         if (cachedVenues) setVenues(JSON.parse(cachedVenues));
         if (cachedResources) setResources(JSON.parse(cachedResources));
         if (cachedTodos) setWeeklyTodos(sanitizeWeeklyTodos(JSON.parse(cachedTodos)));
+        if (cachedRequests) setDirectRequests(sanitizeDirectRequests(JSON.parse(cachedRequests)));
         if (cachedPeerAcc !== null) setAllowPeerAcceptance(cachedPeerAcc === 'true');
         if (cachedTemplates !== null) {
           setChecklistTemplates(sanitizeChecklistTemplates(JSON.parse(cachedTemplates)));
@@ -449,10 +530,18 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           hasPendingOfflineSync && hasCachedWorkspace
             ? latestWorkspaceRef.current.members
             : payload.data.members;
-        setCurrentUserId((prevId) => {
-          const valid = memberSource.some((m) => m.id === prevId);
-          return valid ? prevId : memberSource[0]?.id || 'member-student1';
-        });
+        const matched = savedUserId
+          ? memberSource.find((m) => m.id === savedUserId)
+          : undefined;
+        if (matched) {
+          setCurrentUserId(matched.id);
+          setIsAuthenticatedSession(true);
+          setWorkspaceScope('MINE');
+          setViewMode(resolveMemberDefaultView(matched));
+        } else {
+          setCurrentUserId('');
+          setIsAuthenticatedSession(false);
+        }
       } catch (e) {
         console.warn('Server workspace unavailable, running offline cache:', e);
         if (!cancelled) {
@@ -460,6 +549,18 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           setLastSyncError(
             formatSyncError(undefined, e instanceof Error ? e.message : 'unavailable')
           );
+          const matchedOffline = savedUserId
+            ? offlineMembers.find((m) => m.id === savedUserId)
+            : undefined;
+          if (matchedOffline) {
+            setCurrentUserId(matchedOffline.id);
+            setIsAuthenticatedSession(true);
+            setWorkspaceScope('MINE');
+            setViewMode(resolveMemberDefaultView(matchedOffline));
+          } else {
+            setCurrentUserId('');
+            setIsAuthenticatedSession(false);
+          }
         }
       } finally {
         if (!cancelled) setIsHydrated(true);
@@ -470,16 +571,20 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return () => {
       cancelled = true;
     };
-  }, [applyServerSnapshot, formatSyncError]);
+  }, [applyServerSnapshot, formatSyncError, setViewMode, setWorkspaceScope]);
 
-  // Persist language and active member selection locally
+  // Persist language and active authenticated member selection locally
   useEffect(() => {
     if (!isHydrated) return;
     try {
       localStorage.setItem(CACHE_KEYS.LANG, language);
-      localStorage.setItem(CACHE_KEYS.CURRENT_USER, currentUserId);
+      if (isAuthenticatedSession && currentUserId) {
+        localStorage.setItem(CACHE_KEYS.CURRENT_USER, currentUserId);
+      } else {
+        localStorage.removeItem(CACHE_KEYS.CURRENT_USER);
+      }
     } catch {}
-  }, [language, currentUserId, isHydrated]);
+  }, [language, currentUserId, isAuthenticatedSession, isHydrated]);
 
   const flushWorkspaceToServer = useCallback(
     async (options?: { manual?: boolean }): Promise<boolean> => {
@@ -635,6 +740,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       venues,
       resources,
       weeklyTodos,
+      directRequests,
       allowPeerAcceptance,
       checklistTemplates,
     };
@@ -647,6 +753,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       localStorage.setItem(CACHE_KEYS.VENUES, JSON.stringify(venues));
       localStorage.setItem(CACHE_KEYS.RESOURCES, JSON.stringify(resources));
       localStorage.setItem(CACHE_KEYS.WEEKLY_TODOS, JSON.stringify(weeklyTodos));
+      localStorage.setItem(CACHE_KEYS.DIRECT_REQUESTS, JSON.stringify(directRequests));
       localStorage.setItem(CACHE_KEYS.ALLOW_PEER_ACCEPTANCE, allowPeerAcceptance ? 'true' : 'false');
       localStorage.setItem(CACHE_KEYS.CHECKLIST_TEMPLATES, JSON.stringify(checklistTemplates));
     } catch {}
@@ -681,6 +788,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     venues,
     resources,
     weeklyTodos,
+    directRequests,
     allowPeerAcceptance,
     checklistTemplates,
     isHydrated,
@@ -798,17 +906,54 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const effectiveIsAdmin = currentAccessRole === 'ADMIN_PI' && isAdminUnlocked;
   const isSysAdmin = currentAccessRole === 'SYS_ADMIN';
 
+  const preferredViews = useMemo(
+    () => sanitizePreferredViews(currentMember?.preferredViews),
+    [currentMember]
+  );
+  const defaultView = useMemo(
+    () => resolveMemberDefaultView(currentMember),
+    [currentMember]
+  );
+
   const visibleTasks = useMemo(() => {
-    return tasks.filter((task) =>
-      canViewTask(task, currentUserId, currentAccessRole, effectiveIsAdmin, projects)
-    );
-  }, [tasks, projects, currentAccessRole, currentUserId, effectiveIsAdmin]);
+    return tasks.filter((task) => {
+      if (!canViewTask(task, currentUserId, currentAccessRole, effectiveIsAdmin, projects)) {
+        return false;
+      }
+      if (workspaceScope === 'MINE') {
+        return task.leadAuthor?.id === currentUserId;
+      }
+      return true;
+    });
+  }, [tasks, projects, currentAccessRole, currentUserId, effectiveIsAdmin, workspaceScope]);
 
   const visibleProjects = useMemo(() => {
-    return projects.filter((proj) =>
-      canViewProject(proj, currentUserId, currentAccessRole, effectiveIsAdmin)
+    return projects.filter((proj) => {
+      if (!canViewProject(proj, currentUserId, currentAccessRole, effectiveIsAdmin)) {
+        return false;
+      }
+      if (workspaceScope === 'MINE') {
+        return (
+          proj.leadAuthorId === currentUserId ||
+          (Array.isArray(proj.memberIds) && proj.memberIds.includes(currentUserId))
+        );
+      }
+      return true;
+    });
+  }, [projects, currentAccessRole, currentUserId, effectiveIsAdmin, workspaceScope]);
+
+  const visibleDirectRequests = useMemo(() => {
+    return directRequests.filter((req) =>
+      canViewDirectRequest(req, currentUserId, workspaceScope)
     );
-  }, [projects, currentAccessRole, currentUserId, effectiveIsAdmin]);
+  }, [directRequests, currentUserId, workspaceScope]);
+
+  const pendingRequestsForMeCount = useMemo(() => {
+    if (!currentUserId) return 0;
+    return directRequests.filter(
+      (req) => req.recipientId === currentUserId && req.status !== 'RESOLVED'
+    ).length;
+  }, [directRequests, currentUserId]);
 
   // Admin Session Actions (Server-Side Auth)
   const unlockAdmin = async (password: string): Promise<boolean> => {
@@ -948,12 +1093,22 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     nameEn: string;
     role: LabMember['role'];
     email: string;
+    pin?: string;
+    preferredViews?: ViewMode[];
+    defaultView?: ViewMode;
     accessRole?: AccessRole;
   }): LabMember => {
     const id = `member-${Date.now()}`;
     const defaultAccess: AccessRole =
       data.accessRole || (data.role === 'VISITING_SCHOLAR' ? 'AUDITOR_GUEST' : 'STUDENT_RA');
     const displayName = data.nameZh || data.nameEn;
+    const cleanViews = sanitizePreferredViews(data.preferredViews);
+    const resolvedDefaultView =
+      data.defaultView && cleanViews.includes(data.defaultView)
+        ? data.defaultView
+        : cleanViews[0] || 'kanban';
+    const hashedPin = data.pin && data.pin.trim() ? hashMemberPin(data.pin) : undefined;
+
     const newMember: LabMember = {
       id,
       nameZh: data.nameZh,
@@ -965,11 +1120,137 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       titleEn: data.role === 'RA' ? 'Research Assistant' : 'PhD Researcher',
       avatar: generateInitialsAvatar(displayName, id),
       email: data.email || `${id}@labflow.edu`,
+      pin: hashedPin,
+      preferredViews: cleanViews,
+      defaultView: resolvedDefaultView,
     };
     setMembers((prev) => [...prev, newMember]);
     setCurrentUserId(id);
+    setIsAuthenticatedSession(true);
+    setWorkspaceScope('MINE');
+    setFilterMemberId('all');
+    setViewMode(resolvedDefaultView);
     addToast(t.welcomeMember, `${newMember.nameZh || newMember.nameEn}`, 'success');
     return newMember;
+  };
+
+  const loginAsMember = async (
+    memberId: string,
+    pin: string,
+    newPinIfUnset?: string
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const target = members.find((m) => m.id === memberId);
+    if (!target) {
+      return { ok: false, error: language === 'zh' ? '未找到该成员账号' : 'Member not found' };
+    }
+
+    const targetRole = deriveAccessRole(target);
+    if (targetRole === 'ADMIN_PI') {
+      const unlocked = await unlockAdmin(pin);
+      if (!unlocked) {
+        return {
+          ok: false,
+          error: language === 'zh' ? '导师密码错误，登录失败' : 'Incorrect PI password',
+        };
+      }
+      setCurrentUserId(target.id);
+      setIsAuthenticatedSession(true);
+      setWorkspaceScope('MINE');
+      setFilterMemberId('all');
+      setViewMode(resolveMemberDefaultView(target));
+      return { ok: true };
+    }
+
+    if (hasMemberPin(target)) {
+      if (!verifyMemberPin(pin, target.pin)) {
+        return {
+          ok: false,
+          error: language === 'zh' ? '个人密码 / PIN 错误' : 'Incorrect personal PIN',
+        };
+      }
+    } else {
+      const setupPin = (newPinIfUnset || pin).trim();
+      if (setupPin.length < 4) {
+        return {
+          ok: false,
+          error:
+            language === 'zh'
+              ? '该账号首次认领需设置至少 4 位个人密码 / PIN'
+              : 'Please set at least a 4-character personal PIN for first-time sign-in',
+        };
+      }
+      const hashed = hashMemberPin(setupPin);
+      setMembers((prev) => prev.map((m) => (m.id === target.id ? { ...m, pin: hashed } : m)));
+    }
+
+    setCurrentUserId(target.id);
+    setIsAuthenticatedSession(true);
+    setWorkspaceScope('MINE');
+    setFilterMemberId('all');
+    setViewMode(resolveMemberDefaultView(target));
+    addToast(
+      language === 'zh' ? '已进入个人工作台' : 'Signed In',
+      language === 'zh' ? target.nameZh : target.nameEn,
+      'success'
+    );
+    return { ok: true };
+  };
+
+  const logoutMember = () => {
+    if (isAdminUnlocked) {
+      void lockAdmin();
+    }
+    try {
+      localStorage.removeItem(CACHE_KEYS.CURRENT_USER);
+    } catch {}
+    setIsAuthenticatedSession(false);
+    setCurrentUserId('');
+    setWorkspaceScope('MINE');
+    setWorkCategoryFilter('ALL');
+    setFilterMemberId('all');
+    setSelectedTask(null);
+  };
+
+  const updateMyViewPreferences = (views: ViewMode[], nextDefaultView: ViewMode) => {
+    const cleanViews = sanitizePreferredViews(views);
+    const cleanDefault = cleanViews.includes(nextDefaultView) ? nextDefaultView : cleanViews[0];
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === currentUserId
+          ? { ...m, preferredViews: cleanViews, defaultView: cleanDefault }
+          : m
+      )
+    );
+    if (!cleanViews.includes(cleanDefault)) {
+      setViewMode('kanban');
+    }
+    addToast(
+      language === 'zh' ? '个人初始视图设置已保存' : 'View preferences saved',
+      '',
+      'success'
+    );
+  };
+
+  const updateMyPin = (currentPin: string, nextPin: string): { ok: boolean; error?: string } => {
+    const cleanNext = nextPin.trim();
+    if (cleanNext.length < 4) {
+      return {
+        ok: false,
+        error: language === 'zh' ? '新密码 / PIN 至少需要 4 位' : 'PIN must be at least 4 characters',
+      };
+    }
+    if (hasMemberPin(currentMember) && !verifyMemberPin(currentPin, currentMember.pin)) {
+      return {
+        ok: false,
+        error: language === 'zh' ? '当前密码 / PIN 不正确' : 'Current PIN does not match',
+      };
+    }
+    const hashed = hashMemberPin(cleanNext);
+    setMembers((prev) =>
+      prev.map((m) => (m.id === currentUserId ? { ...m, pin: hashed } : m))
+    );
+    addToast(language === 'zh' ? '个人密码 / PIN 已更新' : 'Personal PIN updated', '', 'success');
+    return { ok: true };
   };
 
   // Member Management
@@ -1164,13 +1445,26 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     ]
   );
 
+  const canAssignWeeklyTodo = canAssignWeeklyTodos(currentAccessRole, isAdminUnlocked);
+
   const addWeeklyTodo = (
     todoData: Omit<WeeklyTodoItem, 'id' | 'createdAt' | 'updatedAt' | 'acceptanceStatus'> & {
       acceptanceStatus?: WeeklyTodoAcceptanceStatus;
     }
   ): WeeklyTodoItem | null => {
-    if (currentAccessRole === 'AUDITOR_GUEST' && !effectiveIsAdmin && !allowPeerAcceptance) {
+    if (currentAccessRole === 'AUDITOR_GUEST' && !effectiveIsAdmin) {
       addToast(t.readOnlyNotice, '', 'warning');
+      return null;
+    }
+    const isCrossMember = todoData.memberId !== currentUserId;
+    if (isCrossMember && !canAssignWeeklyTodo) {
+      addToast(
+        language === 'zh'
+          ? '仅导师、系统管理员或项目骨干可给其他成员布置本周任务'
+          : 'Only Advisors, SysAdmins, or Project Leads can assign tasks to other members',
+        '',
+        'warning'
+      );
       return null;
     }
     const now = new Date().toISOString();
@@ -1178,6 +1472,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       ...todoData,
       id: `todo-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       acceptanceStatus: todoData.acceptanceStatus || (todoData.done ? 'SUBMITTED' : 'PENDING'),
+      assignedById: todoData.assignedById ?? (isCrossMember ? currentUserId : undefined),
       createdAt: now,
       updatedAt: now,
     };
@@ -1186,11 +1481,120 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       setTasks((prev) => applyTodoToggleToTasks(prev, newTodo, newTodo.done));
     }
     addToast(
-      language === 'zh' ? '已添加本周待办事项' : 'Weekly To-Do Added',
+      isCrossMember
+        ? language === 'zh'
+          ? '已布置本周任务'
+          : 'Weekly Task Assigned'
+        : language === 'zh'
+        ? '已添加本周待办事项'
+        : 'Weekly To-Do Added',
       newTodo.title.slice(0, 32),
       'success'
     );
     return newTodo;
+  };
+
+  const assignWeeklyTodos = ({
+    memberIds,
+    weekKey,
+    title,
+    priority = 'MEDIUM',
+    projectId,
+    taskId,
+    checklistItemId,
+    acceptanceCriteria,
+  }: {
+    memberIds: string[];
+    weekKey: string;
+    title: string;
+    priority?: Priority;
+    projectId?: string;
+    taskId?: string;
+    checklistItemId?: string;
+    acceptanceCriteria?: string;
+  }): number => {
+    const cleanTitle = title.trim();
+    const uniqueTargets = Array.from(new Set(memberIds.filter(Boolean)));
+    if (!cleanTitle || uniqueTargets.length === 0) return 0;
+
+    if (currentAccessRole === 'AUDITOR_GUEST' && !effectiveIsAdmin) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return 0;
+    }
+
+    const targetsOther = uniqueTargets.some((id) => id !== currentUserId);
+    if (targetsOther && !canAssignWeeklyTodo) {
+      addToast(
+        language === 'zh'
+          ? '仅导师、系统管理员或项目骨干可给其他成员布置本周任务'
+          : 'Only Advisors, SysAdmins, or Project Leads can assign tasks to others',
+        '',
+        'warning'
+      );
+      return 0;
+    }
+
+    const now = new Date().toISOString();
+    const titleKey = cleanTitle.toLowerCase();
+    const createdItems: WeeklyTodoItem[] = [];
+    let skipped = 0;
+
+    uniqueTargets.forEach((memberId, idx) => {
+      const exists = weeklyTodos.some(
+        (w) =>
+          w.memberId === memberId &&
+          w.weekKey === weekKey &&
+          w.title.trim().toLowerCase() === titleKey
+      );
+      if (exists) {
+        skipped += 1;
+        return;
+      }
+
+      createdItems.push({
+        id: `todo-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 5)}`,
+        memberId,
+        weekKey,
+        title: cleanTitle,
+        done: false,
+        priority,
+        projectId: projectId || undefined,
+        taskId: taskId || undefined,
+        checklistItemId: checklistItemId || undefined,
+        acceptanceCriteria: acceptanceCriteria?.trim() || undefined,
+        acceptanceStatus: 'PENDING',
+        assignedById: memberId !== currentUserId ? currentUserId : undefined,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+
+    if (createdItems.length === 0) {
+      addToast(
+        language === 'zh' ? '所选成员本周已有同名待办任务' : 'Selected members already have this task',
+        cleanTitle.slice(0, 32),
+        'info'
+      );
+      return 0;
+    }
+
+    setWeeklyTodos((prev) => [...createdItems, ...prev]);
+    addToast(
+      targetsOther
+        ? language === 'zh'
+          ? `已向 ${createdItems.length} 位成员布置本周任务`
+          : `Assigned weekly task to ${createdItems.length} member(s)`
+        : language === 'zh'
+        ? '已添加本周待办事项'
+        : 'Weekly To-Do Added',
+      skipped > 0
+        ? language === 'zh'
+          ? `${cleanTitle.slice(0, 24)}（跳过重复 ${skipped} 人）`
+          : `${cleanTitle.slice(0, 24)} (${skipped} skipped)`
+        : cleanTitle.slice(0, 32),
+      'success'
+    );
+    return createdItems.length;
   };
 
   const updateWeeklyTodo = (todoId: string, updates: Partial<WeeklyTodoItem>) => {
@@ -1289,6 +1693,21 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     weekKey?: string;
     acceptanceCriteria?: string;
   }) => {
+    if (currentAccessRole === 'AUDITOR_GUEST' && !effectiveIsAdmin) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+    const isCrossMember = memberId !== currentUserId;
+    if (isCrossMember && !canAssignWeeklyTodo) {
+      addToast(
+        language === 'zh'
+          ? '仅导师、系统管理员或项目骨干可向他人布置任务'
+          : 'Only Advisors, SysAdmins, or Project Leads can assign tasks to others',
+        '',
+        'warning'
+      );
+      return;
+    }
     const duplicate = weeklyTodos.find(
       (w) =>
         w.memberId === memberId &&
@@ -1320,6 +1739,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         acceptanceCriteria ||
         (language === 'zh' ? `完成「${task.projectTag}」执行清单核验` : `Verify ${task.projectTag} checklist item`),
       acceptanceStatus: checklistItem.done ? 'SUBMITTED' : 'PENDING',
+      assignedById: isCrossMember ? currentUserId : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -1536,12 +1956,14 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const injectTemplateToWeeklyTodos = ({
     templateId,
     memberId,
+    memberIds,
     weekKey,
     projectId,
     taskId,
   }: {
     templateId: string;
-    memberId: string;
+    memberId?: string;
+    memberIds?: string[];
     weekKey: string;
     projectId?: string;
     taskId?: string;
@@ -1550,20 +1972,44 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       addToast(t.readOnlyNotice, '', 'warning');
       return 0;
     }
+    const targetMembers = Array.from(
+      new Set((memberIds && memberIds.length > 0 ? memberIds : memberId ? [memberId] : []).filter(Boolean))
+    );
+    if (targetMembers.length === 0) return 0;
+
+    if (targetMembers.some((id) => id !== currentUserId) && !canAssignWeeklyTodo) {
+      addToast(
+        language === 'zh'
+          ? '仅导师、系统管理员或项目骨干可给其他成员批量注入任务'
+          : 'Only Advisors, SysAdmins, or Project Leads can inject tasks for other members',
+        '',
+        'warning'
+      );
+      return 0;
+    }
+
     const template = checklistTemplates.find((tpl) => tpl.id === templateId);
     if (!template) return 0;
 
     const linkedTask = taskId ? tasks.find((tk) => tk.id === taskId) : undefined;
-    const { addedTodos, skippedCount } = buildWeeklyTodosFromTemplate({
-      template,
-      memberId,
-      weekKey,
-      projectId: projectId || linkedTask?.projectId,
-      task: linkedTask,
-      existingTodos: weeklyTodos,
+    const allAdded: WeeklyTodoItem[] = [];
+    let totalSkipped = 0;
+
+    targetMembers.forEach((targetMemberId) => {
+      const { addedTodos, skippedCount } = buildWeeklyTodosFromTemplate({
+        template,
+        memberId: targetMemberId,
+        weekKey,
+        projectId: projectId || linkedTask?.projectId,
+        task: linkedTask,
+        assignedById: targetMemberId !== currentUserId ? currentUserId : undefined,
+        existingTodos: [...allAdded, ...weeklyTodos],
+      });
+      allAdded.push(...addedTodos);
+      totalSkipped += skippedCount;
     });
 
-    if (addedTodos.length === 0) {
+    if (allAdded.length === 0) {
       addToast(
         language === 'zh' ? '该周已包含模板全部待办条目' : 'All template items already exist in this week',
         template.name,
@@ -1572,19 +2018,19 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       return 0;
     }
 
-    setWeeklyTodos((prev) => [...addedTodos, ...prev]);
+    setWeeklyTodos((prev) => [...allAdded, ...prev]);
     addToast(
       language === 'zh'
-        ? `已一键生成 ${addedTodos.length} 条本周待办与验收项`
-        : `Generated ${addedTodos.length} Weekly To-Do & Acceptance items`,
-      skippedCount > 0
+        ? `已一键生成 ${allAdded.length} 条本周待办与验收项`
+        : `Generated ${allAdded.length} Weekly To-Do & Acceptance items`,
+      totalSkipped > 0
         ? language === 'zh'
-          ? `${template.name}（跳过重复 ${skippedCount} 条）`
-          : `${template.name} (${skippedCount} duplicates skipped)`
+          ? `${template.name}（跳过重复 ${totalSkipped} 条）`
+          : `${template.name} (${totalSkipped} duplicates skipped)`
         : template.name,
       'success'
     );
-    return addedTodos.length;
+    return allAdded.length;
   };
 
   // Venue Management
@@ -1713,7 +2159,124 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
   };
 
-  const reportBlocker = (taskId: string, blocker: BlockerInfo) => {
+  const sendDirectRequest = (input: {
+    kind: DirectRequestKind;
+    title: string;
+    content: string;
+    recipientId: string;
+    visibility: RequestVisibility;
+    workCategory?: WorkCategory;
+    projectId?: string;
+    taskId?: string;
+    dueDate?: string;
+  }): DirectRequest | null => {
+    const cleanTitle = input.title.trim();
+    const cleanRecipient = input.recipientId.trim();
+    if (!cleanTitle || !cleanRecipient || !currentUserId) return null;
+    if (!members.some((m) => m.id === cleanRecipient)) return null;
+
+    const now = new Date().toISOString();
+    const newReq: DirectRequest = {
+      id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      kind: input.kind,
+      title: cleanTitle,
+      content: input.content.trim(),
+      senderId: currentUserId,
+      recipientId: cleanRecipient,
+      visibility: input.visibility === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE',
+      status: 'OPEN',
+      workCategory: input.workCategory,
+      projectId: input.projectId || undefined,
+      taskId: input.taskId || undefined,
+      dueDate: input.dueDate || undefined,
+      replies: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setDirectRequests((prev) => [newReq, ...prev]);
+    const targetMember = members.find((m) => m.id === cleanRecipient);
+    const recipientName = targetMember
+      ? language === 'zh'
+        ? targetMember.nameZh
+        : targetMember.nameEn
+      : cleanRecipient;
+    addToast(
+      language === 'zh' ? '已发起 1对1 申请/交流' : '1-on-1 Request Sent',
+      `${recipientName} · ${
+        newReq.visibility === 'PRIVATE'
+          ? language === 'zh'
+            ? '隐私'
+            : 'Private'
+          : language === 'zh'
+          ? '公开'
+          : 'Public'
+      }`,
+      'success'
+    );
+    return newReq;
+  };
+
+  const replyDirectRequest = (requestId: string, content: string) => {
+    const clean = content.trim();
+    if (!clean || !currentUserId) return;
+    const now = new Date().toISOString();
+    setDirectRequests((prev) =>
+      prev.map((req) => {
+        if (req.id !== requestId) return req;
+        return {
+          ...req,
+          status: req.status === 'RESOLVED' ? 'RESOLVED' : 'REPLIED',
+          replies: [
+            ...req.replies,
+            {
+              id: `rep-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+              authorId: currentUserId,
+              content: clean,
+              createdAt: now,
+            },
+          ],
+          updatedAt: now,
+        };
+      })
+    );
+  };
+
+  const updateDirectRequestStatus = (requestId: string, status: DirectRequestStatus) => {
+    const now = new Date().toISOString();
+    setDirectRequests((prev) =>
+      prev.map((req) => (req.id === requestId ? { ...req, status, updatedAt: now } : req))
+    );
+  };
+
+  const updateDirectRequestVisibility = (requestId: string, visibility: RequestVisibility) => {
+    const target = directRequests.find((r) => r.id === requestId);
+    if (!target) return;
+    if (target.senderId !== currentUserId && !effectiveIsAdmin) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+    const now = new Date().toISOString();
+    setDirectRequests((prev) =>
+      prev.map((req) => (req.id === requestId ? { ...req, visibility, updatedAt: now } : req))
+    );
+  };
+
+  const deleteDirectRequest = (requestId: string) => {
+    const target = directRequests.find((r) => r.id === requestId);
+    if (!target) return;
+    if (target.senderId !== currentUserId && !effectiveIsAdmin) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+    setDirectRequests((prev) => prev.filter((r) => r.id !== requestId));
+  };
+
+  const reportBlocker = (
+    taskId: string,
+    blocker: BlockerInfo,
+    requestVisibility: RequestVisibility = 'PRIVATE'
+  ) => {
     const target = tasks.find((item) => item.id === taskId);
     if (target && !canEditTask(target)) {
       addToast(t.readOnlyNotice, '', 'warning');
@@ -1732,9 +2295,32 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           : item
       )
     );
+
+    if (blocker.escalatedToId && members.some((m) => m.id === blocker.escalatedToId)) {
+      const now = new Date().toISOString();
+      const linkedReq: DirectRequest = {
+        id: `req-blk-${Date.now()}`,
+        kind: 'BLOCKER_HELP',
+        title: target ? `[卡点求助] ${target.title}` : blocker.details.slice(0, 48),
+        content: `${blocker.details}\n${blocker.tried ? `\n已尝试：${blocker.tried}` : ''}`.trim(),
+        senderId: currentUserId || target?.leadAuthor?.id || members[0]?.id || '',
+        recipientId: blocker.escalatedToId,
+        visibility: requestVisibility,
+        status: 'OPEN',
+        workCategory: target?.workCategory,
+        projectId: target?.projectId,
+        taskId: target?.id,
+        dueDate: target?.deadline,
+        replies: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+      setDirectRequests((prev) => [linkedReq, ...prev]);
+    }
+
     addToast(
-      language === 'zh' ? '🚨 技术卡点已标记' : '🚨 Blocker Logged & Escalated',
-      `${blocker.escalatedTo} (${blocker.category})`,
+      language === 'zh' ? '已发送 1对1 卡点求助' : '1-on-1 Blocker Request Sent',
+      `${blocker.escalatedTo}`,
       'warning'
     );
   };
@@ -1993,6 +2579,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       venues,
       resources,
       weeklyTodos,
+      directRequests,
       allowPeerAcceptance,
       checklistTemplates,
     };
@@ -2019,6 +2606,9 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       if (data.resources) setResources(data.resources);
       if (Array.isArray(data.weeklyTodos)) {
         setWeeklyTodos(sanitizeWeeklyTodos(data.weeklyTodos));
+      }
+      if (Array.isArray(data.directRequests)) {
+        setDirectRequests(sanitizeDirectRequests(data.directRequests));
       }
       if (typeof data.allowPeerAcceptance === 'boolean') {
         setAllowPeerAcceptance(data.allowPeerAcceptance);
@@ -2055,9 +2645,11 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       setMembers(LAB_MEMBERS);
       setVenues(DEFAULT_VENUES);
       setWeeklyTodos(createInitialWeeklyTodos());
+      setDirectRequests(createInitialDirectRequests());
       setAllowPeerAcceptance(false);
       setChecklistTemplates(structuredClone(DEFAULT_CHECKLIST_TEMPLATES));
-      setCurrentUserId('member-student1');
+      setWorkspaceScope('MINE');
+      setWorkCategoryFilter('ALL');
       setFilterOnlyBlockers(false);
       setSearchQuery('');
       setFilterMemberId('all');
@@ -2091,8 +2683,12 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       setProjects([]);
       setResources([]);
       setWeeklyTodos([]);
+      setDirectRequests([]);
       setMembers([initialUser]);
       setCurrentUserId('member-me');
+      setIsAuthenticatedSession(true);
+      setWorkspaceScope('MINE');
+      setWorkCategoryFilter('ALL');
       setFilterOnlyBlockers(false);
       setSearchQuery('');
       setFilterMemberId('all');
@@ -2347,6 +2943,14 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         members,
         currentUserId,
         setCurrentUserId: handleSetCurrentUserId,
+        isHydrated,
+        isAuthenticatedSession,
+        loginAsMember,
+        logoutMember,
+        preferredViews,
+        defaultView,
+        updateMyViewPreferences,
+        updateMyPin,
         addMember,
         updateMember,
         deleteMember,
@@ -2355,12 +2959,21 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         projects: visibleProjects,
         resources,
         weeklyTodos,
+        directRequests: visibleDirectRequests,
+        pendingRequestsForMeCount,
         allowPeerAcceptance,
         checklistTemplates,
         addProject,
         updateProject,
         deleteProject,
+        sendDirectRequest,
+        replyDirectRequest,
+        updateDirectRequestStatus,
+        updateDirectRequestVisibility,
+        deleteDirectRequest,
+        canAssignWeeklyTodo,
         addWeeklyTodo,
+        assignWeeklyTodos,
         updateWeeklyTodo,
         deleteWeeklyTodo,
         acceptWeeklyTodo,

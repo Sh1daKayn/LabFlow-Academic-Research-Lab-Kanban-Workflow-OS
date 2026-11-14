@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { ReverseDDLForm, MilestoneTemplate, AcademicStage, VisibilityLevel } from '@/types';
+import { ReverseDDLForm, MilestoneTemplate, AcademicStage, VisibilityLevel, WorkCategory } from '@/types';
 import { subtractDays, formatDate } from '@/utils/date';
+import { WORK_CATEGORIES, WORK_CATEGORY_META } from '@/utils/workCategory';
 import { Zap, X, Sparkles, Plus, Trash2, ChevronUp } from 'lucide-react';
 
 export const ReverseDDLModal: React.FC = () => {
@@ -22,10 +23,13 @@ export const ReverseDDLModal: React.FC = () => {
   } = useLabFlow();
 
   const [title, setTitle] = useState('');
+  const [workCategory, setWorkCategory] = useState<WorkCategory>('PAPER');
+  const [partnerOrg, setPartnerOrg] = useState('');
+  const [milestoneNode, setMilestoneNode] = useState('');
   const [category, setCategory] = useState('');
   const [targetVenue, setTargetVenue] = useState('NeurIPS 2027');
   const [tag, setTag] = useState("NeurIPS '27");
-  const [visibility, setVisibility] = useState<VisibilityLevel>('PUBLIC');
+  const [visibility, setVisibility] = useState<VisibilityLevel>('PI_ONLY');
 
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 70);
@@ -65,6 +69,9 @@ export const ReverseDDLModal: React.FC = () => {
 
     const form: ReverseDDLForm = {
       title,
+      workCategory,
+      partnerOrg: partnerOrg.trim() || undefined,
+      milestoneNode: milestoneNode.trim() || undefined,
       category: category.trim() || undefined,
       targetVenue,
       deadlineDate,
@@ -169,10 +176,100 @@ export const ReverseDDLModal: React.FC = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Paper Title */}
+          {/* Work Category Switcher */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              {language === 'zh' ? '工作归属类别 *' : 'Work Category *'}
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {WORK_CATEGORIES.map((cat) => {
+                const meta = WORK_CATEGORY_META[cat];
+                const active = workCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setWorkCategory(cat);
+                      if (cat === 'HORIZONTAL_PROJECT') {
+                        setTargetVenue(
+                          language === 'zh' ? '企业交付协议' : 'Enterprise Delivery'
+                        );
+                        setTag(language === 'zh' ? '横向项目' : 'Industry');
+                        if (visibility === 'PUBLIC') setVisibility('TEAM_ONLY');
+                      } else if (cat === 'VERTICAL_PROJECT') {
+                        setTargetVenue(language === 'zh' ? '科研基金考核' : 'Grant Review');
+                        setTag(language === 'zh' ? '纵向项目' : 'Grant');
+                      }
+                    }}
+                    className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${
+                      active
+                        ? 'border-amber-500 bg-amber-500/20 text-amber-200'
+                        : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    {language === 'zh' ? meta.labelZh : meta.labelEn}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {workCategory !== 'PAPER' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  {workCategory === 'HORIZONTAL_PROJECT'
+                    ? language === 'zh'
+                      ? '合作企业 / 甲方'
+                      : 'Enterprise Partner'
+                    : language === 'zh'
+                      ? '立项资助单位'
+                      : 'Funding Agency'}
+                </label>
+                <input
+                  type="text"
+                  value={partnerOrg}
+                  onChange={(e) => setPartnerOrg(e.target.value)}
+                  placeholder={
+                    workCategory === 'HORIZONTAL_PROJECT'
+                      ? language === 'zh'
+                        ? '如：XX 智造有限公司'
+                        : 'Enterprise Co.'
+                      : language === 'zh'
+                        ? '如：国家自然科学基金'
+                        : 'NSFC / MOST'
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  {language === 'zh' ? '节点交付要求' : 'Node Requirement'}
+                </label>
+                <input
+                  type="text"
+                  value={milestoneNode}
+                  onChange={(e) => setMilestoneNode(e.target.value)}
+                  placeholder={
+                    language === 'zh'
+                      ? '如：合同约定 Q3 完成现场联合验收'
+                      : 'Contractual delivery milestone'
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Paper / Project Title */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              {t.paperTitle} *
+              {workCategory === 'PAPER'
+                ? `${t.paperTitle} *`
+                : language === 'zh'
+                  ? '项目课题名称 *'
+                  : 'Project Title *'}
             </label>
             <input
               type="text"

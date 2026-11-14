@@ -2,14 +2,15 @@ import { LocaleTranslations } from './en';
 
 export const zh: LocaleTranslations = {
   brand: 'LabFlow',
-  labTitle: '课题组工作台',
+  labTitle: '科研管理系统',
 
   // View modes
-  kanban: '看板',
-  gantt: '甘特',
-  architecture: '架构与云图',
-  todos: '周待办与验收',
-  meeting: '组会',
+  kanban: '任务看板',
+  gantt: '时间轴',
+  architecture: '项目归类',
+  todos: '本周待办',
+  requests: '申请与交流',
+  meeting: '组会汇报',
   pipelineSettings: '阶段设置',
   membersManager: '成员中心',
 
@@ -45,14 +46,14 @@ export const zh: LocaleTranslations = {
   hoursRemaining: '小时剩余',
 
   // Blocker Modal
-  reportBlocker: '标记学术卡点',
+  reportBlocker: '标记卡点并向单人求助',
   activeBlockerAlert: '当前技术卡点',
   whereStuck: '具体卡在什么技术点？',
   whatTried: '已尝试过的解法与推导',
-  escalateTo: '求助与决断对象',
+  escalateTo: '发送求助给（仅限一人）',
   resolveBlocker: '解除卡点 (恢复推进)',
   updateBlocker: '更新卡点信息',
-  escalateBlockerBtn: '提交并向全组求助',
+  escalateBlockerBtn: '发送 1对1 求助请求',
   blockerCategory: '卡点类别',
 
   // Reverse DDL Modal
@@ -282,4 +283,17 @@ export const zh: LocaleTranslations = {
   addChildNode: '加子节点',
   addSiblingNode: '加同级节点',
   syncNodeToChecklist: '同步进执行清单',
+
+  // Scope, Categories & 1-on-1 Requests
+  scopeMine: '仅看我的',
+  scopePublic: '组内公开',
+  workCategoryLabel: '类别归属',
+  catAll: '全部',
+  catPaper: '论文',
+  catVertical: '纵向科研项目',
+  catHorizontal: '横向企业项目',
+  partnerOrgLabel: '合作单位 / 课题来源',
+  milestoneNodeLabel: '关键时间节点要求',
+  sendRequestBtn: '发起 1对1 申请/交流',
+  customizeViews: '自定义初始视图',
 };

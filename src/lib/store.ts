@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { Prisma } from '@prisma/client';
 import {
+  createInitialDirectRequests,
   createInitialWeeklyTodos,
   DEFAULT_STAGES,
   DEFAULT_VENUES,
@@ -27,6 +28,7 @@ import {
   TaskItem,
   TaskLogicNode,
   VenuePreset,
+  ViewMode,
   VisibilityLevel,
 } from '@/types';
 import {
@@ -39,6 +41,9 @@ import {
 import { getPrismaClient, isPostgresConfigured } from '@/lib/prisma';
 import { generateInitialsAvatar } from '@/utils/avatar';
 import { sanitizeWeeklyTodos } from '@/utils/weeklyTodos';
+import { sanitizeDirectRequests } from '@/utils/directRequests';
+import { normalizeWorkCategory } from '@/utils/workCategory';
+import { isValidViewMode, sanitizePreferredViews } from '@/utils/viewPreferences';
 import {
   DEFAULT_CHECKLIST_TEMPLATES,
   sanitizeChecklistTemplates,
@@ -87,6 +92,7 @@ export function getDefaultWorkspaceData(): LabWorkspaceData {
     venues: DEFAULT_VENUES,
     resources: INITIAL_RESOURCES,
     weeklyTodos: createInitialWeeklyTodos(),
+    directRequests: createInitialDirectRequests(),
     allowPeerAcceptance: false,
     checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
   });
@@ -112,6 +118,7 @@ export function sanitizeWorkspaceData(input: Partial<LabWorkspaceData>): LabWork
     venues: Array.isArray(input.venues) ? input.venues : defaults.venues,
     resources: Array.isArray(input.resources) ? input.resources : [],
     weeklyTodos: sanitizeWeeklyTodos(input.weeklyTodos),
+    directRequests: sanitizeDirectRequests(input.directRequests),
     allowPeerAcceptance: Boolean(input.allowPeerAcceptance),
     checklistTemplates: sanitizeChecklistTemplates(input.checklistTemplates),
   };
@@ -233,6 +240,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         revision,
         allowPeerAcceptance: Boolean(data.allowPeerAcceptance),
         weeklyTodos: (data.weeklyTodos || []) as unknown as Prisma.InputJsonValue,
+        directRequests: sanitizeDirectRequests(
+          data.directRequests
+        ) as unknown as Prisma.InputJsonValue,
         checklistTemplates: sanitizeChecklistTemplates(
           data.checklistTemplates
         ) as unknown as Prisma.InputJsonValue,
@@ -243,6 +253,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         revision,
         allowPeerAcceptance: Boolean(data.allowPeerAcceptance),
         weeklyTodos: (data.weeklyTodos || []) as unknown as Prisma.InputJsonValue,
+        directRequests: sanitizeDirectRequests(
+          data.directRequests
+        ) as unknown as Prisma.InputJsonValue,
         checklistTemplates: sanitizeChecklistTemplates(
           data.checklistTemplates
         ) as unknown as Prisma.InputJsonValue,
@@ -329,6 +342,10 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
               ? m.accessRole
               : 'STUDENT_RA') as AccessRole,
             pin: m.pin || null,
+            preferredViews: m.preferredViews
+              ? (sanitizePreferredViews(m.preferredViews) as unknown as Prisma.InputJsonValue)
+              : Prisma.DbNull,
+            defaultView: m.defaultView && isValidViewMode(m.defaultView) ? m.defaultView : null,
           };
         }),
       });
@@ -352,6 +369,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             id: p.id,
             title: p.title,
             abstract: p.abstract || null,
+            workCategory: normalizeWorkCategory(p.workCategory),
+            partnerOrg: p.partnerOrg || null,
+            milestoneNode: p.milestoneNode || null,
             category: p.category || null,
             categoryColor: p.categoryColor || null,
             memberIds: (p.memberIds || []) as unknown as Prisma.InputJsonValue,
@@ -378,6 +398,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
           id: t.id,
           title: t.title,
           description: t.description || null,
+          workCategory: normalizeWorkCategory(t.workCategory),
+          partnerOrg: t.partnerOrg || null,
+          milestoneNode: t.milestoneNode || null,
           stage: t.stage,
           projectTag: t.projectTag,
           targetVenue: t.targetVenue,
@@ -404,6 +427,10 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
           blockerReason: t.blocker?.details || null,
           blockerTried: t.blocker?.tried || null,
           blockerEscalatedTo: t.blocker?.escalatedTo || null,
+          blockerEscalatedToId:
+            t.blocker?.escalatedToId && validUserIds.has(t.blocker.escalatedToId)
+              ? t.blocker.escalatedToId
+              : null,
           blockedAt: parseDateOrNull(t.blocker?.reportedAt),
           completedAt: parseDateOrNull(t.completedAt),
         })),
@@ -462,6 +489,13 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     avatar: u.avatar || generateInitialsAvatar(u.nameEn || u.name, u.id),
     email: u.email,
     pin: u.pin || undefined,
+    preferredViews: Array.isArray(u.preferredViews)
+      ? sanitizePreferredViews(u.preferredViews)
+      : undefined,
+    defaultView:
+      typeof u.defaultView === 'string' && isValidViewMode(u.defaultView)
+        ? (u.defaultView as ViewMode)
+        : undefined,
   }));
 
   const memberMap = new Map(members.map((m) => [m.id, m]));
@@ -495,6 +529,9 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     id: p.id,
     title: p.title,
     abstract: p.abstract || undefined,
+    workCategory: normalizeWorkCategory(p.workCategory),
+    partnerOrg: p.partnerOrg || undefined,
+    milestoneNode: p.milestoneNode || undefined,
     category: p.category || undefined,
     categoryColor: p.categoryColor || undefined,
     memberIds: Array.isArray(p.memberIds) ? (p.memberIds as string[]) : undefined,
@@ -519,6 +556,9 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     id: t.id,
     title: t.title,
     description: t.description || undefined,
+    workCategory: normalizeWorkCategory(t.workCategory),
+    partnerOrg: t.partnerOrg || undefined,
+    milestoneNode: t.milestoneNode || undefined,
     stage: t.stage,
     projectId: t.projectId || 'proj-general',
     projectTag: t.projectTag,
@@ -544,6 +584,7 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
             details: t.blockerReason || '',
             tried: t.blockerTried || '',
             escalatedTo: t.blockerEscalatedTo || fallbackPi.nameEn,
+            escalatedToId: t.blockerEscalatedToId || undefined,
             reportedAt: (t.blockedAt || t.updatedAt).toISOString(),
           }
         : undefined,
@@ -582,6 +623,7 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
       venues,
       resources,
       weeklyTodos: sanitizeWeeklyTodos(config.weeklyTodos),
+      directRequests: sanitizeDirectRequests(config.directRequests),
       allowPeerAcceptance: Boolean(config.allowPeerAcceptance),
       checklistTemplates: sanitizeChecklistTemplates(config.checklistTemplates),
     },

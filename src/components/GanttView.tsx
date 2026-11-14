@@ -15,6 +15,11 @@ import {
 } from 'lucide-react';
 import { TaskItem, ProjectItem, StageConfig, AcademicStage } from '@/types';
 import { MemberAvatar } from '@/components/MemberAvatar';
+import {
+  WORK_CATEGORIES,
+  WORK_CATEGORY_META,
+  resolveTaskWorkCategory,
+} from '@/utils/workCategory';
 
 export const GanttView: React.FC = () => {
   const {
@@ -30,6 +35,8 @@ export const GanttView: React.FC = () => {
     setSelectedStageFilter,
     selectedProjectFilter,
     setSelectedProjectFilter,
+    workCategoryFilter,
+    setWorkCategoryFilter,
     sortByDDLUrgency,
     updateTaskProgress,
     updateTaskDates,
@@ -40,7 +47,7 @@ export const GanttView: React.FC = () => {
   } = useLabFlow();
 
   const [timeScale, setTimeScale] = useState<'weekly' | 'monthly'>('weekly');
-  const [groupBy, setGroupBy] = useState<'project' | 'stage'>('project');
+  const [groupBy, setGroupBy] = useState<'project' | 'stage' | 'category'>('project');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   // Collapsed state per group: { [groupId]: boolean }
@@ -60,6 +67,10 @@ export const GanttView: React.FC = () => {
         allIds[p.id] = true;
       });
       allIds['other'] = true;
+    } else if (groupBy === 'category') {
+      WORK_CATEGORIES.forEach((cat) => {
+        allIds[cat] = true;
+      });
     } else {
       stages.forEach((s) => {
         allIds[s.id] = true;
@@ -128,6 +139,12 @@ export const GanttView: React.FC = () => {
         if (filterMemberId !== 'all' && task.leadAuthor.id !== filterMemberId) return false;
         if (selectedProjectFilter !== 'all' && task.projectId !== selectedProjectFilter) return false;
         if (selectedStageFilter !== 'all' && task.stage !== selectedStageFilter) return false;
+        if (
+          workCategoryFilter !== 'ALL' &&
+          resolveTaskWorkCategory(task, projects) !== workCategoryFilter
+        ) {
+          return false;
+        }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchTitle = task.title.toLowerCase().includes(q);
@@ -147,10 +164,12 @@ export const GanttView: React.FC = () => {
       });
   }, [
     tasks,
+    projects,
     filterOnlyBlockers,
     filterMemberId,
     selectedProjectFilter,
     selectedStageFilter,
+    workCategoryFilter,
     searchQuery,
     sortByDDLUrgency,
   ]);
@@ -169,6 +188,21 @@ export const GanttView: React.FC = () => {
   }
 
   const groupViewItems = useMemo<GroupViewItem[]>(() => {
+    if (groupBy === 'category') {
+      return WORK_CATEGORIES.map((cat) => {
+        const meta = WORK_CATEGORY_META[cat];
+        const catTasks = filteredTasks.filter(
+          (tItem) => resolveTaskWorkCategory(tItem, projects) === cat
+        );
+        return {
+          id: cat,
+          tag: language === 'zh' ? meta.shortZh : meta.shortEn,
+          title: language === 'zh' ? meta.labelZh : meta.labelEn,
+          subtitle: language === 'zh' ? meta.descZh : meta.descEn,
+          tasks: catTasks,
+        };
+      });
+    }
     if (groupBy === 'stage') {
       // Group by Academic Stage
       const items: GroupViewItem[] = stages.map((s) => {
@@ -347,7 +381,7 @@ export const GanttView: React.FC = () => {
                 : `${startDateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${endDateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
             </span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               {language === 'zh' ? '看板双向实时同步' : 'Kanban 2-Way Synced'}
             </span>
           </div>
@@ -357,7 +391,38 @@ export const GanttView: React.FC = () => {
 
         {/* View Controls: Group By, Filters, and Scale */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Dual Grouping Mode Switcher */}
+          {/* Work Category Filter Pills */}
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setWorkCategoryFilter('ALL')}
+              className={`px-2 py-1 rounded-lg font-medium transition-all ${
+                workCategoryFilter === 'ALL'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {language === 'zh' ? '全部' : 'All'}
+            </button>
+            {WORK_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setWorkCategoryFilter(cat)}
+                className={`px-2 py-1 rounded-lg font-medium transition-all ${
+                  workCategoryFilter === cat
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {language === 'zh'
+                  ? WORK_CATEGORY_META[cat].shortZh
+                  : WORK_CATEGORY_META[cat].shortEn}
+              </button>
+            ))}
+          </div>
+
+          {/* Grouping Mode Switcher */}
           <div className="flex items-center p-0.5 rounded-xl bg-slate-950 border border-slate-800 text-xs shadow-inner">
             <button
               onClick={() => setGroupBy('project')}
@@ -369,7 +434,18 @@ export const GanttView: React.FC = () => {
               title={language === 'zh' ? '按课题项目分组' : 'Group by Project'}
             >
               <FolderKanban className="w-3.5 h-3.5" />
-              <span>{language === 'zh' ? '按项目分组' : 'By Project'}</span>
+              <span>{language === 'zh' ? '按项目' : 'Project'}</span>
+            </button>
+            <button
+              onClick={() => setGroupBy('category')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
+                groupBy === 'category'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title={language === 'zh' ? '按论文/纵向/横向三类分组' : 'Group by 3 Categories'}
+            >
+              <span>{language === 'zh' ? '按三类' : '3 Categories'}</span>
             </button>
             <button
               onClick={() => setGroupBy('stage')}
@@ -381,7 +457,7 @@ export const GanttView: React.FC = () => {
               title={language === 'zh' ? '按学术流转阶段分组' : 'Group by Academic Stage'}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>{language === 'zh' ? '按阶段泳道' : 'By Stage'}</span>
+              <span>{language === 'zh' ? '按阶段' : 'Stage'}</span>
             </button>
           </div>
 

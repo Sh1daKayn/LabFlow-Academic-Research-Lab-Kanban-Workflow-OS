@@ -12,6 +12,7 @@ import {
 import {
   applyTodoToggleToTasks,
   canAcceptWeeklyTodo,
+  canAssignWeeklyTodos,
   extractWorkspaceAcceptanceFlags,
   getWeekKey,
   sanitizeWeeklyTodos,
@@ -211,13 +212,21 @@ describe('Weekly To-Do List, Two-Way Checklist Sync & Peer Acceptance Mode', () 
     expect(revertedTodos[0].acceptanceStatus).toBe('PENDING');
   });
 
-  it('sanitizes weeklyTodos and allowPeerAcceptance flags safely', () => {
+  it('sanitizes weeklyTodos including assignedById and allowPeerAcceptance flags safely', () => {
     const cleaned = sanitizeWeeklyTodos([
-      { id: 'w1', memberId: 'm1', title: 'Draft Intro', done: true },
+      { id: 'w1', memberId: 'm1', title: 'Draft Intro', done: true, assignedById: 'pi-1' },
       { id: '', memberId: 'm1', title: 'Invalid missing id' },
     ]);
     expect(cleaned).toHaveLength(1);
     expect(cleaned[0].acceptanceStatus).toBe('SUBMITTED');
+    expect(cleaned[0].assignedById).toBe('pi-1');
+
+    expect(canAssignWeeklyTodos('ADMIN_PI', false)).toBe(true);
+    expect(canAssignWeeklyTodos('SYS_ADMIN', false)).toBe(true);
+    expect(canAssignWeeklyTodos('PROJECT_LEAD', false)).toBe(true);
+    expect(canAssignWeeklyTodos('STUDENT_RA', false)).toBe(false);
+    expect(canAssignWeeklyTodos('STUDENT_RA', true)).toBe(true);
+    expect(canAssignWeeklyTodos('AUDITOR_GUEST', false)).toBe(false);
 
     const extracted = extractWorkspaceAcceptanceFlags({
       allowPeerAcceptance: true,

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
-import { BlockerCategory, BlockerInfo } from '@/types';
+import { BlockerCategory, BlockerInfo, RequestVisibility } from '@/types';
 import {
   Flame,
   X,
@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   Clock,
   UserCheck,
+  Lock,
+  Globe,
 } from 'lucide-react';
 
 export const BlockerModal: React.FC = () => {
@@ -27,21 +29,34 @@ export const BlockerModal: React.FC = () => {
   const [category, setCategory] = useState<BlockerCategory>('MATH_DERIVATION');
   const [details, setDetails] = useState('');
   const [tried, setTried] = useState('');
-  const [escalatedTo, setEscalatedTo] = useState('Professor 1');
+  const [escalatedToId, setEscalatedToId] = useState('');
+  const [requestVisibility, setRequestVisibility] = useState<RequestVisibility>('PRIVATE');
 
   useEffect(() => {
+    const defaultPI =
+      members.find((m) => m.accessRole === 'ADMIN_PI' || m.role === 'PI') || members[0];
     if (activeBlockerTask?.blocker) {
       setCategory(activeBlockerTask.blocker.category);
       setDetails(activeBlockerTask.blocker.details);
       setTried(activeBlockerTask.blocker.tried);
-      setEscalatedTo(activeBlockerTask.blocker.escalatedTo);
+      const matched =
+        members.find((m) => m.id === activeBlockerTask.blocker?.escalatedToId) ||
+        members.find(
+          (m) =>
+            m.nameZh === activeBlockerTask.blocker?.escalatedTo ||
+            m.nameEn === activeBlockerTask.blocker?.escalatedTo
+        ) ||
+        defaultPI;
+      setEscalatedToId(matched?.id || '');
+      setRequestVisibility('PRIVATE');
     } else {
       setCategory('MATH_DERIVATION');
       setDetails('');
       setTried('');
-      setEscalatedTo(language === 'zh' ? '教授 1' : 'Professor 1');
+      setEscalatedToId(defaultPI?.id || '');
+      setRequestVisibility('PRIVATE');
     }
-  }, [activeBlockerTask, language]);
+  }, [activeBlockerTask, members]);
 
   if (!activeBlockerTask) return null;
 
@@ -51,15 +66,23 @@ export const BlockerModal: React.FC = () => {
     e.preventDefault();
     if (!details.trim()) return;
 
+    const targetMember = members.find((m) => m.id === escalatedToId) || members[0];
+    const resolvedName = targetMember
+      ? language === 'zh'
+        ? targetMember.nameZh
+        : targetMember.nameEn
+      : 'PI';
+
     const blockerInfo: BlockerInfo = {
       category,
       details,
       tried: tried.trim() || (language === 'zh' ? '已完成初步推导与验证，但在特定边界条件下无法闭合。' : 'Initial formulation tested but failed under edge condition.'),
-      escalatedTo,
+      escalatedTo: resolvedName,
+      escalatedToId: targetMember?.id,
       reportedAt: new Date().toISOString(),
     };
 
-    reportBlocker(activeBlockerTask.id, blockerInfo);
+    reportBlocker(activeBlockerTask.id, blockerInfo, requestVisibility);
     setActiveBlockerTask(null);
   };
 
@@ -88,7 +111,7 @@ export const BlockerModal: React.FC = () => {
                 : 'bg-amber-500/15 border-amber-500/40 text-amber-400'
             }`}
           >
-            <Flame className="w-6 h-6 animate-pulse" />
+            <Flame className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -231,22 +254,56 @@ export const BlockerModal: React.FC = () => {
               />
             </div>
 
-            {/* Escalate To */}
-            <div className="space-y-1.5 mb-5">
-              <label className="block text-xs font-medium text-slate-300">
-                {t.escalateTo}
-              </label>
-              <select
-                value={escalatedTo}
-                onChange={(e) => setEscalatedTo(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-rose-500/60"
-              >
-                {members.map((m) => (
-                  <option key={m.id} value={language === 'zh' ? m.nameZh : m.nameEn}>
-                    {language === 'zh' ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
-                  </option>
-                ))}
-              </select>
+            {/* Escalate To (Strictly Single Member) + Request Visibility */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-300">
+                  {t.escalateTo} ({language === 'zh' ? '仅发给 1 位求助人' : '1 person only'})
+                </label>
+                <select
+                  value={escalatedToId}
+                  onChange={(e) => setEscalatedToId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-rose-500/60"
+                >
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {language === 'zh' ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-300">
+                  {language === 'zh' ? '同步生成 1 对 1 求助可见范围' : 'Linked Request Privacy'}
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setRequestVisibility('PRIVATE')}
+                    className={`flex items-center justify-center gap-1 py-2 px-2 rounded-xl border text-[11px] font-medium transition-colors ${
+                      requestVisibility === 'PRIVATE'
+                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-200'
+                        : 'border-slate-800 bg-slate-950 text-slate-400'
+                    }`}
+                  >
+                    <Lock className="w-3 h-3" />
+                    <span>{language === 'zh' ? '隐私 · 仅双方' : 'Private'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRequestVisibility('PUBLIC')}
+                    className={`flex items-center justify-center gap-1 py-2 px-2 rounded-xl border text-[11px] font-medium transition-colors ${
+                      requestVisibility === 'PUBLIC'
+                        ? 'border-cyan-500 bg-cyan-500/20 text-cyan-200'
+                        : 'border-slate-800 bg-slate-950 text-slate-400'
+                    }`}
+                  >
+                    <Globe className="w-3 h-3" />
+                    <span>{language === 'zh' ? '组内公开' : 'Public'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AcademicStage, Priority, VisibilityLevel } from '@/types';
+import { AcademicStage, Priority, VisibilityLevel, WorkCategory } from '@/types';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
+import {
+  WORK_CATEGORIES,
+  WORK_CATEGORY_META,
+  resolveTaskWorkCategory,
+} from '@/utils/workCategory';
 import {
   X,
   Flame,
@@ -33,6 +38,7 @@ export const TaskDetailDrawer: React.FC = () => {
     updateTask,
     deleteTask,
     members,
+    projects,
     stages,
     language,
     t,
@@ -44,6 +50,9 @@ export const TaskDetailDrawer: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [workCategory, setWorkCategory] = useState<WorkCategory>('PAPER');
+  const [partnerOrg, setPartnerOrg] = useState('');
+  const [milestoneNode, setMilestoneNode] = useState('');
   const [stage, setStage] = useState<AcademicStage>('DATA_EXP');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
   const [visibility, setVisibility] = useState<VisibilityLevel>('PUBLIC');
@@ -66,6 +75,9 @@ export const TaskDetailDrawer: React.FC = () => {
     if (selectedTask) {
       setTitle(selectedTask.title);
       setDescription(selectedTask.description || '');
+      setWorkCategory(resolveTaskWorkCategory(selectedTask, projects));
+      setPartnerOrg(selectedTask.partnerOrg || '');
+      setMilestoneNode(selectedTask.milestoneNode || '');
       setStage(selectedTask.stage);
       setPriority(selectedTask.priority);
       setVisibility(selectedTask.visibility || 'PUBLIC');
@@ -82,7 +94,7 @@ export const TaskDetailDrawer: React.FC = () => {
       setZotero(selectedTask.assets?.zotero || '');
       setChecklist(selectedTask.checklist || []);
     }
-  }, [selectedTask, members]);
+  }, [selectedTask, members, projects]);
 
   if (!selectedTask || viewMode === 'kanban') return null;
 
@@ -102,6 +114,9 @@ export const TaskDetailDrawer: React.FC = () => {
     updateTask(selectedTask.id, {
       title,
       description,
+      workCategory,
+      partnerOrg: partnerOrg.trim() || undefined,
+      milestoneNode: milestoneNode.trim() || undefined,
       stage,
       priority,
       visibility,
@@ -236,7 +251,7 @@ export const TaskDetailDrawer: React.FC = () => {
             <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-500/40 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 uppercase">
-                  <Flame className="w-4 h-4 text-red-500 animate-pulse" />
+                  <Flame className="w-4 h-4 text-red-500" />
                   {t.activeBlockerAlert}
                 </span>
                 {editable && (
@@ -284,6 +299,54 @@ export const TaskDetailDrawer: React.FC = () => {
               onChange={(e) => setTitle(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-cyan-500/60 disabled:opacity-70"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                {language === 'zh' ? '业务归属分类' : 'Work Category'}
+              </label>
+              <select
+                disabled={!editable}
+                value={workCategory}
+                onChange={(e) => setWorkCategory(e.target.value as WorkCategory)}
+                className={inputClass}
+              >
+                {WORK_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {language === 'zh'
+                      ? WORK_CATEGORY_META[cat].labelZh
+                      : WORK_CATEGORY_META[cat].labelEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                {language === 'zh' ? '资助方 / 合作企业' : 'Partner / Sponsor'}
+              </label>
+              <input
+                type="text"
+                disabled={!editable}
+                value={partnerOrg}
+                onChange={(e) => setPartnerOrg(e.target.value)}
+                placeholder={language === 'zh' ? '可选' : 'Optional'}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                {language === 'zh' ? '关键时间节点要求' : 'Milestone / Node'}
+              </label>
+              <input
+                type="text"
+                disabled={!editable}
+                value={milestoneNode}
+                onChange={(e) => setMilestoneNode(e.target.value)}
+                placeholder={language === 'zh' ? '可选' : 'Optional'}
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { UserPlus, X, GraduationCap, Mail, Sparkles } from 'lucide-react';
+import { UserPlus, X, GraduationCap, Mail, Sparkles, Lock, AlertCircle } from 'lucide-react';
 import { LabMember } from '@/types';
 
 export const MemberRegisterModal: React.FC = () => {
@@ -18,23 +18,43 @@ export const MemberRegisterModal: React.FC = () => {
   const [nameEn, setNameEn] = useState('');
   const [role, setRole] = useState<LabMember['role']>('PHD_CANDIDATE');
   const [email, setEmail] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [error, setError] = useState('');
 
   if (!isRegisterModalOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!nameZh.trim() && !nameEn.trim()) return;
+    if (pin.trim().length < 4) {
+      setError(
+        language === 'zh'
+          ? '请为新成员设置至少 4 位的个人密码 / PIN'
+          : 'Please set a 4+ character PIN'
+      );
+      return;
+    }
+    if (pin.trim() !== confirmPin.trim()) {
+      setError(language === 'zh' ? '两次输入的密码 / PIN 不一致' : 'PINs do not match');
+      return;
+    }
 
     registerNewMember({
       nameZh: nameZh.trim() || nameEn.trim(),
       nameEn: nameEn.trim() || nameZh.trim(),
       role,
       email: email.trim(),
+      pin: pin.trim(),
     });
 
     setNameZh('');
     setNameEn('');
     setEmail('');
+    setPin('');
+    setConfirmPin('');
+    setError('');
     setIsRegisterModalOpen(false);
   };
 
@@ -132,6 +152,45 @@ export const MemberRegisterModal: React.FC = () => {
               className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
             />
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-cyan-500" />
+                {language === 'zh' ? '个人密码 / PIN *（4+位）' : 'Personal PIN * (4+)'}
+              </label>
+              <input
+                type="password"
+                required
+                minLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder={language === 'zh' ? '用于个人账号登录切换' : 'Required 4+ chars'}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                {language === 'zh' ? '确认密码 / PIN *' : 'Confirm PIN *'}
+              </label>
+              <input
+                type="password"
+                required
+                minLength={4}
+                value={confirmPin}
+                onChange={(e) => setConfirmPin(e.target.value)}
+                placeholder={language === 'zh' ? '再次输入 PIN' : 'Confirm PIN'}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2.5 pt-3">
             <button

@@ -59,7 +59,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [englishCustomFont, setEnglishCustomFont] = useState<string>('');
   const [chineseFont, setChineseFont] = useState<ChineseFontPreset>('yahei-pingfang');
   const [chineseCustomFont, setChineseCustomFont] = useState<string>('');
-  const [enableComputeStrip, setEnableComputeStrip] = useState<boolean>(true);
+  const [enableComputeStrip, setEnableComputeStrip] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const resetFonts = useCallback(() => {

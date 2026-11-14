@@ -1,13 +1,14 @@
 export const en = {
   brand: 'LabFlow',
-  labTitle: 'LabFlow OS',
+  labTitle: 'Research Management System',
 
   // View modes
-  kanban: 'Kanban',
-  gantt: 'Gantt Chart',
-  architecture: 'Tree & Cloud',
+  kanban: 'Tasks',
+  gantt: 'Timeline',
+  architecture: 'Categories',
   todos: 'Weekly Todos',
-  meeting: 'Standup',
+  requests: 'Requests',
+  meeting: 'Meeting',
   pipelineSettings: 'Stages',
   membersManager: 'Members',
 
@@ -43,14 +44,14 @@ export const en = {
   hoursRemaining: 'h remaining',
 
   // Blocker Modal
-  reportBlocker: 'Report Technical Blocker',
+  reportBlocker: 'Request Help on Blocker',
   activeBlockerAlert: 'Active Technical Blocker',
   whereStuck: 'Where is it stuck? (Technical Bottleneck)',
   whatTried: 'What has been tried so far?',
-  escalateTo: 'Escalate to / Decision Needed from',
+  escalateTo: 'Send 1-on-1 Request To',
   resolveBlocker: 'Resolve Blocker (Resume Pipeline)',
   updateBlocker: 'Update Blocker',
-  escalateBlockerBtn: 'Escalate Blocker to Lab',
+  escalateBlockerBtn: 'Send 1-on-1 Help Request',
   blockerCategory: 'Blocker Category',
 
   // Reverse DDL Modal
@@ -280,6 +281,19 @@ export const en = {
   addChildNode: 'Add Child',
   addSiblingNode: 'Add Sibling',
   syncNodeToChecklist: 'Push to Checklist',
+
+  // Scope, Categories & 1-on-1 Requests
+  scopeMine: 'My Space',
+  scopePublic: 'Group Public',
+  workCategoryLabel: 'Work Type',
+  catAll: 'All',
+  catPaper: 'Paper',
+  catVertical: 'Vertical Project',
+  catHorizontal: 'Enterprise Project',
+  partnerOrgLabel: 'Partner / Sponsor',
+  milestoneNodeLabel: 'Milestone Requirement',
+  sendRequestBtn: 'New 1-on-1 Request',
+  customizeViews: 'Customize Views',
 };
 
 export type LocaleTranslations = typeof en;

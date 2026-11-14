@@ -1,7 +1,26 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { ChecklistTemplateEntry, SettingsTab, TaskItem, ViewMode } from '@/types';
+import {
+  ChecklistTemplateEntry,
+  DirectRequestKind,
+  SettingsTab,
+  TaskItem,
+  ViewMode,
+  WorkCategory,
+  WorkspaceScope,
+} from '@/types';
+
+export interface RequestModalSeed {
+  kind?: DirectRequestKind;
+  recipientId?: string;
+  title?: string;
+  content?: string;
+  taskId?: string;
+  projectId?: string;
+  workCategory?: WorkCategory;
+  dueDate?: string;
+}
 
 export interface TemplateDraftSeed {
   templateId?: string;
@@ -37,6 +56,10 @@ export interface UIContextType {
   setSortByDDLUrgency: (val: boolean) => void;
   viewMode: ViewMode;
   setViewMode: (val: ViewMode) => void;
+  workspaceScope: WorkspaceScope;
+  setWorkspaceScope: (val: WorkspaceScope) => void;
+  workCategoryFilter: 'ALL' | WorkCategory;
+  setWorkCategoryFilter: (val: 'ALL' | WorkCategory) => void;
 
   // Modals & Drawers
   isSettingsOpen: boolean;
@@ -74,6 +97,13 @@ export interface UIContextType {
   templateDraftSeed: TemplateDraftSeed | null;
   setTemplateDraftSeed: (seed: TemplateDraftSeed | null) => void;
   openTemplateModal: (seed?: TemplateDraftSeed | null) => void;
+  isRequestModalOpen: boolean;
+  setIsRequestModalOpen: (open: boolean) => void;
+  requestModalSeed: RequestModalSeed | null;
+  setRequestModalSeed: (seed: RequestModalSeed | null) => void;
+  openRequestModal: (seed?: RequestModalSeed | null) => void;
+  isViewCustomizerOpen: boolean;
+  setIsViewCustomizerOpen: (open: boolean) => void;
 
   // Notifications
   toasts: ToastItem[];
@@ -95,6 +125,8 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
   const [sortByDDLUrgency, setSortByDDLUrgency] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [workspaceScope, setWorkspaceScope] = useState<WorkspaceScope>('MINE');
+  const [workCategoryFilter, setWorkCategoryFilter] = useState<'ALL' | WorkCategory>('ALL');
 
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('appearance');
@@ -113,10 +145,18 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [isFeatureGuideOpen, setIsFeatureGuideOpen] = useState<boolean>(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [templateDraftSeed, setTemplateDraftSeed] = useState<TemplateDraftSeed | null>(null);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState<boolean>(false);
+  const [requestModalSeed, setRequestModalSeed] = useState<RequestModalSeed | null>(null);
+  const [isViewCustomizerOpen, setIsViewCustomizerOpen] = useState<boolean>(false);
 
   const openTemplateModal = useCallback((seed: TemplateDraftSeed | null = null) => {
     setTemplateDraftSeed(seed);
     setIsTemplateModalOpen(true);
+  }, []);
+
+  const openRequestModal = useCallback((seed: RequestModalSeed | null = null) => {
+    setRequestModalSeed(seed);
+    setIsRequestModalOpen(true);
   }, []);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -153,6 +193,10 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         setSortByDDLUrgency,
         viewMode,
         setViewMode,
+        workspaceScope,
+        setWorkspaceScope,
+        workCategoryFilter,
+        setWorkCategoryFilter,
         isSettingsOpen,
         setIsSettingsOpen,
         activeSettingsTab,
@@ -188,6 +232,13 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         templateDraftSeed,
         setTemplateDraftSeed,
         openTemplateModal,
+        isRequestModalOpen,
+        setIsRequestModalOpen,
+        requestModalSeed,
+        setRequestModalSeed,
+        openRequestModal,
+        isViewCustomizerOpen,
+        setIsViewCustomizerOpen,
         toasts,
         addToast,
         removeToast,

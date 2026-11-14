@@ -20,12 +20,18 @@ import {
   GitBranch,
   GripVertical,
   Lock,
+  MessageSquare,
   Shield,
 } from 'lucide-react';
 import { GitHubIcon } from '@/components/icons/BrandIcons';
 import { KanbanCardInlineEditor } from '@/components/KanbanCardInlineEditor';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { countLogicTreeStats } from '@/utils/taskLogicTree';
+import {
+  WORK_CATEGORY_META,
+  getWorkCategoryLabel,
+  resolveTaskWorkCategory,
+} from '@/utils/workCategory';
 
 interface KanbanCardProps {
   task: TaskItem;
@@ -34,6 +40,9 @@ interface KanbanCardProps {
 
 export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
   const {
+    projects,
+    currentUserId,
+    openRequestModal,
     selectedTask,
     setSelectedTask,
     setActiveBlockerTask,
@@ -44,6 +53,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
     t,
     canEditTask,
   } = useLabFlow();
+
+  const linkedProject = projects.find((p) => p.id === task.projectId);
+  const workCategory = resolveTaskWorkCategory(task, projects);
+  const categoryMeta = WORK_CATEGORY_META[workCategory];
+  const partnerOrg = task.partnerOrg || linkedProject?.partnerOrg;
+  const milestoneNode = task.milestoneNode || linkedProject?.milestoneNode;
 
   const hasEditPermission = canEditTask(task);
   const isExpanded = selectedTask?.id === task.id;
@@ -117,7 +132,14 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                 )}
 
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 truncate max-w-[130px]"
+                  className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border shrink-0 ${categoryMeta.badgeClass}`}
+                  title={getWorkCategoryLabel(workCategory, language, false)}
+                >
+                  {getWorkCategoryLabel(workCategory, language, true)}
+                </span>
+
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 truncate max-w-[115px]"
                   title={`${task.projectTag} (${task.targetVenue})`}
                 >
                   {task.projectTag}
@@ -134,7 +156,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                 {task.visibility === 'PI_ONLY' && (
                   <span
                     className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-0.5"
-                    title={language === 'zh' ? '绝密 (仅导师与负责人可见)' : 'Confidential'}
+                    title={language === 'zh' ? '隐私 (仅自己与导师可见)' : 'Private'}
                   >
                     <Shield className="w-2.5 h-2.5" />
                     {t.visibilityPIBadge}
@@ -142,10 +164,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                 )}
 
                 {task.priority === 'URGENT' && (
-                  <span className="flex h-2 w-2 relative" title="Urgent">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
-                  </span>
+                  <span
+                    className="inline-flex rounded-full h-2 w-2 bg-rose-500 shrink-0"
+                    title={language === 'zh' ? '紧急优先级' : 'Urgent'}
+                  />
                 )}
               </div>
 
@@ -192,10 +214,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                 } flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg bg-red-500/15 border border-red-500/40 text-red-600 dark:text-red-300 transition-all group/blocker`}
               >
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                  </span>
+                  <span className="inline-flex rounded-full h-2 w-2 bg-red-500 shrink-0" />
                   <span className="text-[10px] font-bold truncate">
                     {language === 'zh' ? blockerMeta.labelZh : blockerMeta.labelEn}
                   </span>
@@ -209,10 +228,16 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
             )}
 
             {/* Task Title */}
-            <div onClick={toggleExpand} className="cursor-pointer">
+            <div onClick={toggleExpand} className="cursor-pointer space-y-1">
               <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors leading-snug line-clamp-2">
                 {task.title}
               </h3>
+              {(workCategory !== 'PAPER' || milestoneNode || partnerOrg) &&
+                (partnerOrg || milestoneNode) && (
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {[partnerOrg, milestoneNode].filter(Boolean).join(' · ')}
+                  </p>
+                )}
             </div>
 
             {/* Checklist progress if present */}
@@ -310,6 +335,30 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const defaultRecipient =
+                      task.leadAuthor.id === currentUserId ? task.pi.id : task.leadAuthor.id;
+                    openRequestModal({
+                      recipientId: defaultRecipient,
+                      kind: 'PROJECT_SYNC',
+                      workCategory,
+                      projectId: task.projectId,
+                      taskId: task.id,
+                      title:
+                        language === 'zh'
+                          ? `关于「${task.title}」的对接沟通`
+                          : `Sync on "${task.title}"`,
+                    });
+                  }}
+                  className="p-1 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  title={language === 'zh' ? '发起 1 对 1 沟通/申请' : 'Send 1-on-1 request'}
+                >
+                  <MessageSquare className="w-3 h-3" />
+                </button>
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

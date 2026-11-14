@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AcademicStage, TaskItem } from '@/types';
+import { AcademicStage, TaskItem, WorkCategory } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
 import { StageDragMatrix } from '@/components/StageDragMatrix';
-import { Plus, FilterX, Clock, Sparkles, FolderKanban, Columns3, Table2 } from 'lucide-react';
+import { WORK_CATEGORIES, WORK_CATEGORY_META, resolveTaskWorkCategory } from '@/utils/workCategory';
+import { Plus, FilterX, Clock, Sparkles, FolderKanban, Columns3, Table2, LayoutGrid } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
   const {
@@ -22,6 +23,8 @@ export const KanbanBoard: React.FC = () => {
     setSelectedStageFilter,
     selectedProjectFilter,
     setSelectedProjectFilter,
+    workCategoryFilter,
+    setWorkCategoryFilter,
     sortByDDLUrgency,
     setSortByDDLUrgency,
     moveTask,
@@ -32,7 +35,7 @@ export const KanbanBoard: React.FC = () => {
   } = useLabFlow();
 
   const [mounted, setMounted] = useState(false);
-  const [boardLayout, setBoardLayout] = useState<'columns' | 'matrix'>('columns');
+  const [boardLayout, setBoardLayout] = useState<'columns' | 'grouped' | 'matrix'>('columns');
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -73,6 +76,12 @@ export const KanbanBoard: React.FC = () => {
     if (filterOnlyBlockers && !task.isBlocked) return false;
     if (filterMemberId !== 'all' && task.leadAuthor.id !== filterMemberId) return false;
     if (selectedProjectFilter !== 'all' && task.projectId !== selectedProjectFilter) return false;
+    if (
+      workCategoryFilter !== 'ALL' &&
+      resolveTaskWorkCategory(task, projects) !== workCategoryFilter
+    ) {
+      return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = task.title.toLowerCase().includes(q);
@@ -124,6 +133,44 @@ export const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-x-auto p-4 lg:p-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent flex flex-col">
+      {/* Three-Category Filter Bar (论文 | 纵向科研项目 | 横向企业项目) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setWorkCategoryFilter('ALL')}
+            className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
+              workCategoryFilter === 'ALL'
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+            }`}
+          >
+            {language === 'zh' ? '全部分类' : 'All Categories'} ({tasks.length})
+          </button>
+          {WORK_CATEGORIES.map((cat) => {
+            const meta = WORK_CATEGORY_META[cat];
+            const count = tasks.filter(
+              (item) => resolveTaskWorkCategory(item, projects) === cat
+            ).length;
+            const active = workCategoryFilter === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setWorkCategoryFilter(cat)}
+                className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
+                  active
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400/50'
+                }`}
+              >
+                {language === 'zh' ? meta.labelZh : meta.labelEn} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Top Stage Filter Tabs & Sort Toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none max-w-full">
@@ -199,7 +246,7 @@ export const KanbanBoard: React.FC = () => {
             <span>{t.sortByDDLUrgency}</span>
           </button>
 
-          {/* Board Mode Switcher: Columns vs Stage Drag Matrix */}
+          {/* Board Mode Switcher: Columns vs Grouped by Category vs Stage Drag Matrix */}
           <div className="inline-flex items-center rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-0.5 text-xs shadow-sm">
             <button
               type="button"
@@ -216,6 +263,19 @@ export const KanbanBoard: React.FC = () => {
             </button>
             <button
               type="button"
+              onClick={() => setBoardLayout('grouped')}
+              className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
+                boardLayout === 'grouped'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+              title={language === 'zh' ? '按论文 / 纵向 / 横向三类归类展示' : 'Grouped by Work Category'}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>{language === 'zh' ? '三类归类' : 'By Category'}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setBoardLayout('matrix')}
               className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
                 boardLayout === 'matrix'
@@ -229,7 +289,7 @@ export const KanbanBoard: React.FC = () => {
               }
             >
               <Table2 className="w-3.5 h-3.5" />
-              <span>{language === 'zh' ? '阶段拖拽单元格' : 'Stage Cells'}</span>
+              <span>{language === 'zh' ? '阶段单元格' : 'Stage Cells'}</span>
             </button>
           </div>
         </div>
@@ -299,6 +359,65 @@ export const KanbanBoard: React.FC = () => {
 
       {boardLayout === 'matrix' ? (
         <StageDragMatrix filteredTasks={allFilteredTasks} />
+      ) : boardLayout === 'grouped' ? (
+        <DragDropContext onDragEnd={() => {}}>
+          <div className="space-y-6 pb-8">
+            {WORK_CATEGORIES.filter(
+              (cat) => workCategoryFilter === 'ALL' || workCategoryFilter === cat
+            ).map((cat: WorkCategory) => {
+              const meta = WORK_CATEGORY_META[cat];
+              const catTasks = allFilteredTasks.filter(
+                (item) => resolveTaskWorkCategory(item, projects) === cat
+              );
+              return (
+                <section
+                  key={cat}
+                  className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 p-4 space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-0.5 rounded-lg border ${meta.badgeClass}`}
+                        >
+                          {language === 'zh' ? meta.labelZh : meta.labelEn}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          ({catTasks.length})
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        {language === 'zh' ? meta.descZh : meta.descEn}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Droppable droppableId={`cat-${cat}`} isDropDisabled>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
+                      >
+                        {catTasks.map((task, idx) => (
+                          <KanbanCard key={task.id} task={task} index={idx} />
+                        ))}
+                        {provided.placeholder}
+                        {catTasks.length === 0 && (
+                          <div className="col-span-full rounded-xl border border-dashed border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-400">
+                            {language === 'zh'
+                              ? `当前「${meta.labelZh}」下暂无匹配任务`
+                              : `No tasks in ${meta.labelEn}`}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                </section>
+              );
+            })}
+          </div>
+        </DragDropContext>
       ) : (
         /* DND Context */
         <DragDropContext onDragEnd={handleDragEnd}>
@@ -331,7 +450,7 @@ export const KanbanBoard: React.FC = () => {
 
                       <div className="flex items-center gap-1.5 shrink-0">
                         {blockedInStage > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-600 dark:text-rose-300 animate-pulse">
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/15 border border-rose-500/35 text-rose-600 dark:text-rose-300">
                             {blockedInStage} {language === 'zh' ? '卡点' : 'blocked'}
                           </span>
                         )}

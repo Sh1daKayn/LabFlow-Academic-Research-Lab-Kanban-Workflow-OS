@@ -2,9 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AcademicStage, Priority, VisibilityLevel } from '@/types';
+import { AcademicStage, Priority, VisibilityLevel, WorkCategory } from '@/types';
 import { getSafeLeadAuthor, getSafePI } from '@/utils/rbac';
-import { FolderPlus, Plus, X } from 'lucide-react';
+import {
+  WORK_CATEGORIES,
+  WORK_CATEGORY_META,
+  resolveProjectWorkCategory,
+} from '@/utils/workCategory';
+import { ChevronDown, ChevronRight, FolderPlus, Plus, X } from 'lucide-react';
 
 export const NewTaskModal: React.FC = () => {
   const {
@@ -22,9 +27,13 @@ export const NewTaskModal: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [workCategory, setWorkCategory] = useState<WorkCategory>('PAPER');
+  const [partnerOrg, setPartnerOrg] = useState('');
+  const [milestoneNode, setMilestoneNode] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [stage, setStage] = useState<AcademicStage>(stages[1]?.id || stages[0]?.id || 'DATA_EXP');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
-  const [visibility, setVisibility] = useState<VisibilityLevel>('PUBLIC');
+  const [visibility, setVisibility] = useState<VisibilityLevel>('PI_ONLY');
   const [projectId, setProjectId] = useState(projects[0]?.id || '');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [deadline, setDeadline] = useState(new Date().toISOString().split('T')[0]);
@@ -39,9 +48,18 @@ export const NewTaskModal: React.FC = () => {
 
   useEffect(() => {
     if (!isNewTaskOpen) return;
+    const defaultProj = projects[0];
     setProjectId((prev) =>
-      projects.some((p) => p.id === prev) ? prev : projects[0]?.id || ''
+      projects.some((p) => p.id === prev) ? prev : defaultProj?.id || ''
     );
+    if (defaultProj) {
+      setWorkCategory(resolveProjectWorkCategory(defaultProj));
+    } else {
+      setWorkCategory('PAPER');
+    }
+    setPartnerOrg('');
+    setMilestoneNode('');
+    setShowAdvanced(false);
     setLeadAuthorId((prev) => {
       if (members.some((m) => m.id === prev)) return prev;
       if (members.some((m) => m.id === currentUserId)) return currentUserId;
@@ -67,8 +85,17 @@ export const NewTaskModal: React.FC = () => {
     if ((creatingInlineProj || !resolvedProject) && inlineProjTitle.trim()) {
       resolvedProject = addProject({
         title: inlineProjTitle.trim(),
+        workCategory,
+        partnerOrg: partnerOrg.trim() || undefined,
+        milestoneNode: milestoneNode.trim() || undefined,
         category: inlineProjCategory.trim() || undefined,
-        targetVenue: inlineProjVenue.trim() || 'Conference',
+        targetVenue:
+          inlineProjVenue.trim() ||
+          (workCategory === 'HORIZONTAL_PROJECT'
+            ? 'Enterprise Delivery'
+            : workCategory === 'VERTICAL_PROJECT'
+              ? 'Grant Milestone'
+              : 'Conference'),
         tag:
           inlineProjTag.trim() ||
           inlineProjTitle.trim().split(/\s+/)[0]?.slice(0, 12) ||
@@ -89,6 +116,9 @@ export const NewTaskModal: React.FC = () => {
     addTask({
       title: title.trim(),
       description: description.trim() || undefined,
+      workCategory,
+      partnerOrg: partnerOrg.trim() || resolvedProject?.partnerOrg || undefined,
+      milestoneNode: milestoneNode.trim() || resolvedProject?.milestoneNode || undefined,
       stage,
       priority,
       projectId: safeProjectId,
@@ -113,6 +143,8 @@ export const NewTaskModal: React.FC = () => {
 
     setTitle('');
     setDescription('');
+    setPartnerOrg('');
+    setMilestoneNode('');
     setInlineProjTitle('');
     setInlineProjTag('');
     setInlineProjCategory('');
@@ -150,19 +182,117 @@ export const NewTaskModal: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 3-Category Work Selector */}
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              {language === 'zh' ? '任务所属分类 *' : 'Work Category *'}
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {WORK_CATEGORIES.map((cat) => {
+                const meta = WORK_CATEGORY_META[cat];
+                const active = workCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setWorkCategory(cat)}
+                    className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-colors text-center ${
+                      active
+                        ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    {language === 'zh' ? meta.labelZh : meta.labelEn}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {t.paperTitle} *
+              {workCategory === 'HORIZONTAL_PROJECT'
+                ? language === 'zh'
+                  ? '横向企业交付节点 / 任务名称 *'
+                  : 'Enterprise Milestone / Task *'
+                : workCategory === 'VERTICAL_PROJECT'
+                  ? language === 'zh'
+                    ? '纵向项目研发任务 *'
+                    : 'Grant Project Task *'
+                  : `${t.paperTitle} *`}
             </label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Conduct sensitivity analysis on variance penalty parameter lambda"
+              placeholder={
+                workCategory === 'HORIZONTAL_PROJECT'
+                  ? language === 'zh'
+                    ? '如：完成产线接口联调并提交企业阶段测试报告'
+                    : 'e.g. Complete enterprise API integration & test report'
+                  : 'e.g. Conduct sensitivity analysis on variance penalty parameter lambda'
+              }
               className={inputClass}
             />
           </div>
+
+          {workCategory !== 'PAPER' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 p-3">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {workCategory === 'HORIZONTAL_PROJECT'
+                    ? language === 'zh'
+                      ? '合作企业 / 委托方'
+                      : 'Enterprise Partner'
+                    : language === 'zh'
+                      ? '立项资助单位'
+                      : 'Funding Agency'}
+                </label>
+                <input
+                  type="text"
+                  value={partnerOrg}
+                  onChange={(e) => setPartnerOrg(e.target.value)}
+                  placeholder={
+                    workCategory === 'HORIZONTAL_PROJECT'
+                      ? language === 'zh'
+                        ? '如：XX 科技有限公司'
+                        : 'Partner Co.'
+                      : language === 'zh'
+                        ? '如：基金委 / 科技厅'
+                        : 'Sponsor'
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {workCategory === 'HORIZONTAL_PROJECT'
+                    ? language === 'zh'
+                      ? '关键时间节点要求'
+                      : 'Time-Node Requirement'
+                    : language === 'zh'
+                      ? '项目验收 / 里程碑要求'
+                      : 'Milestone Requirement'}
+                </label>
+                <input
+                  type="text"
+                  value={milestoneNode}
+                  onChange={(e) => setMilestoneNode(e.target.value)}
+                  placeholder={
+                    workCategory === 'HORIZONTAL_PROJECT'
+                      ? language === 'zh'
+                        ? '如：月底前交付可执行演示原型'
+                        : 'e.g. Deliver runnable demo by month-end'
+                      : language === 'zh'
+                        ? '如：中期检查指标达标'
+                        : 'e.g. Midterm metrics check'
+                  }
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -228,7 +358,14 @@ export const NewTaskModal: React.FC = () => {
               ) : (
                 <select
                   value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setProjectId(nextId);
+                    const matched = projects.find((p) => p.id === nextId);
+                    if (matched) {
+                      setWorkCategory(resolveProjectWorkCategory(matched));
+                    }
+                  }}
                   className={inputClass}
                 >
                   {projects.map((p) => (
@@ -258,23 +395,14 @@ export const NewTaskModal: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t.startDate}
-              </label>
-              <input
-                type="date"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t.endDate}
+                {workCategory === 'HORIZONTAL_PROJECT'
+                  ? language === 'zh'
+                    ? '明确交付截止时间 (DDL) *'
+                    : 'Strict Node Deadline *'
+                  : `${t.endDate} *`}
               </label>
               <input
                 type="date"
@@ -284,71 +412,112 @@ export const NewTaskModal: React.FC = () => {
                 className={inputClass}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t.priority}
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-                className={inputClass}
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent 🔥</option>
-              </select>
-            </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t.leadAuthor} *
+                {t.visibility}
               </label>
               <select
-                value={leadAuthorId}
-                onChange={(e) => setLeadAuthorId(e.target.value)}
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as VisibilityLevel)}
                 className={inputClass}
               >
-                {members.map((m) => (
-                  <option key={m.id} value={m.id} className="bg-white dark:bg-slate-900">
-                    {language === 'zh'
-                      ? `${m.nameZh} (${m.titleZh})`
-                      : `${m.nameEn} (${m.titleEn})`}
-                  </option>
-                ))}
+                <option value="PI_ONLY">
+                  {language === 'zh' ? '🔒 隐私（仅自己与导师可见）' : 'Private (Self & PI)'}
+                </option>
+                <option value="TEAM_ONLY">
+                  {language === 'zh' ? '👥 仅项目参与成员可见' : 'Team Only'}
+                </option>
+                <option value="PUBLIC">
+                  {language === 'zh' ? '🌐 公开（组内可见）' : 'Public (Group View)'}
+                </option>
               </select>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {t.visibility}
-            </label>
-            <select
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value as VisibilityLevel)}
-              className={inputClass}
+          {/* Progressive Disclosure for Secondary Fields */}
+          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="w-full px-3.5 py-2 flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50/70 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/70"
             >
-              <option value="PUBLIC">{t.visibilityPublic}</option>
-              <option value="TEAM_ONLY">{t.visibilityTeamOnly}</option>
-              <option value="PI_ONLY">{t.visibilityPIOnly}</option>
-            </select>
-          </div>
+              <span>
+                {language === 'zh'
+                  ? '更多选项（开始日期 · 优先级 · 主责人 · 详细说明）'
+                  : 'More Options (Start Date · Priority · Lead · Description)'}
+              </span>
+              {showAdvanced ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {t.methodologyDesc}
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Outline specific objectives, theorems, or data protocols..."
-              className={inputClass}
-            />
+            {showAdvanced && (
+              <div className="p-3.5 space-y-3 bg-white dark:bg-slate-900">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {t.startDate}
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {t.priority}
+                    </label>
+                    <select
+                      value={priority}
+                      onChange={(e) => setPriority(e.target.value as Priority)}
+                      className={inputClass}
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent 🔥</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {t.leadAuthor} *
+                    </label>
+                    <select
+                      value={leadAuthorId}
+                      onChange={(e) => setLeadAuthorId(e.target.value)}
+                      className={inputClass}
+                    >
+                      {members.map((m) => (
+                        <option key={m.id} value={m.id} className="bg-white dark:bg-slate-900">
+                          {language === 'zh'
+                            ? `${m.nameZh} (${m.titleZh})`
+                            : `${m.nameEn} (${m.titleEn})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t.methodologyDesc}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Outline specific objectives, milestones, or data protocols..."
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">

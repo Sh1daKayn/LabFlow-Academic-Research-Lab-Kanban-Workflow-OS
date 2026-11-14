@@ -243,6 +243,7 @@ export function buildWeeklyTodosFromTemplate(params: {
   weekKey?: string;
   projectId?: string;
   task?: TaskItem;
+  assignedById?: string;
   checklistLinks?: Array<{ checklistItem: ChecklistItem; entry: ChecklistTemplateEntry }>;
   existingTodos?: WeeklyTodoItem[];
 }): {
@@ -255,6 +256,7 @@ export function buildWeeklyTodosFromTemplate(params: {
     weekKey = getWeekKey(),
     projectId,
     task,
+    assignedById,
     checklistLinks,
     existingTodos = [],
   } = params;
@@ -307,6 +309,7 @@ export function buildWeeklyTodosFromTemplate(params: {
       checklistItemId,
       acceptanceCriteria: entry.acceptanceCriteria || undefined,
       acceptanceStatus: done ? 'SUBMITTED' : 'PENDING',
+      ...(assignedById && assignedById !== memberId ? { assignedById } : {}),
       createdAt: now,
       updatedAt: now,
     });
