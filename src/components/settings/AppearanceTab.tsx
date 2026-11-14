@@ -2,8 +2,20 @@
 
 import React from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AccentColor, BgTheme, FontSize } from '@/types';
-import { Check, Moon, Palette, Pipette, Sun } from 'lucide-react';
+import {
+  AccentColor,
+  BgTheme,
+  ChineseFontPreset,
+  EnglishFontPreset,
+  FontSize,
+} from '@/types';
+import {
+  buildBilingualFontFamily,
+  CHINESE_FONT_PRESETS,
+  ENGLISH_FONT_PRESETS,
+  FontPresetMeta,
+} from '@/utils/theme';
+import { Check, Moon, Palette, Pipette, RotateCcw, Sun, Type } from 'lucide-react';
 
 const ACCENT_OPTIONS: { id: AccentColor; nameZh: string; nameEn: string; color: string }[] = [
   { id: 'purdue', nameZh: '黑金', nameEn: 'Black Gold', color: '#C28E0E' },
@@ -60,6 +72,106 @@ const BG_OPTIONS: { id: BgTheme; nameZh: string; nameEn: string; descZh: string;
   },
 ];
 
+interface FontFamilyPickerProps<T extends string> {
+  title: string;
+  language: 'zh' | 'en';
+  presets: FontPresetMeta<T>[];
+  selectedPreset: T | 'custom';
+  onSelectPreset: (val: T | 'custom') => void;
+  customValue: string;
+  onChangeCustom: (val: string) => void;
+  customLabel: string;
+  customPlaceholder: string;
+  sampleText: string;
+}
+
+function FontFamilyPicker<T extends string>({
+  title,
+  language,
+  presets,
+  selectedPreset,
+  onSelectPreset,
+  customValue,
+  onChangeCustom,
+  customLabel,
+  customPlaceholder,
+  sampleText,
+}: FontFamilyPickerProps<T>) {
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{title}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {presets.map((preset) => {
+          const isSelected = selectedPreset === preset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onSelectPreset(preset.id)}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                isSelected
+                  ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/30 dark:bg-indigo-950/20 shadow-sm'
+                  : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-xs font-bold truncate" style={{ fontFamily: preset.stack }}>
+                  {language === 'zh' ? preset.nameZh : preset.nameEn}
+                </span>
+                {isSelected && (
+                  <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                )}
+              </div>
+              <span
+                className="text-[11px] text-slate-500 block mt-0.5 truncate"
+                style={{ fontFamily: preset.stack }}
+              >
+                {sampleText} · {language === 'zh' ? preset.descZh : preset.descEn}
+              </span>
+            </button>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={() => onSelectPreset('custom')}
+          className={`p-2.5 rounded-xl border text-left transition-all ${
+            selectedPreset === 'custom'
+              ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/30 dark:bg-indigo-950/20 shadow-sm'
+              : 'bg-white dark:bg-slate-950 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="text-xs font-bold flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5 text-indigo-500" />
+              {customLabel}
+            </span>
+            {selectedPreset === 'custom' && (
+              <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 block mt-0.5 truncate">
+            {customValue.trim() ||
+              (language === 'zh' ? '点击输入任意本机字体名称' : 'Type any local CSS font name')}
+          </span>
+        </button>
+      </div>
+
+      {selectedPreset === 'custom' && (
+        <input
+          type="text"
+          value={customValue}
+          onChange={(e) => onChangeCustom(e.target.value)}
+          placeholder={customPlaceholder}
+          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+        />
+      )}
+    </div>
+  );
+}
+
 export const AppearanceTab: React.FC = () => {
   const {
     theme,
@@ -70,9 +182,25 @@ export const AppearanceTab: React.FC = () => {
     setBgStyle,
     fontSize,
     setFontSize,
+    englishFont,
+    setEnglishFont,
+    englishCustomFont,
+    setEnglishCustomFont,
+    chineseFont,
+    setChineseFont,
+    chineseCustomFont,
+    setChineseCustomFont,
+    resetFonts,
     language,
     t,
   } = useLabFlow();
+
+  const liveFontFamily = buildBilingualFontFamily(
+    englishFont,
+    chineseFont,
+    englishCustomFont,
+    chineseCustomFont
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -251,46 +379,108 @@ export const AppearanceTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {t.fontSize}
-          </h3>
-          <span className="text-[11px] text-slate-500 font-serif">
-            Times New Roman · Publication Standard
-          </span>
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-5 space-y-5">
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t.fontSize}
+            </h3>
+            <span className="text-[11px] text-slate-500" style={{ fontFamily: liveFontFamily }}>
+              AaBb 123 · 中文排版实时预览
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5 max-w-md">
+            {(['compact', 'standard', 'large'] as FontSize[]).map((size) => {
+              const isSelected = fontSize === size;
+              const labels = {
+                compact: 'Compact',
+                standard: 'Standard',
+                large: 'Large',
+              };
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setFontSize(size)}
+                  className={`p-2.5 rounded-xl border text-center transition-all ${
+                    isSelected
+                      ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/30 dark:bg-indigo-950/20 font-bold'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-xs block">
+                    {language === 'zh'
+                      ? size === 'compact'
+                        ? '紧凑'
+                        : size === 'standard'
+                        ? '标准'
+                        : '大号'
+                      : labels[size]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-2.5 max-w-md">
-          {(['compact', 'standard', 'large'] as FontSize[]).map((size) => {
-            const isSelected = fontSize === size;
-            const labels = {
-              compact: 'Compact',
-              standard: 'Standard',
-              large: 'Large',
-            };
-            return (
-              <button
-                key={size}
-                type="button"
-                onClick={() => setFontSize(size)}
-                className={`p-2.5 rounded-xl border text-center transition-all ${
-                  isSelected
-                    ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/30 dark:bg-indigo-950/20 font-bold'
-                    : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                }`}
-              >
-                <span className="text-xs block">
-                  {language === 'zh'
-                    ? size === 'compact'
-                      ? '紧凑'
-                      : size === 'standard'
-                      ? '标准'
-                      : '大号'
-                    : labels[size]}
-                </span>
-              </button>
-            );
-          })}
+
+        {/* Bilingual Font Family Customizer */}
+        <div className="space-y-4 pt-4 border-t border-slate-200/70 dark:border-slate-800/70">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t.fontFamilySection}
+            </h3>
+            <button
+              type="button"
+              onClick={resetFonts}
+              className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>{t.resetFonts}</span>
+            </button>
+          </div>
+
+          <FontFamilyPicker<Exclude<EnglishFontPreset, 'custom'>>
+            title={t.englishFontLabel}
+            language={language}
+            presets={ENGLISH_FONT_PRESETS}
+            selectedPreset={englishFont}
+            onSelectPreset={setEnglishFont}
+            customValue={englishCustomFont}
+            onChangeCustom={setEnglishCustomFont}
+            customLabel={t.customFontOption}
+            customPlaceholder={t.customFontPlaceholderEn}
+            sampleText="Paper 2027"
+          />
+
+          <FontFamilyPicker<Exclude<ChineseFontPreset, 'custom'>>
+            title={t.chineseFontLabel}
+            language={language}
+            presets={CHINESE_FONT_PRESETS}
+            selectedPreset={chineseFont}
+            onSelectPreset={setChineseFont}
+            customValue={chineseCustomFont}
+            onChangeCustom={setChineseCustomFont}
+            customLabel={t.customFontOption}
+            customPlaceholder={t.customFontPlaceholderZh}
+            sampleText="科研看板"
+          />
+
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === 'zh' ? '中英混排实时预览' : 'Live Bilingual Preview'}
+              </span>
+              <span className="text-[10px] font-mono text-slate-400 truncate max-w-[65%]">
+                {liveFontFamily}
+              </span>
+            </div>
+            <p
+              className="text-sm text-slate-800 dark:text-slate-100 leading-relaxed"
+              style={{ fontFamily: liveFontFamily }}
+            >
+              NeurIPS 2027 · ADMM Multi-Agent 收敛性证明与实验基线冻结（T - 14 Days，P = 0.0014）。
+            </p>
+          </div>
         </div>
       </div>
     </div>

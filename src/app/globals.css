@@ -27,6 +27,8 @@
   --lab-bg-elevated-light: #e2e2ec;
   --lab-border-subtle-light: #dbdbe8;
   --lab-border-strong-light: #c2c2d9;
+
+  --lab-font-family: 'Times New Roman', Times, 'Liberation Serif', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', serif;
 }
 
 html.light {
@@ -38,7 +40,7 @@ html.light {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Times New Roman', Times, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif;
+  font-family: var(--lab-font-family);
   overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
 }

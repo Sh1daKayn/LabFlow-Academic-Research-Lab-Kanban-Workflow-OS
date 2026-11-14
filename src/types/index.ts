@@ -15,6 +15,22 @@ export type AccentColor =
   | string;
 export type BgTheme = 'default' | 'oled' | 'warm';
 export type FontSize = 'compact' | 'standard' | 'large';
+export type EnglishFontPreset =
+  | 'times'
+  | 'georgia'
+  | 'palatino'
+  | 'geist'
+  | 'system-sans'
+  | 'jetbrains'
+  | 'custom';
+export type ChineseFontPreset =
+  | 'yahei-pingfang'
+  | 'songti'
+  | 'kaiti'
+  | 'fangsong'
+  | 'heiti'
+  | 'system-zh'
+  | 'custom';
 export type SettingsTab = 'appearance' | 'members' | 'resources' | 'stages' | 'venues' | 'backup';
 
 export type AcademicStage = string;
