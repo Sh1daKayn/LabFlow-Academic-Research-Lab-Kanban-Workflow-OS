@@ -13,26 +13,29 @@
 
 ## 🌟 English Introduction / 英文概览
 
-Academic research is fundamentally governed by publication deadlines (DDLs), Overleaf LaTeX drafts, complex empirical pipelines, shared GPU cluster contention, and sudden mathematical/algorithmic bottlenecks. Generic project tools like **Jira** (built for software agile sprints) or **Notion** (unstructured blank canvases) fail to capture the reality of academic labs.
+Academic research is fundamentally governed by publication deadlines (DDLs), Overleaf LaTeX drafts, complex empirical pipelines, shared GPU cluster contention, weekly deliverable verification, and sudden mathematical/algorithmic bottlenecks. Generic project tools like **Jira** (built for software agile sprints) or **Notion** (unstructured blank canvases) fail to capture the reality of academic labs.
 
-**LabFlow** is purpose-built from the ground up for Principal Investigators (PIs), Postdocs, PhD candidates, and Research Assistants (RAs). It unifies:
-1. **Paper-Driven Academic Kanban**: 6-stage lifecycle (`IDEATION` → `DATA_EXP` → `DRAFTING` → `PI_REVIEW` → `REVISION` → `ACCEPTED`).
-2. **Reverse DDL Scheduler**: Auto-deriving $T-45$, $T-30$, $T-14$, and $T-3$ milestones backwards from submission deadlines.
-3. **AI Smart Document Importer**: Feed messy lab notes/proposals to any AI with our prompt to auto-populate members, projects, and milestones with 1 click.
-4. **4-Tier Academic RBAC**: PI Advisor, Project Lead, Student RA, and Auditor Guest roles guarded by an Admin Master Password.
-5. **Academic Gantt Chart**: Multi-project timeline breakdown and countdown visualization.
-6. **No-PPT Group Meeting Mode**: 3-column presenter dashboard with instant Markdown minutes export.
-7. **Academic Theme Palettes & Times New Roman Typography**: Curated Black Gold, Deep Blue, Deep Red, Teal Green, Crimson, Indigo, plus interactive color palette swatches.
+**LabFlow** is purpose-built from the ground up for Principal Investigators (PIs), Student System Admins, Postdocs, PhD candidates, and Research Assistants (RAs). It unifies **5 core views** under a crisp, distraction-free **two-tier top navigation**:
+
+1. **Paper-Driven Academic Kanban & Stage Drag Matrix**: 6-stage customizable lifecycle (`IDEATION` → `DATA_EXP` → `DRAFTING` → `PI_REVIEW` → `REVISION` → `ACCEPTED`) supporting full drag-and-drop, bidirectional stage forward/rollback arrows (`←` / `→`), and a **Project & Task Stage Drag Matrix**.
+2. **Academic Gantt Chart**: Multi-project timeline breakdown, weekly/monthly zooming, progress sliders, and countdown visualization synced with Kanban.
+3. **Lab Architecture Tree & Research Word Cloud**: Project categorization with automatic member headcounts, interactive Lab → Category → Project → Task hierarchy tree, and auto-generated keyword cloud.
+4. **Weekly To-Dos & Peer Acceptance Verification**: Per-member weekly deliverable tracking bidirectionally linked to task checklists & acceptance criteria, with flexible **Advisor-only** or **Open Peer Verification** mode.
+5. **No-PPT Group Meeting Standup**: High-contrast 3-column presenter dashboard (with automatic Light/Dark theme adaptation and auto-collapsed header sub-bar) + instant Markdown minutes & personal weekly digest export.
+6. **Custom Checklist & Acceptance Templates**: Save reusable verification rubrics & experimental pipelines and **1-click inject** them into any task or member's weekly list.
+7. **Editable Task Logic Trees**: Auto-generate and freely edit multi-level reasoning/experiment trees per task and sync leaf nodes back to checklists.
+8. **5-Tier Academic RBAC & Personal Profiles**: `PI Advisor > Student SysAdmin > Project Lead > Student RA > Auditor Guest`, plus editable member names, titles, and uploaded custom photo avatars.
+9. **Bilingual Typography & Curated Palettes**: **12 English + 12 Chinese font presets** (from Times New Roman, Georgia, Garamond to YouYuan 幼圆, Songti 宋体, LXGW WenKai 霞鹜文楷, plus custom CSS fonts), adaptive Dark/Light themes, and a built-in **Feature Guide (`功能一览`)**.
 
 ---
 
 ## 🇨🇳 中文简介 / Chinese Overview
 
-学术科研管理的核心是**论文发表周期、投稿 Deadline 倒推、LaTeX/Overleaf 实时写作、复杂实验跑批、GPU 算力抢占以及突发的数学证明与收敛性卡点**。通用的项目管理工具（如 Jira、Trello、Notion）无法适配学术团队的真实场景：
-- **Jira / Linear**：专为软件工程敏捷冲刺（Sprint）设计，充斥着学术场景完全用不到的故事点（Story Points）与燃尽图；
-- **Notion**：自由度过高缺乏学术流程约束，易沦为散乱的笔记垃圾堆，无法自动倒排论文截稿期或在组会中高效投屏。
+学术科研管理的核心是**论文发表周期、投稿 Deadline 倒推、LaTeX/Overleaf 协作、复杂实验消融、GPU 算力协调、每周待办项验收以及突发的数学/算法卡点**。通用工具无法适配学术团队的真实场景：
+- **Jira / Linear**：专为软件敏捷冲刺（Sprint）设计，充斥学术场景用不到的故事点（Story Points）与燃尽图；
+- **Notion / Trello**：缺乏学术阶段流转约束、反向倒排期、周验收联动与大屏组会投屏支持，易沦为散乱笔记堆。
 
-**LabFlow** 是专为高校与科研院所课题组打造的现代化学术操作系统（Academic Research Lab OS）。通过 6 阶段学术看板、投稿倒推排期生成器（Reverse DDL Planner）、AI 智能冷启动导入、四级科研权限隔离、数学与算力卡点闭环求助机制、无 PPT 组会投屏模式及名校学术主题系统，全面赋能顶尖实验室的高效协作与成果产出。
+**LabFlow** 是专为高校与科研院所课题组打造的现代化学术工作流操作系统。通过 **五大核心视图（看板｜甘特｜架构与云图｜周待办与验收｜组会）**、**双层轻量顶栏**、**五级科研权限与学生系统管理员**、**项目分类树与自动词云**、**任务树状逻辑图**、**执行清单与验收项自定义模板库**、**AI 冷启动导入**、**12+12 中英混排字体体系**及**内置「功能一览」上手引导**，全面赋能顶尖课题组的日常科研协作与高效产出。
 
 ---
 
@@ -40,118 +43,91 @@ Academic research is fundamentally governed by publication deadlines (DDLs), Ove
 
 | 核心维度 / Feature Dimension | Jira / Linear | Notion / Trello | **LabFlow (Academic OS)** |
 | :--- | :--- | :--- | :--- |
-| **工作流哲学 (Paradigm)** | 软件工程敏捷冲刺 (Sprint / Backlog) | 自由文档笔记 / 通用看板 | **论文与课题全生命周期导向 (Paper-Driven Pipeline)** |
-| **流转阶段 (Board Stages)** | Todo / In Progress / Done | 自定义列 (无学术语义) | **灵感文献 → 数据实验 → 初稿撰写 → 导师审阅 → 投稿返修 → 录用归档** |
-| **投稿倒排机制 (Reverse DDL)** | ❌ 无 (需手动计算工期) | ❌ 静态日历 (无法自动生成里程碑) | **⚡ 自动倒推生成 T-45/T-30/T-14/T-3 关键学术节点并注入看板** |
-| **冷启动导入 (Cold-Start)** | 需繁琐配置 CSV 导入 | 纯手动复制黏贴 | **✨ 专属 AI 提示词 + 自动化容错解析，文档秒变全组看板** |
-| **卡点求助 (Blocker Handling)** | 仅有简单 Flag 标记 | 评论区艾特 (极易淹没) | **🔥 细分卡点类型 (数学推导/算法收敛/算力瓶颈)，直接呼叫导师拍板** |
-| **科研资产直达 (Assets)** | 自定义字段 (折叠层级深) | 链接嵌入 | **统一低饱和度灰阶标签：Overleaf、GitHub、Zenodo、Zotero 一键直达** |
-| **科研权限制 (Academic RBAC)** | 企业级复杂权限树 | 全员可乱改或全员只读 | **👑 导师全权 + 🔬 骨干管课题 + 🧑‍💻 组员仅管自己 + 👁️ 访客只读** |
-| **组会汇报 (Group Standup)** | ❌ 无法直观投屏 | 需学生耗费半天准备 PPT | **🖥️ 无 PPT 投屏模式：3 栏汇报视图 + 1 秒导出 Markdown 周报与纪要** |
-| **算力资源调度 (Compute Strip)** | ❌ 无关联 | 需单独维护表格 | **内置 GPU/HPC 节点状态、占用者、剩余机时与防误释放保护** |
-| **学术排版审美 (Typography)** | 现代无衬线体 (UI 风) | 常见系统字体 | **标准学术 Times New Roman 衬线体、三级字号与名校经典主题配色** |
+| **工作流哲学 (Paradigm)** | 软件工程敏捷冲刺 (Sprint / Backlog) | 自由文档笔记 / 通用看板 | **论文与课题全生命周期导向 + 双层清爽顶栏** |
+| **阶段流转与回退 (Stages)** | Todo / In Progress / Done | 自定义列 (无学术语义) | **6 阶段双向推进/回退 +「阶段拖拽单元格」项目/任务矩阵** |
+| **课题全景与词云 (Analytics)** | 需第三方插件或 BI 看板 | 需手动整理关系表 | **自动生成课题大类统计、实验室架构树状图与研究高频词云** |
+| **周待办与项验收 (Weekly QA)** | Subtask 状态流无学术验收语义 | 勾选框无互验与权限控制 | **成员周待办双向绑定任务清单，支持导师验收与全员非锁互验切换** |
+| **模板一键注入 (Templates)** | 仅限 Issue 描述文本模板 | 页面模板较重 | **自定义清单+验收标准+优先级模板库，支持一键注入任务或某周待办** |
+| **投稿倒排机制 (Reverse DDL)** | ❌ 无 (需手动计算) | ❌ 静态日历 | **⚡ 自动倒推生成 T-45/T-30/T-14/T-3 关键学术节点并注入看板** |
+| **冷启动导入 (Cold-Start)** | 繁琐 CSV 字段映射 | 手动逐条录入 | **✨ 专属 AI 提示词 + 自动化容错解析，文档秒变全组看板** |
+| **科研权限制 (Academic RBAC)** | 企业级复杂权限树 | 全员可乱改或全员只读 | **👑 导师 > 🛡️ 学生系统管理员 > 🔬 骨干 > 🧑‍💻 组员 > 👁️ 访客** |
+| **组会汇报 (Group Standup)** | ❌ 无法直观投屏 | 需耗时制作汇报 PPT | **🖥️ 无 PPT 投屏模式（黑/白模式自适应）：3 栏看板 + 一键周报纪要** |
+| **学术排版审美 (Typography)** | 固定现代 UI 无衬线体 | 仅有少数内置字体 | **12 种中文（含幼圆/宋体/楷体/霞鹜文楷）+ 12 种英文字体自由混排** |
 
 ---
 
 ## 🚀 核心功能详解 (Core Features Breakdown)
 
-### 1. 📌 论文全生命周期学术看板 (Paper-First Academic Pipeline)
-提供贴合高校科研规律的 6 阶段学术研发流水线：
-1. `IDEATION` (灵感与文献): 假说构思、文献调研、创新点论证与实验方案设计；
-2. `DATA_EXP` (数据与实验): 数据清洗、模型训练、仿真调优与 SOTA 基线评测；
-3. `DRAFTING` (初稿撰写): Overleaf LaTeX 协作、高分辨率矢量图表绘制、附录整理；
-4. `PI_REVIEW` (导师审阅): 论文结构把关、定理严谨性核验、导师批注与修改；
-5. `REVISION` (投稿与返修): 审稿人意见回复 (Rebuttal)、补充安慰剂检验、差异对比排版；
-6. `ACCEPTED` (录用归档): 论文录用发表、代码开源归档、全屏庆祝彩带（Confetti）！
+### 1. 📌 论文全生命周期看板与「阶段拖拽单元格」
+提供贴合高校科研规律的 6 阶段学术研发流水线（且阶段名称/颜色/数量支持自定义）：
+1. `IDEATION` (灵感与文献)：假说构思、文献调研、创新点论证与实验方案设计；
+2. `DATA_EXP` (数据与实验)：数据清洗、模型训练、仿真调优与 SOTA 基线评测；
+3. `DRAFTING` (初稿撰写)：Overleaf LaTeX 协作、矢量图表绘制、附录整理；
+4. `PI_REVIEW` (导师审阅)：论文结构把关、定理严谨性核验、导师批注与修改；
+5. `REVISION` (投稿与返修)：审稿人意见回复 (Rebuttal)、补充检验、差异对比排版；
+6. `ACCEPTED` (录用归档)：论文录用发表、代码开源归档、全屏庆祝彩带（Confetti）！
 
-- **卡片关键学术要素**：课题标签 (`AAAI 2027`, `Nature Comm`, `青年基金`)、截止日期倒计时（3天内红脉冲警示）、统一纯净灰阶资源标签 (`Overleaf`, `GitHub`, `Dataset`, `Zotero`)、一作与导师徽标。
-- **项目详情下拉抽屉**：点击任务直接在当前板块下方优雅展开下拉抽屉，无需右侧弹窗，支持就地编辑实验方案、修改 DDL 与勾选双盲匿名合规清单。
-
----
-
-### 2. ✨ AI 智能文档导入与系统冷启动 (AI Smart Document Importer)
-初次使用 LabFlow 时，老师或负责人无需手动一个个录入人员与任务：
-1. **一键复制 AI 提示词**：系统内置精心设计的学术架构师提取提示词，支持中英双语；
-2. **连接任意 AI**：将该提示词连同您手头现有的**实验室文档、周报、立项书、学生花名册或会议纪要**，一并粘贴给 ChatGPT、Claude、DeepSeek、Kimi 或 Gemini 等任意 AI；
-3. **自动化容错解析**：将 AI 返回的文段粘贴回 LabFlow，内置脚本自动清洗 Markdown 代码块、修复尾部多余逗号、智能映射学术阶段与身份角色；
-4. **双模式导入**：
-   - 🚀 **【覆盖并全新初始化】**：清空示例数据，直接生成老师团队的真实项目与名单；
-   - ➕ **【增量追加合并】**：保留现有卡片，仅将新提取的任务与课题无损追加进来。
+- **双向阶段推进与回退**：看板卡片既支持跨列拖拽，也可在卡片底部使用「← / →」直接前推或回退阶段（从已录用回退时自动清除完结标记）；
+- **阶段拖拽单元格 (`StageDragMatrix`)**：看板右上角可一键切换至「矩阵单元格」视角，将**项目（Project）与任务（Task）**同时按所属阶段平铺展示，支持跨阶段单元格直接拖拽改变位置。
+- **双层轻量顶栏**：第一行专注品牌、`5 大核心视图 Tab` 与系统身份（不再挤压左上角视图空间）；第二行聚合搜索、成员筛选、`仅看卡点` 与 `模板库`、`投稿倒排期`、`AI 导入`（支持一键收起，并在组会投屏视图下默认自动折叠）。
 
 ---
 
-### 3. 👑 四级科研权限体系与主密码保护 (4-Tier Academic RBAC)
-完全免除配置外部邮箱验证码或注册服务器的繁琐门槛，通过**管理员主密码 (默认: `admin888`)** 兼顾即开即用与团队防误改：
-- 👑 **导师 / 实验室管理员 (`ADMIN_PI`)**：全权掌控，可查阅绝密卡片、修改/删除任意成员任务、强制释放被死锁的 GPU 算力、调整阶段与系统初始化；
-- 🔬 **课题负责人 / 骨干 (`PROJECT_LEAD`)**：可创建并完全管理自己课题下的所有任务与里程碑，可推进论文至录用归档；
-- 🧑‍💻 **组内成员 / 研究生 (`STUDENT_RA`)**：**仅管自己**。只能编辑、拖拽自己为负责人或参与者的卡片；他人卡片强制加锁；若试图将卡片移入「录用归档」，系统会自动触发学术把关拦截提示（需导师核验）；只能释放自己登记占用的设备；
-- 👁️ **只读访客 / 旁听 (`AUDITOR_GUEST`)**：全局只读模式，禁用新建、拖拽与修改，适用于学术汇报、外部评审或新生旁听。
-- ⚡ **5 秒极速登记新成员**：在顶部身份栏直接点击「+ 登记新成员」，输入姓名即可立即开始协作。
+### 2. 🌳 课题大类、实验室架构树状图与研究词云 (`Architecture & Cloud`)
+- **课题大类归类与人力统计**：项目支持设定所属研究大类（如 `大模型与多模态`、`具身智能` 等），自动统计每个大类下的项目数、关联任务数与参与成员数；
+- **实验室全览架构树状图**：以交互式树状结构层级展开 `实验室 -> 研究大类 -> 具体课题 -> 任务与负责成员`，并支持直接在项目节点调整阶段进展；
+- **自动研究词云 (`Word Cloud`)**：实时从全部课题名称、投稿会议/期刊、摘要与任务标题中提取核心关键词并按权重排版渲染，点击关键词即可反查相关项目与任务。
 
 ---
 
-### 4. 🔒 课题保密与可见性分级 (Confidentiality & Privacy Scope)
-创建任务、立项与排期时，支持自由配置保密级别：
-- 🌐 **全组公开 (`PUBLIC`)**：课题组全体成员均可查看；
-- 👥 **课题内可见 (`TEAM_ONLY`)**：仅课题参与成员与导师可见，避免不同研究方向互相打扰；
-- 🔒 **绝密 (`PI_ONLY`)**：仅导师与一作可见，用于未发表的核心创新点、高密基金本子或专利草案。
+### 3. ✅ 周待办、任务清单联动与「项验收」闭环 (`Weekly Todos & Acceptance`)
+- **每位成员的本周推进清单**：顶部切换成员头像即可查看个人本周 To-Do List，并可按「全部 / 推进中 / 待验收 / 已验收 / 需修改」快速过滤；
+- **与看板执行清单双向同步**：可将任务中的某一条 Checklist 直接推入对应成员的本周待办；在周待办勾选完成提交或修改状态时，自动双向同步回原任务清单进度与完成率；
+- **灵活可控的「项验收」机制**：
+  - 导师解锁后可在页面顶部切换开关：**开启「自由互验（非锁模式）」**时，全实验室成员（含同级学生）可互相进行验收通过（`ACCEPTED`）或打回修改（`REVISION_REQUESTED`）并附验收评语；关闭时则严格限定由导师/系统管理员/项目骨干验收。
 
 ---
 
-### 5. ⚡ 投稿反向排期生成器 (Reverse DDL Scheduler)
-顶级会议与期刊（NeurIPS, ICML, CVPR, AAAI, Nature 子刊, AER 等）需要极其严格的倒排工期计划：
-- 输入论文题目、目标会议和截稿日期（$T$ 日）；
-- 自动按科学工期生成并关联 4 大协同里程碑：
-  - $T - 45\text{ 天}$ (`DATA_EXP`): **基线锁定与实验评测冻结**
-  - $T - 30\text{ 天}$ (`DRAFTING`): **论文完整初稿完成 (Overleaf)**
-  - $T - 14\text{ 天}$ (`PI_REVIEW`): **提交导师深入审阅与组内把关**
-  - $T - 3\text{ 天}$ (`PI_REVIEW`): **双盲匿名复核、格式排版与可复现包核验**
-- 步长天数与步骤名称支持自由增加、删除与自定义。
+### 4. 📑 执行清单与验收项自定义模板库 + 🌿 任务树状逻辑图
+- **自定义模板保存与一键注入 (`Checklist Templates`)**：
+  - 内置 3 套科研起始模板（顶会投稿与双盲核查、模型实验与消融验证周模板、论文初稿与图表规范），支持新建、编辑、复制副本与多行文本快速粘贴拆解（支持 `条目标题 | 验收标准` 语法）；
+  - 可在**任务卡片内嵌编辑器**、**任务详情抽屉**、**周待办页**或**顶部「模板库」**一键将模板注入为任务 Checklist（或同步推成带验收标准的本周待办），也可把现有任务清单或某成员的本周待办反存为新模板。
+- **任务树状逻辑图 (`Task Logic Tree`)**：
+  - 每张任务卡均支持一键生成并自由编辑层级化树状逻辑图（增删子节点、同级节点、拖拽或上下调整顺序、更改节点状态），并支持将叶节点一键同步入任务执行清单。
 
 ---
 
-### 6. 🔥 科研卡点上报与闭环决断 (Blocker Escalation)
-学术项目极易因某些技术暗礁导致停滞。LabFlow 将隐形阻力转化为公开协作决断：
-- 顶部支持一键筛选 **「🔥 仅看卡点」**，全组红灯任务一览无余；
-- 细分学术卡点类别：`数学推导卡点`、`算法模型收敛异常`、`算力与显存短缺`、`数据缺失`、`等待审阅`、`经验复现差异`；
-- 明确填写：*具体卡在哪里？* + *已尝试过的推导/解法* + *亟需谁介入决断 (导师/骨干)*；
-- 解决卡点后一键解除，自动更新状态并恢复顺畅推进。
+### 5. 👑 五级科研权限体系、学生系统管理员与自定义头像资料
+完全免除配置外部邮箱验证码的繁琐门槛，通过**管理员主密码（默认: `admin888`）**兼顾即开即用与团队防误改：
+- 👑 **导师 / 实验室最高管理员 (`ADMIN_PI`)**：全权掌控，解锁后可委任或撤销学生的「系统管理员」身份、配置管理员密码、查阅绝密卡片、切换全局非锁互验模式、执行全库重置/初始化；
+- 🛡️ **系统管理员（学生委任, `SYS_ADMIN`)**：权限仅次于导师、高于所有普通学生与骨干！可协助导师分担人员纳新、日常权限调配、算力设施统筹、阶段与目标会议管理及非破坏性文档导入，方便与同学高效沟通；
+- 🔬 **课题负责人 / 骨干 (`PROJECT_LEAD`)**：管理自己负责/参与课题下的任务流转与成果归档；
+- 🧑‍💻 **组内成员 / 研究生 (`STUDENT_RA`)**：**仅管自己**。可维护个人负责或参与的任务、提交个人本周待办验收（非锁模式下也可帮同学互验），跨成员任务只读防误触；
+- 👁️ **只读访客 (`AUDITOR_GUEST`)**：全局只读模式，适用于学术汇报、外部评审或新生旁听。
+- 🖼️ **随时改名与上传自定义照片头像**：所有成员均可随时在右上角个人资料弹窗修改中英文姓名、研究头衔、邮箱，并上传本地图片（客户端自动裁剪压缩为适配 PNG/JPEG）作为全系统个人头像。
 
 ---
 
-### 7. 📊 学术项目进度甘特图 (Academic Gantt View)
-- 支持 **按周 (Weekly)** 和 **按月 (Monthly)** 时间轴粒度缩放；
-- 支持 **按课题分类筛选与分组**，避免全实验室几十个任务堆积过大；
-- 支持在时间轴上直接拖动滑块调整完成进度（0~100%），自主编辑工期起始与截止日期。
+### 6. ✨ AI 智能文档导入、投稿倒排期与卡点求助
+- **AI 冷启动导入 (`AI Importer`)**：内置中英双语提示词与容错 JSON 解析器，将现有立项书、周报或人员名单发给任意大模型后粘贴即可**覆盖初始化**或**增量追加合并**全组数据；
+- **投稿反向排期生成器 (`Reverse DDL`)**：输入截稿日（$T$ 日），自动按 $T-45$、$T-30$、$T-14$、$T-3$（均支持自定义天数与步骤）生成全流程里程碑并注入看板；
+- **科研卡点上报 (`Blocker Escalation`)**：细分 `数学推导卡点`、`算法模型收敛异常`、`算力与显存短缺`、`数据缺失`、`等待审阅`、`经验复现差异`，明确标注尝试过的解法与求助决断人；解决后一键解除。
 
 ---
 
-### 8. 🖥️ 无 PPT 组会投屏模式 (Group Standup Mode)
-告别全组学生每周花半天做 PPT 却只汇报 5 分钟的内卷痛点：
-- 专为会议室 4K 大屏与腾讯会议/Zoom 屏幕共享设计的高对比度投屏面板；
-- **三栏学术汇报看板**：
-  1. *近期进展与录用*：已录用论文与阶段成果；
-  2. *当前实验与初稿推进*：正在进行的模型调优、实证分析与初稿章节；
-  3. *核心卡点与导师决断*：亟需组会集体讨论或导师拍板的技术难点。
-- **一键导出纪要与个人周报**：自动生成格式工整的 Markdown 汇报周报，支持一键复制到剪贴板，秒发微信群或邮件！
+### 7. 📊 学术甘特图、无 PPT 组会投屏与 🧭 内置「功能一览」
+- **学术甘特图 (`Gantt View`)**：支持按周/按月粒度缩放、按课题或阶段分组，以及进度滑块与起止日期就地调整；
+- **无 PPT 组会投屏模式 (`Group Standup`)**：完整适配**浅色（白天会议室）/ 深色（暗调演示）**模式，自动展示「近期录用与进展 / 当前实验与撰写 / 核心卡点与导师决断」三栏看板，支持汇报计时器与一键导出 Markdown 周报及会议纪要；
+- **内置「功能一览」上手引导 (`Feature Guide`)**：顶部导航右上角可随时打开，支持按**学生 / 系统管理员 / 导师**切换快速上手路径、关键词检索与点击一键跳转对应视图或工具窗口。
 
 ---
 
-### 9. 🎨 经典学术主题配色、色卡拾色器与 Times New Roman 学术排版
-- **主题配色预设**：
-  - 🌟 **黑金 (`#C28E0E`)**：沉稳高级黑金质感，完美契合暗黑与深灰底色；
-  - 🌊 **深蓝 (`#002147`)**：严谨深邃的经典学术深蓝；
-  - 🔴 **深红 (`#8C1515`)**：沉着大气的质感深红；
-  - 🍃 **青绿 (`#0D9488`)**：清爽聚焦的自然青绿；
-  - 🍷 **酒红 (`#A31F34`)**：沉稳坚韧的暗调酒红；
-  - 🌌 经典蓝紫、计算青、翠绿、琥珀金、玫瑰红等。
-- **色卡与拾色器直接点选**：
-  - 内置经典学术色卡阵列，点击色卡立即全局生效；
-  - 支持 HTML5 原生吸色笔 / 拾色器与 HEX 色值输入，任意色号皆可完美驱动界面。
-- **学术专业排版**：
-  - 英文字体全面统一为国际学术期刊通用 **Times New Roman** 衬线体；
-  - 支持 **紧凑小号**、**标准常规**、**舒适大号** 三级字号调节；
-  - **色调统一规范**：所有科研资源外链（GitHub, Overleaf, Zotero, Dataset）统一采用优雅低饱和度学术灰阶微胶囊，彻底去除多余花哨杂色。
+### 8. 🎨 12+12 中英混排学术字体、色卡拾色器与灰阶资源外链
+- **12 种英文字体 + 12 种中文字体自由搭配（含自定义输入）**：
+  - 英文涵盖 `Times New Roman`、`Georgia`、`Palatino`、`Garamond`、`Baskerville`、`Cambria`、`Geist Sans`、`Inter`、`Helvetica/Arial`、`Segoe/System Sans`、`JetBrains Mono`、`Fira Code`；
+  - 中文涵盖 `苹方/微软雅黑`、`幼圆（圆润亲和）`、`宋体/思源宋体`、`华文中宋`、`楷体/华文楷体`、`霞鹜文楷`、`仿宋/华文仿宋`、`黑体/思源黑体`、`隶书`、`华文行楷`、`等线` 等；同时支持直接输入本机已安装字体名；
+- **名校主题色卡 + 吸色器**：黑金 (`#C28E0E`)、牛津深蓝 (`#002147`)、斯坦福深红 (`#8C1515`)、青绿、酒红、靛紫等色卡 + HTML5 拾色器实时切换；
+- **三级字号与纯净外链规范**：紧凑小号 / 标准常规 / 舒适大号自由调节；Overleaf、GitHub、Dataset、Zotero 外链统一低饱和度学术灰阶展示。
 
 ---
 
@@ -205,7 +181,7 @@ npm run dev
        npm run start:lan
        ```
      - 若暂不装 PostgreSQL，直接执行 `npm run build && npm run start:lan` 也会自动持久保存在服务器磁盘 `.data/labflow-state.json` 中。
-     - 启动后，顶部状态胶囊会显示 **「服务器DB已同步」**（PostgreSQL）或 **「本机服务已保存」**（`.data/labflow-state.json`）。
+     - 启动后，顶部状态胶囊悬停可查看详情（PostgreSQL 同步或本机服务端 `.data/labflow-state.json` 保存）。
 
 #### 5. 后续一键升级与自动化运维 (One-Click Upgrade)
 
@@ -230,8 +206,11 @@ npm run dev
   ```
   脚本会自动在本地打包轻量 `git bundle` 并通过 `scp` 传至服务器调用 `update.sh` 完成构建重启。
 
-#### 6. 生产环境构建与打包
+#### 6. 生产环境构建与测试
 ```bash
+npm test
+npx tsc --noEmit
+npm run lint
 npm run build
 npm run start
 ```
@@ -267,7 +246,7 @@ LabFlow 深度集成了 Progressive Web App (PWA) 协议：
       "nameZh": "中文名（如：王伟）",
       "nameEn": "英文或拼音（如：Wei Wang）",
       "role": "PI | POSTDOC | SENIOR_PHD | PHD_CANDIDATE | RA | VISITING_SCHOLAR",
-      "accessRole": "ADMIN_PI | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
+      "accessRole": "ADMIN_PI | SYS_ADMIN | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
       "titleZh": "身份或研究方向（如：副教授 / 具身智能方向）",
       "email": "工作邮箱（如无写空字符串）"
     }
@@ -320,11 +299,12 @@ LabFlow 深度集成了 Progressive Web App (PWA) 协议：
 
 - **核心框架**: [Next.js 14](https://nextjs.org/) (React 18, App Router)
 - **开发语言**: [TypeScript 5](https://www.typescriptlang.org/) (全静态严格类型定义)
-- **样式系统**: [Tailwind CSS 3.4](https://tailwindcss.com/) (含实时 CSS 变量全局动态注入)
-- **交互拖拽**: [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (流畅丝滑的拖拽排序与跨阶段流转)
+- **样式系统**: [Tailwind CSS 3.4](https://tailwindcss.com/) (明暗双色自适应 + 实时 CSS 变量注入)
+- **交互拖拽**: [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) + 阶段单元格原生拖拽矩阵
+- **自动化测试**: [Vitest](https://vitest.dev/) (涵盖权限模型、任务操作、排期工具、模板引擎、主题字体与 API 路由测试)
 - **学术图标**: [Lucide React](https://lucide.dev/)
 - **数据持久化**: 双模服务端持久化引擎 — 零配置本机服务端文件存储（`.data/labflow-state.json` + 原子写盘锁 + 乐观并发修订号）与 PostgreSQL + Prisma ORM 云端/多用户数据库无缝切换，搭配浏览器离线缓存与 JSON 灾备导入导出
-- **字体标准**: 学术标准 Times New Roman 衬线字体族
+- **字体体系**: 12 种英文字体 + 12 种中文字体自由混排（含幼圆、宋体、楷体、霞鹜文楷、Times New Roman、Georgia 等）及自定义字体输入
 
 ---
 
