@@ -13,19 +13,25 @@ datasource db {
 enum LabRole {
   PI
   POSTDOC
+  SENIOR_PHD
+  PHD_CANDIDATE
   PHD_STUDENT
   RA
   VISITING_SCHOLAR
   COLLABORATOR
 }
 
-enum AcademicStage {
-  IDEATION
-  DATA_EXP
-  DRAFTING
-  PI_REVIEW
-  REVISION
-  ACCEPTED
+enum AccessRole {
+  ADMIN_PI
+  PROJECT_LEAD
+  STUDENT_RA
+  AUDITOR_GUEST
+}
+
+enum VisibilityLevel {
+  PUBLIC
+  TEAM_ONLY
+  PI_ONLY
 }
 
 enum Priority {
@@ -59,6 +65,15 @@ enum ResourceStatus {
   MAINTENANCE
 }
 
+model WorkspaceConfig {
+  id                String   @id @default("default")
+  adminPasswordHash String
+  sessionSecret     String
+  revision          Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
 model Lab {
   id          String         @id @default(uuid())
   name        String
@@ -77,13 +92,20 @@ model User {
   id                String       @id @default(uuid())
   email             String       @unique
   name              String
+  nameZh            String       @default("")
+  nameEn            String       @default("")
+  titleZh           String       @default("")
+  titleEn           String       @default("")
   avatar            String?
-  role              LabRole      @default(PHD_STUDENT)
+  role              LabRole      @default(PHD_CANDIDATE)
+  accessRole        AccessRole   @default(STUDENT_RA)
   affiliation       String?
+  pin               String?
   memberships       Membership[]
   ledProjects       Project[]    @relation("ProjectLead")
   piProjects        Project[]    @relation("ProjectPI")
   assignedTasks     Task[]       @relation("TaskAssignee")
+  piTasks           Task[]       @relation("TaskPI")
   escalatedBlockers Task[]       @relation("BlockerEscalation")
   blockerLogs       Blocker[]    @relation("BlockerEscalatedTo")
   createdAt         DateTime     @default(now())
@@ -91,25 +113,47 @@ model User {
 }
 
 model Membership {
-  id        String   @id @default(uuid())
-  labId     String
-  userId    String
-  role      LabRole
-  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(uuid())
+  labId    String
+  userId   String
+  role     LabRole
+  lab      Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
 
   @@unique([labId, userId])
 }
 
+model Stage {
+  id          String  @id
+  labelEn     String
+  labelZh     String
+  subTitleEn  String?
+  subTitleZh  String?
+  color       String
+  badgeBg     String
+  borderColor String
+  sortOrder   Int     @default(0)
+}
+
+model VenuePreset {
+  id            String @id
+  name          String
+  tag           String
+  defaultLeadId String
+  milestones    Json
+  sortOrder     Int    @default(0)
+}
+
 model Project {
-  id                 String        @id @default(uuid())
+  id                 String          @id @default(uuid())
   title              String
   abstract           String?
-  targetVenue        String        // e.g. "AAAI 2027", "AEPP", "Management Science"
-  tag                String        // Short badge tag, e.g. "AAAI '27"
+  targetVenue        String          // e.g. "AAAI 2027", "AEPP", "Management Science"
+  tag                String          // Short badge tag, e.g. "AAAI '27"
   submissionDeadline DateTime?
-  status             AcademicStage @default(IDEATION)
+  status             String          @default("IDEATION")
+  visibility         VisibilityLevel @default(PUBLIC)
   overleafUrl        String?
   githubUrl          String?
   datasetUrl         String?
@@ -117,42 +161,56 @@ model Project {
   labId              String
   leadAuthorId       String
   piId               String
-  lab                Lab           @relation(fields: [labId], references: [id], onDelete: Cascade)
-  leadAuthor         User          @relation("ProjectLead", fields: [leadAuthorId], references: [id])
-  pi                 User          @relation("ProjectPI", fields: [piId], references: [id])
+  lab                Lab             @relation(fields: [labId], references: [id], onDelete: Cascade)
+  leadAuthor         User            @relation("ProjectLead", fields: [leadAuthorId], references: [id])
+  pi                 User            @relation("ProjectPI", fields: [piId], references: [id])
   tasks              Task[]
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 }
 
 model Task {
-  id                  String           @id @default(uuid())
-  title               String
-  description         String?
-  stage               AcademicStage    @default(IDEATION)
-  priority            Priority         @default(MEDIUM)
-  deadline            DateTime?
-  order               Int              @default(0)
-  projectId           String
-  assigneeId          String?
-  
+  id                   String           @id @default(uuid())
+  title                String
+  description          String?
+  stage                String           @default("IDEATION")
+  projectTag           String           @default("")
+  targetVenue          String           @default("")
+  priority             Priority         @default(MEDIUM)
+  visibility           VisibilityLevel  @default(PUBLIC)
+  startDate            String?
+  deadline             DateTime?
+  progress             Int              @default(0)
+  order                Int              @default(0)
+  projectId            String?
+  assigneeId           String?
+  piId                 String?
+  overleafUrl          String?
+  githubUrl            String?
+  datasetUrl           String?
+  zoteroUrl            String?
+  tags                 Json?
+  checklist            Json?
+
   // Blocker Status & Escalation fields
-  isBlocked           Boolean          @default(false)
-  blockerCategory     BlockerCategory?
-  blockerReason       String?
-  blockerTried        String?
+  isBlocked            Boolean          @default(false)
+  blockerCategory      BlockerCategory?
+  blockerReason        String?
+  blockerTried         String?
+  blockerEscalatedTo   String?
   blockerEscalatedToId String?
-  blockedAt           DateTime?
-  
+  blockedAt            DateTime?
+
   // Relations
-  project             Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee            User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  escalatedTo         User?            @relation("BlockerEscalation", fields: [blockerEscalatedToId], references: [id])
-  blockerHistory      Blocker[]
-  
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  completedAt         DateTime?
+  project              Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignee             User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  pi                   User?            @relation("TaskPI", fields: [piId], references: [id], onDelete: SetNull)
+  escalatedTo          User?            @relation("BlockerEscalation", fields: [blockerEscalatedToId], references: [id], onDelete: SetNull)
+  blockerHistory       Blocker[]
+
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  completedAt          DateTime?
 }
 
 model Blocker {
@@ -165,25 +223,28 @@ model Blocker {
   reportedAt      DateTime        @default(now())
   resolvedAt      DateTime?
   resolutionNotes String?
-  
+
   task            Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
   escalatedTo     User            @relation("BlockerEscalatedTo", fields: [escalatedToId], references: [id])
 }
 
 model ResourceSlot {
-  id               String         @id @default(uuid())
-  labId            String
-  name             String         // e.g. "GPU Node-01 (4x A100-80G)"
-  type             ResourceType   @default(GPU)
-  specs            String?        // "4x NVIDIA A100 SXM4 80GB, NVLink 600GB/s"
-  status           ResourceStatus @default(IDLE)
-  currentUserId    String?
-  currentUser      String?        // Username or handle
-  currentJob       String?        // "ADMM Multi-Agent Training"
-  vramUtilPercent  Int            @default(0)
-  expiresAt        DateTime?
-  
-  lab              Lab            @relation(fields: [labId], references: [id], onDelete: Cascade)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id              String         @id @default(uuid())
+  labId           String
+  name            String         // e.g. "GPU Node-01 (4x A100-80G)"
+  nameZh          String         @default("")
+  nameEn          String         @default("")
+  type            ResourceType   @default(GPU)
+  specs           String?        // "4x NVIDIA A100 SXM4 80GB, NVLink 600GB/s"
+  status          ResourceStatus @default(IDLE)
+  currentUserId   String?
+  currentUser     String?        // Username or handle
+  currentJob      String?        // "ADMM Multi-Agent Training"
+  remainingHours  Int            @default(0)
+  vramUtilPercent Int            @default(0)
+  expiresAt       DateTime?
+
+  lab             Lab            @relation(fields: [labId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }

@@ -17,6 +17,8 @@
 # local env files
 .env
 .env*.local
+.data/
+coverage/
 
 # misc & OS
 .DS_Store

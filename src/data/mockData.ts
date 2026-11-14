@@ -7,6 +7,7 @@ import {
   StageConfig,
   TaskItem,
 } from '@/types';
+import { generateInitialsAvatar } from '@/utils/avatar';
 
 export const DEFAULT_STAGES: StageConfig[] = [
   {
@@ -212,7 +213,7 @@ export const LAB_MEMBERS: LabMember[] = [
     accessRole: 'ADMIN_PI',
     titleEn: 'Principal Investigator & Lab Director',
     titleZh: '课题组负责人 / 博士生导师',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    avatar: generateInitialsAvatar('Professor 1', 'member-pi'),
     email: 'professor1@labflow.edu',
   },
   {
@@ -223,7 +224,7 @@ export const LAB_MEMBERS: LabMember[] = [
     accessRole: 'PROJECT_LEAD',
     titleEn: 'Postdoctoral Research Fellow',
     titleZh: '博士后研究员 (优化理论)',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    avatar: generateInitialsAvatar('Postdoc 1', 'member-postdoc'),
     email: 'postdoc1@labflow.edu',
   },
   {
@@ -234,7 +235,7 @@ export const LAB_MEMBERS: LabMember[] = [
     accessRole: 'PROJECT_LEAD',
     titleEn: 'Senior PhD Candidate',
     titleZh: '高年级博士生 (计量与机器学习)',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    avatar: generateInitialsAvatar('Student 1', 'member-student1'),
     email: 'student1@labflow.edu',
   },
   {
@@ -245,7 +246,7 @@ export const LAB_MEMBERS: LabMember[] = [
     accessRole: 'STUDENT_RA',
     titleEn: 'PhD Researcher',
     titleZh: '博士研究生 (分布式算法)',
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80',
+    avatar: generateInitialsAvatar('Student 2', 'member-student2'),
     email: 'student2@labflow.edu',
   },
   {
@@ -256,7 +257,7 @@ export const LAB_MEMBERS: LabMember[] = [
     accessRole: 'STUDENT_RA',
     titleEn: 'Graduate Research Assistant',
     titleZh: '科研助理 (数据实证)',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    avatar: generateInitialsAvatar('Student 3', 'member-student3'),
     email: 'student3@labflow.edu',
   },
   {
@@ -267,7 +268,7 @@ export const LAB_MEMBERS: LabMember[] = [
     accessRole: 'AUDITOR_GUEST',
     titleEn: 'Visiting Research Scholar',
     titleZh: '访问学者 (金融工程)',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+    avatar: generateInitialsAvatar('Visiting 1', 'member-visiting1'),
     email: 'visiting1@labflow.edu',
   },
 ];

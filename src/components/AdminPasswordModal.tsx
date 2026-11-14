@@ -15,17 +15,24 @@ export const AdminPasswordModal: React.FC = () => {
 
   const [inputPass, setInputPass] = useState('');
   const [errorMsg, setErrorMsg] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isPasswordModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = unlockAdmin(inputPass);
-    if (success) {
-      setInputPass('');
-      setErrorMsg(false);
-    } else {
-      setErrorMsg(true);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const success = await unlockAdmin(inputPass);
+      if (success) {
+        setInputPass('');
+        setErrorMsg(false);
+      } else {
+        setErrorMsg(true);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -116,10 +123,19 @@ export const AdminPasswordModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm transition-all flex items-center gap-1.5"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm transition-all flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{language === 'zh' ? '验证并解锁' : 'Verify & Unlock'}</span>
+              <span>
+                {isSubmitting
+                  ? language === 'zh'
+                    ? '验证中...'
+                    : 'Verifying...'
+                  : language === 'zh'
+                  ? '验证并解锁'
+                  : 'Verify & Unlock'}
+              </span>
             </button>
           </div>
         </form>

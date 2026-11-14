@@ -35,6 +35,7 @@ export const GanttView: React.FC = () => {
     moveTask,
     setSelectedTask,
     setActiveBlockerTask,
+    canEditTask,
   } = useLabFlow();
 
   const [timeScale, setTimeScale] = useState<'weekly' | 'monthly'>('weekly');
@@ -629,23 +630,25 @@ export const GanttView: React.FC = () => {
                             </span>
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono text-cyan-400">{task.progress || 0}%</span>
-                              <button
-                                onClick={() => setEditingTaskId(isEditing ? null : task.id)}
-                                className="text-slate-500 hover:text-slate-300 text-[10px] underline"
-                              >
-                                {isEditing
-                                  ? language === 'zh'
-                                    ? '收起'
-                                    : 'Close'
-                                  : language === 'zh'
-                                  ? '调整'
-                                  : 'Edit'}
-                              </button>
+                              {canEditTask(task) && (
+                                <button
+                                  onClick={() => setEditingTaskId(isEditing ? null : task.id)}
+                                  className="text-slate-500 hover:text-slate-300 text-[10px] underline"
+                                >
+                                  {isEditing
+                                    ? language === 'zh'
+                                      ? '收起'
+                                      : 'Close'
+                                    : language === 'zh'
+                                    ? '调整'
+                                    : 'Edit'}
+                                </button>
+                              )}
                             </div>
                           </div>
 
                           {/* Inline quick adjustment drawer when clicked */}
-                          {isEditing && (
+                          {isEditing && canEditTask(task) && (
                             <div className="mt-2 p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2 text-xs">
                               {/* Stage Selector */}
                               <div className="flex items-center justify-between gap-1 text-[10px]">

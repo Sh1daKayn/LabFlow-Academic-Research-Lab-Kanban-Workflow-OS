@@ -5,6 +5,28 @@
 :root {
   --background: #020617;
   --foreground: #f8fafc;
+  --lab-accent: #6366f1;
+  --lab-accent-hover: #4f46e5;
+  --lab-accent-light: rgba(99, 102, 241, 0.12);
+  --lab-accent-border: rgba(99, 102, 241, 0.35);
+
+  /* Fallback dark surface tokens */
+  --lab-bg-canvas: #040407;
+  --lab-bg-surface: #0a0a12;
+  --lab-bg-card: #10101c;
+  --lab-bg-elevated: #181828;
+  --lab-bg-hover: #1f1f33;
+  --lab-border-subtle: #25253d;
+  --lab-border-strong: #3b3b61;
+  --lab-bg-backdrop: rgba(4, 4, 7, 0.78);
+
+  /* Fallback light surface tokens */
+  --lab-bg-canvas-light: #f9f9fb;
+  --lab-bg-surface-light: #f3f3f7;
+  --lab-bg-card-light: #ececf3;
+  --lab-bg-elevated-light: #e2e2ec;
+  --lab-border-subtle-light: #dbdbe8;
+  --lab-border-strong-light: #c2c2d9;
 }
 
 html.light {
@@ -22,7 +44,7 @@ body {
 }
 
 /* ========================================================================= */
-/* FONT SIZE CUSTOMIZATION */
+/* FONT SIZE CUSTOMIZATION                                                   */
 /* ========================================================================= */
 
 html[data-font-size="compact"] {
@@ -39,33 +61,7 @@ html[data-font-size="large"] {
 
 /* ========================================================================= */
 /* DYNAMIC ACCENT & COLOR FAMILY IMMERSION SYSTEM                           */
-/* Except pure black & white, every background & border adopts the hue      */
 /* ========================================================================= */
-
-:root {
-  --lab-accent: #6366f1;
-  --lab-accent-hover: #4f46e5;
-  --lab-accent-light: rgba(99, 102, 241, 0.12);
-  --lab-accent-border: rgba(99, 102, 241, 0.35);
-
-  /* Fallback dark values */
-  --lab-bg-canvas: #040407;
-  --lab-bg-surface: #0a0a12;
-  --lab-bg-card: #10101c;
-  --lab-bg-elevated: #181828;
-  --lab-bg-hover: #1f1f33;
-  --lab-border-subtle: #25253d;
-  --lab-border-strong: #3b3b61;
-  --lab-bg-backdrop: rgba(4, 4, 7, 0.78);
-
-  /* Fallback light values */
-  --lab-bg-canvas-light: #f9f9fb;
-  --lab-bg-surface-light: #f3f3f7;
-  --lab-bg-card-light: #ececf3;
-  --lab-bg-elevated-light: #e2e2ec;
-  --lab-border-subtle-light: #dbdbe8;
-  --lab-border-strong-light: #c2c2d9;
-}
 
 /* Universal dynamic accent styling for any selected color or custom picker */
 button.bg-indigo-600,

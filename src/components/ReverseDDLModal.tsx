@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { ReverseDDLForm, MilestoneTemplate, AcademicStage, VisibilityLevel } from '@/types';
 import { subtractDays, formatDate } from '@/utils/date';
@@ -11,6 +11,7 @@ export const ReverseDDLModal: React.FC = () => {
     isReverseDDLOpen,
     setIsReverseDDLOpen,
     members,
+    currentUserId,
     venues,
     addVenue,
     deleteVenue,
@@ -28,7 +29,7 @@ export const ReverseDDLModal: React.FC = () => {
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 70);
   const [deadlineDate, setDeadlineDate] = useState(defaultDate.toISOString().split('T')[0]);
-  const [leadAuthorId, setLeadAuthorId] = useState('member-student1');
+  const [leadAuthorId, setLeadAuthorId] = useState(members[0]?.id || 'member-student1');
   const [overleafUrl, setOverleafUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [datasetUrl, setDatasetUrl] = useState('');
@@ -45,6 +46,15 @@ export const ReverseDDLModal: React.FC = () => {
   const [isAddingVenue, setIsAddingVenue] = useState(false);
   const [newVenueName, setNewVenueName] = useState('');
   const [newVenueTag, setNewVenueTag] = useState('');
+
+  useEffect(() => {
+    if (!isReverseDDLOpen) return;
+    setLeadAuthorId((prev) => {
+      if (members.some((m) => m.id === prev)) return prev;
+      if (members.some((m) => m.id === currentUserId)) return currentUserId;
+      return members[0]?.id || '';
+    });
+  }, [isReverseDDLOpen, members, currentUserId]);
 
   if (!isReverseDDLOpen) return null;
 
@@ -75,7 +85,9 @@ export const ReverseDDLModal: React.FC = () => {
   const handleSelectVenue = (v: (typeof venues)[0]) => {
     setTargetVenue(v.name);
     setTag(v.tag);
-    if (v.defaultLeadId) setLeadAuthorId(v.defaultLeadId);
+    if (v.defaultLeadId && members.some((m) => m.id === v.defaultLeadId)) {
+      setLeadAuthorId(v.defaultLeadId);
+    }
     if (v.milestones && v.milestones.length > 0) {
       setMilestones(JSON.parse(JSON.stringify(v.milestones)));
     }

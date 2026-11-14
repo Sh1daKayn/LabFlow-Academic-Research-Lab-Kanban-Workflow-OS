@@ -5,12 +5,13 @@ import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, TaskItem } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
-import { Plus, FilterX, Clock, Sparkles } from 'lucide-react';
+import { Plus, FilterX, Clock, Sparkles, FolderKanban } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
   const {
     tasks,
     stages,
+    projects,
     language,
     t,
     filterOnlyBlockers,
@@ -18,10 +19,13 @@ export const KanbanBoard: React.FC = () => {
     filterMemberId,
     selectedStageFilter,
     setSelectedStageFilter,
+    selectedProjectFilter,
+    setSelectedProjectFilter,
     sortByDDLUrgency,
     setSortByDDLUrgency,
     moveTask,
     reorderTasks,
+    addToast,
     setIsNewTaskOpen,
     setIsAIImportOpen,
   } = useLabFlow();
@@ -46,7 +50,18 @@ export const KanbanBoard: React.FC = () => {
     const destStage = destination.droppableId as AcademicStage;
 
     if (sourceStage === destStage) {
-      reorderTasks(sourceStage, source.index, destination.index);
+      if (sortByDDLUrgency) {
+        addToast(
+          language === 'zh' ? '请先关闭 DDL 紧迫度排序' : 'Disable DDL Urgency Sort First',
+          language === 'zh'
+            ? '按截止时间自动排序时不支持手动拖拽同列顺序'
+            : 'Intra-column drag reordering is disabled while DDL sorting is active.',
+          'warning'
+        );
+        return;
+      }
+      const visibleIds = getFilteredTasksForStage(sourceStage).map((item) => item.id);
+      reorderTasks(sourceStage, source.index, destination.index, visibleIds);
     } else {
       moveTask(draggableId, destStage, destination.index);
     }
@@ -58,6 +73,7 @@ export const KanbanBoard: React.FC = () => {
       .filter((task) => {
         if (filterOnlyBlockers && !task.isBlocked) return false;
         if (filterMemberId !== 'all' && task.leadAuthor.id !== filterMemberId) return false;
+        if (selectedProjectFilter !== 'all' && task.projectId !== selectedProjectFilter) return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchTitle = task.title.toLowerCase().includes(q);
@@ -108,7 +124,11 @@ export const KanbanBoard: React.FC = () => {
           </button>
           {stages.map((stage) => {
             const isSelected = selectedStageFilter === stage.id;
-            const count = tasks.filter((t) => t.stage === stage.id).length;
+            const count = tasks.filter(
+              (item) =>
+                item.stage === stage.id &&
+                (selectedProjectFilter === 'all' || item.projectId === selectedProjectFilter)
+            ).length;
             const name = language === 'zh' ? stage.labelZh : stage.labelEn;
             return (
               <button
@@ -128,8 +148,29 @@ export const KanbanBoard: React.FC = () => {
           })}
         </div>
 
-        {/* Sort by urgency toggle */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Project filter & Sort by urgency toggle */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {projects.length > 0 && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
+              <FolderKanban className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <select
+                value={selectedProjectFilter}
+                onChange={(e) => setSelectedProjectFilter(e.target.value)}
+                aria-label={t.allProjects}
+                className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer max-w-[170px] truncate"
+              >
+                <option value="all" className="bg-slate-900 text-slate-200">
+                  {t.allProjects}
+                </option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id} className="bg-slate-900 text-slate-200">
+                    [{p.tag}] {p.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button
             onClick={() => setSortByDDLUrgency(!sortByDDLUrgency)}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${
@@ -146,14 +187,28 @@ export const KanbanBoard: React.FC = () => {
       </div>
 
       {/* Active filter announcement bar if active */}
-      {(filterOnlyBlockers || filterMemberId !== 'all' || searchQuery) && (
+      {(filterOnlyBlockers ||
+        filterMemberId !== 'all' ||
+        selectedProjectFilter !== 'all' ||
+        searchQuery) && (
         <div className="mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-cyan-400">{t.activeFilters}:</span>
             {filterOnlyBlockers && (
               <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-medium">
                 {t.onlyBlockers}
               </span>
+            )}
+            {selectedProjectFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setSelectedProjectFilter('all')}
+                className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-medium hover:bg-indigo-500/30"
+              >
+                {projects.find((p) => p.id === selectedProjectFilter)?.tag ||
+                  selectedProjectFilter}{' '}
+                ✕
+              </button>
             )}
             {searchQuery && (
               <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-medium">

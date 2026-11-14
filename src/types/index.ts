@@ -175,3 +175,14 @@ export interface ReverseDDLForm {
   notes?: string;
   customMilestones?: MilestoneTemplate[];
 }
+
+export type StorageMode = 'postgres' | 'local-file' | 'browser-local';
+
+export interface LabWorkspaceData {
+  stages: StageConfig[];
+  tasks: TaskItem[];
+  projects: ProjectItem[];
+  members: LabMember[];
+  venues: VenuePreset[];
+  resources: LabResource[];
+}

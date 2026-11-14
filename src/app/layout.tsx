@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { PWARegister } from '@/components/PWARegister';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
-    apple: '/favicon.ico',
+    apple: '/icon-192.png',
   },
   keywords: [
     'Academic Lab OS',
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
+        <PWARegister />
         {children}
       </body>
     </html>

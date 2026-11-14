@@ -1,0 +1,4 @@
+# Default to LF line endings for Linux server compatibility
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf

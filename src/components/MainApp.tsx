@@ -15,6 +15,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { AdminPasswordModal } from '@/components/AdminPasswordModal';
 import { MemberRegisterModal } from '@/components/MemberRegisterModal';
 import { AIImportModal } from '@/components/AIImportModal';
+import { TaskDetailDrawer } from '@/components/TaskDetailDrawer';
 import { ToastContainer } from '@/components/Toast';
 
 export const MainApp: React.FC = () => {
@@ -48,6 +49,7 @@ export const MainApp: React.FC = () => {
       <AdminPasswordModal />
       <MemberRegisterModal />
       <AIImportModal />
+      {viewMode !== 'kanban' && <TaskDetailDrawer />}
 
       {/* Toast Notification Layer */}
       <ToastContainer />

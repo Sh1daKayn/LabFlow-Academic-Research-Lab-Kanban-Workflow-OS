@@ -29,6 +29,7 @@ export const GroupMeetingView: React.FC = () => {
     setActiveBlockerTask,
     resolveBlocker,
     setSelectedTask,
+    canEditTask,
     addToast,
     generateMyWeeklyDigest,
     language,
@@ -443,21 +444,23 @@ export const GroupMeetingView: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setActiveBlockerTask(t)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition-colors"
-                      >
-                        {language === 'zh' ? '编辑' : 'Edit'}
-                      </button>
-                      <button
-                        onClick={() => resolveBlocker(t.id)}
-                        className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow transition-colors"
-                      >
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>{language === 'zh' ? '解除' : 'Resolve'}</span>
-                      </button>
-                    </div>
+                    {canEditTask(t) && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setActiveBlockerTask(t)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition-colors"
+                        >
+                          {language === 'zh' ? '编辑' : 'Edit'}
+                        </button>
+                        <button
+                          onClick={() => resolveBlocker(t.id)}
+                          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow transition-colors"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>{language === 'zh' ? '解除' : 'Resolve'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

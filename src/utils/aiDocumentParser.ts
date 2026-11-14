@@ -7,6 +7,7 @@ import {
   VisibilityLevel,
   AccessRole,
 } from '@/types';
+import { generateInitialsAvatar } from '@/utils/avatar';
 
 export interface ParsedMember {
   id: string;
@@ -562,7 +563,7 @@ export function parseAIDocumentText(
         titleZh: rm.titleZh || `${nameZh} 的研究方向`,
         titleEn: rm.titleEn || nameEn,
         email: rm.email || `${nameEn.toLowerCase().replace(/\s+/g, '.')}@lab.edu.cn`,
-        avatar: rm.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        avatar: rm.avatar || generateInitialsAvatar(nameEn, nameZh),
       };
       membersMap.set(nameZh, member);
       membersMap.set(nameEn, member);
@@ -588,7 +589,7 @@ export function parseAIDocumentText(
           titleZh: '课题负责人',
           titleEn: 'Project Lead',
           email: '',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+          avatar: generateInitialsAvatar(leadName),
         };
         membersMap.set(leadName, leadMember);
       }
@@ -651,7 +652,7 @@ export function parseAIDocumentText(
           titleZh: '学术骨干',
           titleEn: 'Researcher',
           email: '',
-          avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150',
+          avatar: generateInitialsAvatar(authorName),
         };
         membersMap.set(authorName, author);
       }

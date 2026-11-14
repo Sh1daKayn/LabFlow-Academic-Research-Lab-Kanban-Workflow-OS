@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   labflow:
     build:
@@ -12,7 +10,11 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://labflow:labflow_secret@postgres:5432/labflow_db?schema=public
+      - LABFLOW_SESSION_SECRET=${LABFLOW_SESSION_SECRET:-change-this-in-production-labflow-secret}
+      - LABFLOW_DEFAULT_ADMIN_PASSWORD=${LABFLOW_DEFAULT_ADMIN_PASSWORD:-admin888}
       - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      - labflow_data:/app/.data
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,7 +30,7 @@ services:
       POSTGRES_PASSWORD: labflow_secret
       POSTGRES_DB: labflow_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -40,6 +42,8 @@ services:
       - labflow-net
 
 volumes:
+  labflow_data:
+    driver: local
   postgres_data:
     driver: local
 

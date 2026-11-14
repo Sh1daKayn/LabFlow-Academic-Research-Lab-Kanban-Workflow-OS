@@ -181,7 +181,33 @@ npm run dev
 ```
 启动完成后，在浏览器访问 **`http://localhost:3000`** 即可开始使用。
 
-#### 4. 生产环境构建与打包
+#### 4. 服务器持久化与跨设备协作说明 (重要)
+默认不配置 `.env` 时，所有更新会自动保存到**运行 Next.js 的这台主机硬盘上**（`.data/labflow-state.json`），属于「零配置本机服务端存储」——不会自动推送到 GitHub，也不能在只读的无服务器环境（如未挂数据库的 Vercel）持久化写入。
+
+根据您的使用场景，可按以下两种方式实现跨设备 / 远程服务器保存：
+- **实验室局域网共享本机数据（最轻量）**：
+  ```bash
+  npm run dev:lan
+  ```
+  同课题组成员在局域网内访问 `http://<运行主机的局域网IP>:3000`，所有人的修改都会实时同步写入该主机的 `.data/labflow-state.json`。
+- **云端 / 独立 Linux 服务器 + PostgreSQL 数据库（推荐多人长期协作 & 公网部署）**：
+  1. **Docker Compose 一键部署（内置 PostgreSQL 16 + 自动建表）**：
+     ```bash
+     docker compose up -d --build
+     ```
+  2. **裸机 Linux + Node.js 20 部署**：
+     - 复制 `.env.example` 为 `.env`，填入 PostgreSQL 的 `DATABASE_URL`（如自建 Postgres、Neon 或 Supabase）；
+     - 安装依赖、同步表结构、构建并以全网卡监听模式启动：
+       ```bash
+       npm ci
+       npx prisma db push
+       npm run build
+       npm run start:lan
+       ```
+     - 若暂不装 PostgreSQL，直接执行 `npm run build && npm run start:lan` 也会自动持久保存在服务器磁盘 `.data/labflow-state.json` 中。
+     - 启动后，顶部状态胶囊会显示 **「服务器DB已同步」**（PostgreSQL）或 **「本机服务已保存」**（`.data/labflow-state.json`）。
+
+#### 5. 生产环境构建与打包
 ```bash
 npm run build
 npm run start
@@ -274,7 +300,7 @@ LabFlow 深度集成了 Progressive Web App (PWA) 协议：
 - **样式系统**: [Tailwind CSS 3.4](https://tailwindcss.com/) (含实时 CSS 变量全局动态注入)
 - **交互拖拽**: [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) (流畅丝滑的拖拽排序与跨阶段流转)
 - **学术图标**: [Lucide React](https://lucide.dev/)
-- **数据持久化**: LocalStorage 增量安全镜像，内置 JSON 完整快照导出与容错灾备恢复
+- **数据持久化**: 双模服务端持久化引擎 — 零配置本机服务端文件存储（`.data/labflow-state.json` + 原子写盘锁 + 乐观并发修订号）与 PostgreSQL + Prisma ORM 云端/多用户数据库无缝切换，搭配浏览器离线缓存与 JSON 灾备导入导出
 - **字体标准**: 学术标准 Times New Roman 衬线字体族
 
 ---

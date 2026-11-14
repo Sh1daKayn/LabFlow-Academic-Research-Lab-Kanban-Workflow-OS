@@ -1,22 +1,28 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AcademicStage,
   AccessRole,
   BlockerInfo,
   LabMember,
   LabResource,
+  LabWorkspaceData,
   Language,
   ProjectItem,
   ReverseDDLForm,
   StageConfig,
+  StorageMode,
   TaskItem,
   VenuePreset,
-  AccentColor,
-  BgTheme,
-  FontSize,
-  SettingsTab,
   VisibilityLevel,
 } from '@/types';
 import {
@@ -29,22 +35,44 @@ import {
 } from '@/data/mockData';
 import { en, LocaleTranslations } from '@/locales/en';
 import { zh } from '@/locales/zh';
-import { subtractDays, formatDate } from '@/utils/date';
 import { triggerConfetti } from '@/utils/confetti';
 import { ParsedAIData } from '@/utils/aiDocumentParser';
+import { generateInitialsAvatar } from '@/utils/avatar';
+import {
+  canAdvanceToStage,
+  canDeleteTask as checkCanDeleteTask,
+  canEditTask as checkCanEditTask,
+  canViewProject,
+  canViewTask,
+  deriveAccessRole,
+  getSafePI,
+} from '@/utils/rbac';
+import {
+  buildReverseDDLPipeline,
+  moveTaskToStage,
+  reorderStageTasks,
+} from '@/utils/taskOperations';
+import { buildWeeklyDigestMarkdown } from '@/utils/weeklyDigest';
+import { ThemeContextType, ThemeProvider, useLabTheme } from '@/context/ThemeContext';
+import { ToastItem, UIContextType, UIProvider, useLabUI } from '@/context/UIContext';
 
-export interface ToastItem {
-  id: string;
-  title: string;
-  description?: string;
-  type: 'success' | 'warning' | 'info' | 'error';
-}
+export type { ToastItem };
+export { useLabTheme, useLabUI };
 
-interface LabFlowContextType {
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'offline';
+
+interface LabDataContextType {
   // Locale & Translation
   language: Language;
   setLanguage: (lang: Language) => void;
   t: LocaleTranslations;
+
+  // Storage & Sync Status
+  storageMode: StorageMode;
+  syncStatus: SyncStatus;
+  lastSyncError: string | null;
+  lastSyncedAt: string | null;
+  retryServerSync: () => Promise<boolean>;
 
   // Stages
   stages: StageConfig[];
@@ -52,8 +80,6 @@ interface LabFlowContextType {
   updateStage: (stageId: string, updates: Partial<StageConfig>) => void;
   deleteStage: (stageId: string) => void;
   restoreDefaultStages: () => void;
-  isStageSettingsOpen: boolean;
-  setIsStageSettingsOpen: (open: boolean) => void;
 
   // Target Venues
   venues: VenuePreset[];
@@ -67,67 +93,24 @@ interface LabFlowContextType {
   addMember: (member: LabMember) => void;
   updateMember: (id: string, updates: Partial<LabMember>) => void;
   deleteMember: (id: string) => void;
-  isMemberManagerOpen: boolean;
-  setIsMemberManagerOpen: (open: boolean) => void;
 
   // Core Data
   tasks: TaskItem[];
   projects: ProjectItem[];
   resources: LabResource[];
+  addProject: (project: Omit<ProjectItem, 'id'> & { id?: string }) => ProjectItem;
 
-  // View & Filters
-  filterOnlyBlockers: boolean;
-  searchQuery: string;
-  filterMemberId: string;
-  selectedStageFilter: string; // 'all' or specific stageId
-  setSelectedStageFilter: (val: string) => void;
-  selectedProjectFilter: string; // 'all' or specific projectId
-  setSelectedProjectFilter: (val: string) => void;
-  sortByDDLUrgency: boolean;
-  setSortByDDLUrgency: (val: boolean) => void;
-  viewMode: 'kanban' | 'gantt' | 'meeting';
-  theme: 'dark' | 'light';
-  accentColor: AccentColor;
-  setAccentColor: (val: AccentColor) => void;
-  bgStyle: BgTheme;
-  setBgStyle: (val: BgTheme) => void;
-  fontSize: FontSize;
-  setFontSize: (val: FontSize) => void;
-  enableComputeStrip: boolean;
-  setEnableComputeStrip: (val: boolean) => void;
-
-  // Settings Modal Center
-  isSettingsOpen: boolean;
-  setIsSettingsOpen: (open: boolean) => void;
-  activeSettingsTab: SettingsTab;
-  setActiveSettingsTab: (tab: SettingsTab) => void;
-
-  // Modals
-  activeBlockerTask: TaskItem | null;
-  isReverseDDLOpen: boolean;
-  isNewTaskOpen: boolean;
-  isResourceModalOpen: boolean;
-  isAIImportOpen: boolean;
-  setIsAIImportOpen: (open: boolean) => void;
+  // AI Import
   applyAIImport: (data: ParsedAIData, mode: 'overwrite' | 'append') => void;
-  selectedTask: TaskItem | null;
-  toasts: ToastItem[];
-
-  // Setters
-  setFilterOnlyBlockers: (val: boolean) => void;
-  setSearchQuery: (val: string) => void;
-  setFilterMemberId: (val: string) => void;
-  setViewMode: (val: 'kanban' | 'gantt' | 'meeting') => void;
-  setTheme: (val: 'dark' | 'light') => void;
-  setActiveBlockerTask: (task: TaskItem | null) => void;
-  setIsReverseDDLOpen: (open: boolean) => void;
-  setIsNewTaskOpen: (open: boolean) => void;
-  setIsResourceModalOpen: (open: boolean) => void;
-  setSelectedTask: (task: TaskItem | null) => void;
 
   // Actions
   moveTask: (taskId: string, targetStage: AcademicStage, newOrder?: number) => void;
-  reorderTasks: (stage: AcademicStage, sourceIndex: number, destinationIndex: number) => void;
+  reorderTasks: (
+    stage: AcademicStage,
+    sourceIndex: number,
+    destinationIndex: number,
+    visibleStageTaskIds?: string[]
+  ) => void;
   reportBlocker: (taskId: string, blocker: BlockerInfo) => void;
   resolveBlocker: (taskId: string) => void;
   addTask: (task: Omit<TaskItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -146,50 +129,71 @@ interface LabFlowContextType {
   exportDataBackup: () => void;
   importDataBackup: (jsonStr: string) => boolean;
   generateMyWeeklyDigest: (targetMemberId?: string) => string;
-  addToast: (title: string, description?: string, type?: ToastItem['type']) => void;
-  removeToast: (id: string) => void;
 
   // Permissions & RBAC
-  adminPassword: string;
   isAdminUnlocked: boolean;
   currentMember: LabMember;
   currentAccessRole: AccessRole;
   effectiveIsAdmin: boolean;
-  unlockAdmin: (password: string) => boolean;
-  lockAdmin: () => void;
-  updateAdminPassword: (newPass: string) => void;
+  unlockAdmin: (password: string) => Promise<boolean>;
+  lockAdmin: () => Promise<void>;
+  updateAdminPassword: (newPass: string) => Promise<boolean>;
   requireAdminAuth: (action: () => void) => void;
-  isPasswordModalOpen: boolean;
-  setIsPasswordModalOpen: (open: boolean) => void;
-  isRegisterModalOpen: boolean;
-  setIsRegisterModalOpen: (open: boolean) => void;
   canEditTask: (task: TaskItem) => boolean;
   canDeleteTask: (task: TaskItem) => boolean;
   canManageLab: () => boolean;
-  registerNewMember: (memberData: { nameZh: string; nameEn: string; role: LabMember['role']; email: string; accessRole?: AccessRole }) => LabMember;
+  registerNewMember: (memberData: {
+    nameZh: string;
+    nameEn: string;
+    role: LabMember['role'];
+    email: string;
+    accessRole?: AccessRole;
+  }) => LabMember;
 }
 
-const LabFlowContext = createContext<LabFlowContextType | undefined>(undefined);
+export type LabFlowContextType = LabDataContextType & ThemeContextType & UIContextType;
 
-const STORAGE_KEYS = {
+const LabDataContext = createContext<LabDataContextType | undefined>(undefined);
+
+const CACHE_KEYS = {
   LANG: 'labflow_lang_v3',
+  CURRENT_USER: 'labflow_current_user_v3',
   STAGES: 'labflow_stages_v3',
   TASKS: 'labflow_tasks_v3',
   PROJECTS: 'labflow_projects_v3',
   MEMBERS: 'labflow_members_v3',
   VENUES: 'labflow_venues_v3',
-  CURRENT_USER: 'labflow_current_user_v3',
   RESOURCES: 'labflow_resources_v3',
-  THEME: 'labflow_theme_v3',
-  ACCENT: 'labflow_accent_v3',
-  BG_STYLE: 'labflow_bg_style_v3',
-  FONT_SIZE: 'labflow_font_size_v3',
-  ENABLE_COMPUTE: 'labflow_enable_compute_v3',
-  ADMIN_PASSWORD: 'labflow_admin_password_v3',
-  ADMIN_UNLOCKED: 'labflow_admin_unlocked_v3',
+  PENDING_OFFLINE_SYNC: 'labflow_pending_offline_sync_v3',
+  LEGACY_ADMIN_PASS: 'labflow_admin_password_v3',
+  LEGACY_ADMIN_UNLOCKED: 'labflow_admin_unlocked_v3',
 };
 
-export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+function serializeWorkspace(workspace: LabWorkspaceData): string {
+  return JSON.stringify({
+    stages: workspace.stages,
+    tasks: workspace.tasks,
+    projects: workspace.projects,
+    members: workspace.members,
+    venues: workspace.venues,
+    resources: workspace.resources,
+  });
+}
+
+const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const {
+    addToast,
+    setFilterOnlyBlockers,
+    setSearchQuery,
+    setFilterMemberId,
+    setSelectedStageFilter,
+    setSelectedProjectFilter,
+    setViewMode,
+    selectedTask,
+    setSelectedTask,
+    setIsPasswordModalOpen,
+  } = useLabUI();
+
   const [language, setLanguage] = useState<Language>('zh');
   const [stages, setStages] = useState<StageConfig[]>(DEFAULT_STAGES);
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
@@ -199,312 +203,566 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [currentUserId, setCurrentUserId] = useState<string>('member-student1');
   const [resources, setResources] = useState<LabResource[]>(INITIAL_RESOURCES);
 
-  // Auth & RBAC State
-  const [adminPassword, setAdminPasswordState] = useState<string>('admin888');
+  const [storageMode, setStorageMode] = useState<StorageMode>('local-file');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  // Auth & RBAC State (verified against server-issued HttpOnly cookie)
   const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState<boolean>(false);
   const [passwordCallback, setPasswordCallback] = useState<(() => void) | null>(null);
 
-  const [filterOnlyBlockers, setFilterOnlyBlockers] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filterMemberId, setFilterMemberId] = useState<string>('all');
-  const [selectedStageFilter, setSelectedStageFilter] = useState<string>('all');
-  const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
-  const [sortByDDLUrgency, setSortByDDLUrgency] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'kanban' | 'gantt' | 'meeting'>('kanban');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [accentColor, setAccentColor] = useState<AccentColor>('indigo');
-  const [bgStyle, setBgStyle] = useState<BgTheme>('default');
-  const [fontSize, setFontSize] = useState<FontSize>('standard');
-  const [enableComputeStrip, setEnableComputeStrip] = useState<boolean>(true);
+  const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('appearance');
+  const serverRevisionRef = useRef<number>(0);
+  const lastSyncedSerializedRef = useRef<string>('');
+  const syncInFlightRef = useRef<boolean>(false);
+  const pendingResyncRef = useRef<boolean>(false);
+  const notifiedOfflineRef = useRef<boolean>(false);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const languageRef = useRef<Language>(language);
+  languageRef.current = language;
+  const latestWorkspaceRef = useRef<LabWorkspaceData>({
+    stages: DEFAULT_STAGES,
+    tasks: INITIAL_TASKS,
+    projects: INITIAL_PROJECTS,
+    members: LAB_MEMBERS,
+    venues: DEFAULT_VENUES,
+    resources: INITIAL_RESOURCES,
+  });
 
-  const [activeBlockerTask, setActiveBlockerTask] = useState<TaskItem | null>(null);
-  const [isReverseDDLOpen, setIsReverseDDLOpen] = useState<boolean>(false);
-  const [isNewTaskOpen, setIsNewTaskOpen] = useState<boolean>(false);
-  const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
-  const [isAIImportOpen, setIsAIImportOpen] = useState<boolean>(false);
-  const [isStageSettingsOpen, setIsStageSettingsOpen] = useState<boolean>(false);
-  const [isMemberManagerOpen, setIsMemberManagerOpen] = useState<boolean>(false);
-  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
-
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  latestWorkspaceRef.current = {
+    stages,
+    tasks,
+    projects,
+    members,
+    venues,
+    resources,
+  };
 
   const t = language === 'zh' ? zh : en;
 
-  // Load from localStorage
-  useEffect(() => {
-    try {
-      const savedLang = localStorage.getItem(STORAGE_KEYS.LANG) as Language;
-      const savedStages = localStorage.getItem(STORAGE_KEYS.STAGES);
-      const savedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-      const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
-      const savedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-      const savedVenues = localStorage.getItem(STORAGE_KEYS.VENUES);
-      const savedCurrentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-      const savedResources = localStorage.getItem(STORAGE_KEYS.RESOURCES);
-      const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light';
-      const savedAccent = localStorage.getItem(STORAGE_KEYS.ACCENT) as AccentColor;
-      const savedBgStyle = localStorage.getItem(STORAGE_KEYS.BG_STYLE) as BgTheme;
-      const savedFontSize = localStorage.getItem(STORAGE_KEYS.FONT_SIZE) as FontSize;
-      const savedCompute = localStorage.getItem(STORAGE_KEYS.ENABLE_COMPUTE);
-
-      if (savedLang) setLanguage(savedLang);
-      if (savedStages) setStages(JSON.parse(savedStages));
-      if (savedTasks) setTasks(JSON.parse(savedTasks));
-      if (savedProjects) setProjects(JSON.parse(savedProjects));
-      if (savedMembers) setMembers(JSON.parse(savedMembers));
-      if (savedVenues) setVenues(JSON.parse(savedVenues));
-      if (savedCurrentUser) setCurrentUserId(savedCurrentUser);
-      if (savedResources) setResources(JSON.parse(savedResources));
-      if (savedTheme) setTheme(savedTheme);
-      if (savedAccent) setAccentColor(savedAccent);
-      if (savedBgStyle) setBgStyle(savedBgStyle);
-      if (savedFontSize) setFontSize(savedFontSize);
-      if (savedCompute !== null) setEnableComputeStrip(savedCompute === 'true');
-      const savedPass = localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORD);
-      if (savedPass) setAdminPasswordState(savedPass);
-      try {
-        const savedUnlocked = sessionStorage.getItem(STORAGE_KEYS.ADMIN_UNLOCKED);
-        if (savedUnlocked === 'true') setIsAdminUnlocked(true);
-      } catch {}
-    } catch (e) {
-      console.warn('Could not read from localStorage', e);
-    } finally {
-      setIsInitialized(true);
-    }
+  const applyServerSnapshot = useCallback((snapshot: LabWorkspaceData) => {
+    lastSyncedSerializedRef.current = serializeWorkspace(snapshot);
+    setStages(snapshot.stages);
+    setTasks(snapshot.tasks);
+    setProjects(snapshot.projects);
+    setMembers(snapshot.members);
+    setVenues(snapshot.venues);
+    setResources(snapshot.resources);
   }, []);
 
-  // Save to localStorage
-  useEffect(() => {
-    if (!isInitialized) return;
-    try {
-      localStorage.setItem(STORAGE_KEYS.LANG, language);
-      localStorage.setItem(STORAGE_KEYS.STAGES, JSON.stringify(stages));
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
-      localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(members));
-      localStorage.setItem(STORAGE_KEYS.VENUES, JSON.stringify(venues));
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, currentUserId);
-      localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(resources));
-      localStorage.setItem(STORAGE_KEYS.THEME, theme);
-      localStorage.setItem(STORAGE_KEYS.ACCENT, accentColor);
-      localStorage.setItem(STORAGE_KEYS.BG_STYLE, bgStyle);
-      localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize);
-      localStorage.setItem(STORAGE_KEYS.ENABLE_COMPUTE, enableComputeStrip ? 'true' : 'false');
-      localStorage.setItem(STORAGE_KEYS.ADMIN_PASSWORD, adminPassword);
-    } catch (e) {
-      console.warn('Could not write to localStorage', e);
+  const formatSyncError = useCallback((code?: string, fallbackMsg?: string) => {
+    const isZh = languageRef.current === 'zh';
+    if (code === 'READONLY_FILESYSTEM') {
+      return isZh
+        ? '服务器文件系统只读（未配置 PostgreSQL 数据库），更新目前仅保存在本机浏览器缓存中'
+        : 'Server filesystem is read-only (no PostgreSQL configured); edits are currently kept in browser storage only';
     }
-  }, [language, stages, tasks, projects, members, venues, currentUserId, resources, theme, accentColor, bgStyle, fontSize, enableComputeStrip, adminPassword, isInitialized]);
-
-  // Apply dark/light classes to <html>
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
+    if (code === 'DATABASE_UNAVAILABLE') {
+      return isZh
+        ? '无法连接 PostgreSQL 数据库，更新暂存在本机浏览器缓存中，请检查 DATABASE_URL 与数据库状态'
+        : 'Cannot reach PostgreSQL database; edits are cached locally until connection recovers';
     }
-  }, [theme]);
+    return isZh
+      ? `无法保存到服务器（${fallbackMsg || '网络或服务端异常'}），更新暂存在本机浏览器缓存中`
+      : `Could not save to server (${fallbackMsg || 'network or server error'}); edits are cached locally`;
+  }, []);
 
-  // Apply accent color, background tone, and font size attributes to <html>
+  // Hydrate client preferences & fetch authoritative server workspace
   useEffect(() => {
-    const ACCENT_MAP: Record<string, string> = {
-      purdue: '#C28E0E', // 黑金
-      oxford: '#1e40af', // 深蓝
-      cardinal: '#8c1515', // 深红
-      cambridge: '#0f766e', // 青绿
-      crimson: '#991b1b', // 酒红
-      indigo: '#6366f1', // 经典蓝紫
-      cyan: '#06b6d4', // 计算青
-      emerald: '#10b981', // 翠绿
-      amber: '#f59e0b', // 琥珀金
-      rose: '#f43f5e', // 玫瑰红
-      violet: '#8b5cf6', // 深紫
-    };
+    let cancelled = false;
 
-    const hex = ACCENT_MAP[accentColor] || (accentColor.startsWith('#') ? accentColor : '#6366f1');
+    const hydrate = async () => {
+      let hasCachedWorkspace = false;
+      let hasPendingOfflineSync = false;
 
-    document.documentElement.setAttribute('data-accent', accentColor);
-    document.documentElement.style.setProperty('--lab-accent', hex);
+      try {
+        // Purge legacy plain-text credential keys from browser storage
+        localStorage.removeItem(CACHE_KEYS.LEGACY_ADMIN_PASS);
+        sessionStorage.removeItem(CACHE_KEYS.LEGACY_ADMIN_UNLOCKED);
 
-    const hexToRgba = (h: string, alpha: number) => {
-      let c = h.replace('#', '');
-      if (c.length === 3) c = c.split('').map((x) => x + x).join('');
-      const num = parseInt(c, 16);
-      if (isNaN(num)) return `rgba(99, 102, 241, ${alpha})`;
-      const r = (num >> 16) & 255;
-      const g = (num >> 8) & 255;
-      const b = num & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
+        const savedLang = localStorage.getItem(CACHE_KEYS.LANG) as Language | null;
+        const savedUser = localStorage.getItem(CACHE_KEYS.CURRENT_USER);
+        if (savedLang === 'zh' || savedLang === 'en') setLanguage(savedLang);
+        if (savedUser) setCurrentUserId(savedUser);
+        hasPendingOfflineSync = localStorage.getItem(CACHE_KEYS.PENDING_OFFLINE_SYNC) === '1';
 
-    document.documentElement.style.setProperty('--lab-accent-light', hexToRgba(hex, 0.15));
-    document.documentElement.style.setProperty('--lab-accent-border', hexToRgba(hex, 0.35));
-    document.documentElement.style.setProperty('--lab-accent-hover', hexToRgba(hex, 0.88));
+        // Apply cached offline copy initially before server response arrives
+        const cachedTasks = localStorage.getItem(CACHE_KEYS.TASKS);
+        const cachedStages = localStorage.getItem(CACHE_KEYS.STAGES);
+        const cachedProjects = localStorage.getItem(CACHE_KEYS.PROJECTS);
+        const cachedMembers = localStorage.getItem(CACHE_KEYS.MEMBERS);
+        const cachedVenues = localStorage.getItem(CACHE_KEYS.VENUES);
+        const cachedResources = localStorage.getItem(CACHE_KEYS.RESOURCES);
 
-    // Dynamic HSL Conversion to immerse all non-black/non-white background surfaces into this color family
-    const hexToHsl = (h: string): [number, number, number] => {
-      let c = h.replace('#', '');
-      if (c.length === 3) c = c.split('').map((x) => x + x).join('');
-      const num = parseInt(c, 16);
-      if (isNaN(num)) return [240, 70, 60];
-      const r = ((num >> 16) & 255) / 255;
-      const g = ((num >> 8) & 255) / 255;
-      const b = (num & 255) / 255;
-
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let hue = 0;
-      let s = 0;
-      const l = (max + min) / 2;
-
-      if (max !== min) {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-          case r:
-            hue = (g - b) / d + (g < b ? 6 : 0);
-            break;
-          case g:
-            hue = (b - r) / d + 2;
-            break;
-          case b:
-            hue = (r - g) / d + 4;
-            break;
-        }
-        hue *= 60;
+        if (cachedStages) setStages(JSON.parse(cachedStages));
+        if (cachedTasks) setTasks(JSON.parse(cachedTasks));
+        if (cachedProjects) setProjects(JSON.parse(cachedProjects));
+        if (cachedMembers) setMembers(JSON.parse(cachedMembers));
+        if (cachedVenues) setVenues(JSON.parse(cachedVenues));
+        if (cachedResources) setResources(JSON.parse(cachedResources));
+        hasCachedWorkspace = Boolean(cachedTasks || cachedProjects || cachedMembers);
+      } catch (e) {
+        console.warn('Could not read local cache', e);
       }
-      return [Math.round(hue), Math.round(s * 100), Math.round(l * 100)];
+
+      try {
+        const res = await fetch('/api/labflow', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = (await res.json()) as {
+          data: LabWorkspaceData;
+          revision: number;
+          updatedAt?: string;
+          storageMode: StorageMode;
+          isAdminUnlocked?: boolean;
+        };
+
+        if (cancelled) return;
+        serverRevisionRef.current = payload.revision;
+        setStorageMode(payload.storageMode);
+        setIsAdminUnlocked(Boolean(payload.isAdminUnlocked));
+        if (payload.updatedAt) setLastSyncedAt(payload.updatedAt);
+
+        if (hasPendingOfflineSync && hasCachedWorkspace) {
+          // Keep unsynced local edits and let sync effect flush them to server
+          lastSyncedSerializedRef.current = serializeWorkspace(payload.data);
+          setSyncStatus('syncing');
+        } else {
+          applyServerSnapshot(payload.data);
+          try {
+            localStorage.removeItem(CACHE_KEYS.PENDING_OFFLINE_SYNC);
+          } catch {}
+          setLastSyncError(null);
+          notifiedOfflineRef.current = false;
+          setSyncStatus('synced');
+        }
+
+        const memberSource =
+          hasPendingOfflineSync && hasCachedWorkspace
+            ? latestWorkspaceRef.current.members
+            : payload.data.members;
+        setCurrentUserId((prevId) => {
+          const valid = memberSource.some((m) => m.id === prevId);
+          return valid ? prevId : memberSource[0]?.id || 'member-student1';
+        });
+      } catch (e) {
+        console.warn('Server workspace unavailable, running offline cache:', e);
+        if (!cancelled) {
+          setSyncStatus('offline');
+          setLastSyncError(
+            formatSyncError(undefined, e instanceof Error ? e.message : 'unavailable')
+          );
+        }
+      } finally {
+        if (!cancelled) setIsHydrated(true);
+      }
     };
 
-    const [hue, sat] = hexToHsl(hex);
-    // Calibrated saturation ensuring vibrant themes immerse the UI elegantly without being loud
-    const darkSat = Math.min(Math.max(Math.round(sat * 0.38), 16), 30);
-    const lightSat = Math.min(Math.max(Math.round(sat * 0.32), 14), 28);
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyServerSnapshot, formatSyncError]);
 
-    document.documentElement.style.setProperty('--lab-hue', String(hue));
-    document.documentElement.style.setProperty('--lab-sat', `${sat}%`);
-
-    // Dark Mode: rich deep obsidian surfaces toned to this color
-    document.documentElement.style.setProperty('--lab-bg-canvas', `hsl(${hue}, ${darkSat}%, 4%)`);
-    document.documentElement.style.setProperty('--lab-bg-surface', `hsl(${hue}, ${darkSat}%, 7.5%)`);
-    document.documentElement.style.setProperty('--lab-bg-card', `hsl(${hue}, ${Math.max(10, darkSat - 3)}%, 11%)`);
-    document.documentElement.style.setProperty('--lab-bg-elevated', `hsl(${hue}, ${Math.max(8, darkSat - 5)}%, 15.5%)`);
-    document.documentElement.style.setProperty('--lab-bg-hover', `hsl(${hue}, ${Math.min(darkSat + 4, 32)}%, 19%)`);
-    document.documentElement.style.setProperty('--lab-border-subtle', `hsl(${hue}, ${darkSat}%, 18%)`);
-    document.documentElement.style.setProperty('--lab-border-strong', `hsl(${hue}, ${Math.min(sat, 36)}%, 26%)`);
-    document.documentElement.style.setProperty('--lab-bg-backdrop', `hsla(${hue}, ${darkSat}%, 4%, 0.78)`);
-
-    // Light Mode: soft elegant paper surfaces toned to this color
-    document.documentElement.style.setProperty('--lab-bg-canvas-light', `hsl(${hue}, ${lightSat}%, 98.2%)`);
-    document.documentElement.style.setProperty('--lab-bg-surface-light', `hsl(${hue}, ${Math.max(10, lightSat - 3)}%, 95.5%)`);
-    document.documentElement.style.setProperty('--lab-bg-card-light', `hsl(${hue}, ${Math.max(8, lightSat - 5)}%, 93%)`);
-    document.documentElement.style.setProperty('--lab-bg-elevated-light', `hsl(${hue}, ${Math.max(6, lightSat - 7)}%, 89%)`);
-    document.documentElement.style.setProperty('--lab-border-subtle-light', `hsl(${hue}, ${lightSat}%, 86%)`);
-    document.documentElement.style.setProperty('--lab-border-strong-light', `hsl(${hue}, ${Math.min(sat, 35)}%, 76%)`);
-  }, [accentColor]);
-
+  // Persist language and active member selection locally
   useEffect(() => {
-    document.documentElement.setAttribute('data-bg', bgStyle);
-  }, [bgStyle]);
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(CACHE_KEYS.LANG, language);
+      localStorage.setItem(CACHE_KEYS.CURRENT_USER, currentUserId);
+    } catch {}
+  }, [language, currentUserId, isHydrated]);
 
+  const flushWorkspaceToServer = useCallback(
+    async (options?: { manual?: boolean }): Promise<boolean> => {
+      if (syncInFlightRef.current) {
+        pendingResyncRef.current = true;
+        return false;
+      }
+
+      const payloadData = latestWorkspaceRef.current;
+      const payloadSerialized = serializeWorkspace(payloadData);
+      if (payloadSerialized === lastSyncedSerializedRef.current && !options?.manual) {
+        setSyncStatus('synced');
+        return true;
+      }
+
+      syncInFlightRef.current = true;
+      setSyncStatus('syncing');
+
+      try {
+        const res = await fetch('/api/labflow', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: payloadData,
+            expectedRevision: serverRevisionRef.current,
+          }),
+        });
+
+        if (res.status === 409) {
+          const conflictBody = (await res.json()) as {
+            data?: LabWorkspaceData;
+            revision?: number;
+            updatedAt?: string;
+          };
+          if (conflictBody.data && typeof conflictBody.revision === 'number') {
+            serverRevisionRef.current = conflictBody.revision;
+            if (conflictBody.updatedAt) setLastSyncedAt(conflictBody.updatedAt);
+            applyServerSnapshot(conflictBody.data);
+            try {
+              localStorage.removeItem(CACHE_KEYS.PENDING_OFFLINE_SYNC);
+            } catch {}
+            setLastSyncError(null);
+            notifiedOfflineRef.current = false;
+            addToast(
+              languageRef.current === 'zh'
+                ? '检测到其他协作成员更新了工作区，已同步最新数据'
+                : 'Synced newer workspace changes from another session',
+              '',
+              'info'
+            );
+          }
+          setSyncStatus('synced');
+          return true;
+        }
+
+        if (!res.ok) {
+          let errCode: string | undefined;
+          let errDetail = `HTTP ${res.status}`;
+          try {
+            const errBody = (await res.json()) as { error?: string; code?: string };
+            errCode = errBody.code;
+            if (errBody.error) errDetail = errBody.error;
+          } catch {}
+
+          const message = formatSyncError(errCode, errDetail);
+          setLastSyncError(message);
+          setSyncStatus('offline');
+          try {
+            localStorage.setItem(CACHE_KEYS.PENDING_OFFLINE_SYNC, '1');
+          } catch {}
+          if (options?.manual || !notifiedOfflineRef.current) {
+            notifiedOfflineRef.current = true;
+            addToast(
+              languageRef.current === 'zh' ? '服务器同步受限 · 仅保存在本机缓存' : 'Server Sync Failed',
+              message,
+              'warning'
+            );
+          }
+          return false;
+        }
+
+        const saved = (await res.json()) as {
+          revision: number;
+          updatedAt?: string;
+          storageMode: StorageMode;
+        };
+        serverRevisionRef.current = saved.revision;
+        lastSyncedSerializedRef.current = payloadSerialized;
+        if (saved.updatedAt) setLastSyncedAt(saved.updatedAt);
+        setStorageMode(saved.storageMode);
+        setLastSyncError(null);
+        notifiedOfflineRef.current = false;
+        try {
+          localStorage.removeItem(CACHE_KEYS.PENDING_OFFLINE_SYNC);
+        } catch {}
+        setSyncStatus('synced');
+        if (options?.manual) {
+          addToast(
+            languageRef.current === 'zh' ? '已成功同步至服务器' : 'Synced to server',
+            saved.storageMode === 'postgres'
+              ? 'PostgreSQL'
+              : languageRef.current === 'zh'
+              ? '已写入服务端数据文件 (.data/labflow-state.json)'
+              : 'Saved to host store (.data/labflow-state.json)',
+            'success'
+          );
+        }
+        return true;
+      } catch (e) {
+        const message = formatSyncError(
+          undefined,
+          e instanceof Error ? e.message : 'network error'
+        );
+        console.warn('Failed to persist workspace to server:', e);
+        setLastSyncError(message);
+        setSyncStatus('offline');
+        try {
+          localStorage.setItem(CACHE_KEYS.PENDING_OFFLINE_SYNC, '1');
+        } catch {}
+        if (options?.manual || !notifiedOfflineRef.current) {
+          notifiedOfflineRef.current = true;
+          addToast(
+            languageRef.current === 'zh' ? '服务器连接失败 · 仅保存在本机缓存' : 'Server Unreachable',
+            message,
+            'warning'
+          );
+        }
+        return false;
+      } finally {
+        syncInFlightRef.current = false;
+        if (pendingResyncRef.current) {
+          pendingResyncRef.current = false;
+          void flushWorkspaceToServer();
+        }
+      }
+    },
+    [applyServerSnapshot, addToast, formatSyncError]
+  );
+
+  const retryServerSync = useCallback(() => {
+    return flushWorkspaceToServer({ manual: true });
+  }, [flushWorkspaceToServer]);
+
+  // Write offline cache & debounce server sync on domain state changes
   useEffect(() => {
-    document.documentElement.setAttribute('data-font-size', fontSize);
-  }, [fontSize]);
+    if (!isHydrated) return;
+
+    const currentWorkspace: LabWorkspaceData = {
+      stages,
+      tasks,
+      projects,
+      members,
+      venues,
+      resources,
+    };
+
+    try {
+      localStorage.setItem(CACHE_KEYS.STAGES, JSON.stringify(stages));
+      localStorage.setItem(CACHE_KEYS.TASKS, JSON.stringify(tasks));
+      localStorage.setItem(CACHE_KEYS.PROJECTS, JSON.stringify(projects));
+      localStorage.setItem(CACHE_KEYS.MEMBERS, JSON.stringify(members));
+      localStorage.setItem(CACHE_KEYS.VENUES, JSON.stringify(venues));
+      localStorage.setItem(CACHE_KEYS.RESOURCES, JSON.stringify(resources));
+    } catch {}
+
+    const serialized = serializeWorkspace(currentWorkspace);
+    if (serialized === lastSyncedSerializedRef.current) {
+      try {
+        localStorage.removeItem(CACHE_KEYS.PENDING_OFFLINE_SYNC);
+      } catch {}
+      setLastSyncError(null);
+      setSyncStatus((prev) => (prev === 'idle' ? 'synced' : prev === 'syncing' ? 'synced' : prev));
+      return;
+    }
+
+    try {
+      localStorage.setItem(CACHE_KEYS.PENDING_OFFLINE_SYNC, '1');
+    } catch {}
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      void flushWorkspaceToServer();
+    }, 250);
+
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, [stages, tasks, projects, members, venues, resources, isHydrated, flushWorkspaceToServer]);
+
+  // Flush pending workspace changes immediately if tab closes/reloads before debounce fires
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const flushPendingBeforeLeave = () => {
+      const currentSerialized = serializeWorkspace(latestWorkspaceRef.current);
+      if (currentSerialized === lastSyncedSerializedRef.current) return;
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+      const body = JSON.stringify({
+        data: latestWorkspaceRef.current,
+        expectedRevision: serverRevisionRef.current,
+      });
+      void fetch('/api/labflow', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: body.length < 60_000,
+      }).catch(() => {});
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushPendingBeforeLeave();
+      }
+    };
+
+    window.addEventListener('pagehide', flushPendingBeforeLeave);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', flushPendingBeforeLeave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isHydrated]);
+
+  // Keep selectedTask synchronized with updates to the underlying task list
+  useEffect(() => {
+    if (!selectedTask) return;
+    const latest = tasks.find((item) => item.id === selectedTask.id);
+    if (!latest) {
+      setSelectedTask(null);
+    } else if (latest !== selectedTask) {
+      setSelectedTask(latest);
+    }
+  }, [tasks, selectedTask, setSelectedTask]);
+
+  // Lightweight multi-user background polling every 12s when tab is active
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const timer = setInterval(async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (syncInFlightRef.current || pendingResyncRef.current) return;
+
+      try {
+        const res = await fetch('/api/labflow', { cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = (await res.json()) as {
+          data: LabWorkspaceData;
+          revision: number;
+          updatedAt?: string;
+          storageMode: StorageMode;
+          isAdminUnlocked?: boolean;
+        };
+
+        setStorageMode(payload.storageMode);
+        setIsAdminUnlocked(Boolean(payload.isAdminUnlocked));
+
+        const hasDirtyLocal =
+          serializeWorkspace(latestWorkspaceRef.current) !== lastSyncedSerializedRef.current;
+
+        if (hasDirtyLocal) {
+          if (!syncTimerRef.current) {
+            void flushWorkspaceToServer();
+          }
+          return;
+        }
+
+        if (payload.revision > serverRevisionRef.current) {
+          serverRevisionRef.current = payload.revision;
+          if (payload.updatedAt) setLastSyncedAt(payload.updatedAt);
+          applyServerSnapshot(payload.data);
+          setLastSyncError(null);
+          setSyncStatus('synced');
+        } else {
+          setLastSyncError(null);
+          setSyncStatus((prev) => (prev === 'offline' ? 'synced' : prev));
+        }
+      } catch {
+        // Keep current status on transient polling failures
+      }
+    }, 12000);
+
+    return () => clearInterval(timer);
+  }, [isHydrated, applyServerSnapshot, flushWorkspaceToServer]);
 
   // Current Member & RBAC Derivation
   const currentMember: LabMember = useMemo(() => {
     return members.find((m) => m.id === currentUserId) || members[0] || LAB_MEMBERS[0];
   }, [members, currentUserId]);
 
-  const currentAccessRole: AccessRole = useMemo(() => {
-    if (currentMember?.accessRole) return currentMember.accessRole;
-    if (currentMember?.role === 'PI') return 'ADMIN_PI';
-    if (currentMember?.role === 'POSTDOC' || currentMember?.role === 'SENIOR_PHD') return 'PROJECT_LEAD';
-    if (currentMember?.role === 'VISITING_SCHOLAR') return 'AUDITOR_GUEST';
-    return 'STUDENT_RA';
-  }, [currentMember]);
+  const currentAccessRole: AccessRole = useMemo(
+    () => deriveAccessRole(currentMember),
+    [currentMember]
+  );
 
   const effectiveIsAdmin = currentAccessRole === 'ADMIN_PI' && isAdminUnlocked;
 
-  // Visibility filtering for Confidentiality/Privacy
   const visibleTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      const vis = t.visibility || 'PUBLIC';
-      if (vis === 'PUBLIC') return true;
-      if (effectiveIsAdmin) return true;
-      if (vis === 'TEAM_ONLY') {
-        if (currentAccessRole === 'AUDITOR_GUEST') return false;
-        const isAuthor = t.leadAuthor?.id === currentUserId;
-        const project = projects.find((p) => p.id === t.projectId);
-        const isProjLead = project?.leadAuthorId === currentUserId;
-        return isAuthor || isProjLead;
-      }
-      if (vis === 'PI_ONLY') {
-        return t.leadAuthor?.id === currentUserId;
-      }
-      return true;
-    });
-  }, [tasks, effectiveIsAdmin, currentAccessRole, currentUserId, projects]);
+    return tasks.filter((task) =>
+      canViewTask(task, currentUserId, currentAccessRole, effectiveIsAdmin, projects)
+    );
+  }, [tasks, projects, currentAccessRole, currentUserId, effectiveIsAdmin]);
 
   const visibleProjects = useMemo(() => {
-    return projects.filter((p) => {
-      const vis = p.visibility || 'PUBLIC';
-      if (vis === 'PUBLIC') return true;
-      if (effectiveIsAdmin) return true;
-      if (vis === 'TEAM_ONLY') {
-        if (currentAccessRole === 'AUDITOR_GUEST') return false;
-        return p.leadAuthorId === currentUserId;
-      }
-      if (vis === 'PI_ONLY') {
-        return p.leadAuthorId === currentUserId;
-      }
-      return true;
-    });
-  }, [projects, effectiveIsAdmin, currentAccessRole, currentUserId]);
+    return projects.filter((proj) =>
+      canViewProject(proj, currentUserId, currentAccessRole, effectiveIsAdmin)
+    );
+  }, [projects, currentAccessRole, currentUserId, effectiveIsAdmin]);
 
-  const unlockAdmin = (password: string): boolean => {
-    if (password === adminPassword) {
+  // Admin Session Actions (Server-Side Auth)
+  const unlockAdmin = async (password: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!res.ok) return false;
+      const body = (await res.json()) as { unlocked?: boolean };
+      if (!body.unlocked) return false;
+
       setIsAdminUnlocked(true);
-      try {
-        sessionStorage.setItem(STORAGE_KEYS.ADMIN_UNLOCKED, 'true');
-      } catch {}
-      addToast(t.unlockSuccess, '', 'success');
+      setIsPasswordModalOpen(false);
+      addToast(t.adminUnlocked, '', 'success');
       if (passwordCallback) {
         const cb = passwordCallback;
         setPasswordCallback(null);
         cb();
       }
-      setIsPasswordModalOpen(false);
       return true;
-    } else {
-      addToast(t.passwordError, '', 'error');
+    } catch {
+      addToast(
+        language === 'zh' ? '无法连接验证服务' : 'Could not reach auth endpoint',
+        '',
+        'error'
+      );
       return false;
     }
   };
 
-  const lockAdmin = () => {
+  const lockAdmin = async (): Promise<void> => {
     setIsAdminUnlocked(false);
     try {
-      sessionStorage.removeItem(STORAGE_KEYS.ADMIN_UNLOCKED);
+      await fetch('/api/auth/admin', { method: 'DELETE' });
     } catch {}
     addToast(t.adminLocked, '', 'info');
   };
 
-  const updateAdminPassword = (newPass: string) => {
-    if (!newPass.trim()) return;
-    setAdminPasswordState(newPass.trim());
+  const updateAdminPassword = async (newPass: string): Promise<boolean> => {
+    const trimmed = newPass.trim();
+    if (trimmed.length < 4) {
+      addToast(
+        language === 'zh' ? '密码长度不能少于 4 位' : 'Password must be at least 4 characters',
+        '',
+        'error'
+      );
+      return false;
+    }
+
     try {
-      localStorage.setItem(STORAGE_KEYS.ADMIN_PASSWORD, newPass.trim());
-    } catch {}
-    addToast(t.passwordUpdated, '', 'success');
+      const res = await fetch('/api/auth/admin', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: trimmed }),
+      });
+
+      if (!res.ok) {
+        addToast(
+          language === 'zh'
+            ? '需要解锁管理员权限后才能修改密码'
+            : 'Unlock Admin session before updating password',
+          '',
+          'error'
+        );
+        return false;
+      }
+
+      addToast(t.passwordUpdated, '', 'success');
+      return true;
+    } catch {
+      addToast(
+        language === 'zh' ? '密码修改失败' : 'Failed to update password',
+        '',
+        'error'
+      );
+      return false;
+    }
   };
 
   const requireAdminAuth = (action: () => void) => {
@@ -516,31 +774,19 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const canEditTask = (task: TaskItem): boolean => {
-    if (effectiveIsAdmin) return true;
-    if (currentAccessRole === 'AUDITOR_GUEST') return false;
-    if (currentAccessRole === 'PROJECT_LEAD') {
-      const isLead = task.leadAuthor?.id === currentUserId || task.pi?.id === currentUserId;
-      const project = projects.find((p) => p.id === task.projectId);
-      return isLead || project?.leadAuthorId === currentUserId;
-    }
-    if (currentAccessRole === 'STUDENT_RA') {
-      return task.leadAuthor?.id === currentUserId;
-    }
-    return false;
-  };
+  const canEditTask = useCallback(
+    (task: TaskItem): boolean =>
+      checkCanEditTask(task, currentUserId, currentAccessRole, effectiveIsAdmin, projects),
+    [currentUserId, currentAccessRole, effectiveIsAdmin, projects]
+  );
 
-  const canDeleteTask = (task: TaskItem): boolean => {
-    if (effectiveIsAdmin) return true;
-    if (currentAccessRole === 'PROJECT_LEAD') {
-      return task.leadAuthor?.id === currentUserId;
-    }
-    return false;
-  };
+  const canDeleteTask = useCallback(
+    (task: TaskItem): boolean =>
+      checkCanDeleteTask(task, currentUserId, currentAccessRole, effectiveIsAdmin),
+    [currentUserId, currentAccessRole, effectiveIsAdmin]
+  );
 
-  const canManageLab = (): boolean => {
-    return effectiveIsAdmin;
-  };
+  const canManageLab = useCallback((): boolean => effectiveIsAdmin, [effectiveIsAdmin]);
 
   const registerNewMember = (data: {
     nameZh: string;
@@ -552,15 +798,17 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const id = `member-${Date.now()}`;
     const defaultAccess: AccessRole =
       data.accessRole || (data.role === 'VISITING_SCHOLAR' ? 'AUDITOR_GUEST' : 'STUDENT_RA');
+    const displayName = data.nameZh || data.nameEn;
     const newMember: LabMember = {
       id,
       nameZh: data.nameZh,
       nameEn: data.nameEn || data.nameZh,
       role: data.role,
       accessRole: defaultAccess,
-      titleZh: data.role === 'RA' ? '科研助理' : data.role === 'PHD_CANDIDATE' ? '博士研究生' : '课题组成员',
+      titleZh:
+        data.role === 'RA' ? '科研助理' : data.role === 'PHD_CANDIDATE' ? '博士研究生' : '课题组成员',
       titleEn: data.role === 'RA' ? 'Research Assistant' : 'PhD Researcher',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      avatar: generateInitialsAvatar(displayName, id),
       email: data.email || `${id}@labflow.edu`,
     };
     setMembers((prev) => [...prev, newMember]);
@@ -569,26 +817,14 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return newMember;
   };
 
-  const addToast = (
-    title: string,
-    description?: string,
-    type: ToastItem['type'] = 'info'
-  ) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
-    setToasts((prev) => [...prev, { id, title, description, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((item) => item.id !== id));
-    }, 4500);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((item) => item.id !== id));
-  };
-
   // Member Management
   const addMember = (member: LabMember) => {
     setMembers((prev) => [...prev, member]);
-    addToast(language === 'zh' ? '成员已添加' : 'Member Added', member.nameZh || member.nameEn, 'success');
+    addToast(
+      language === 'zh' ? '成员已添加' : 'Member Added',
+      member.nameZh || member.nameEn,
+      'success'
+    );
   };
 
   const updateMember = (id: string, updates: Partial<LabMember>) => {
@@ -598,14 +834,34 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteMember = (id: string) => {
     if (members.length <= 1) {
-      addToast(language === 'zh' ? '无法删除' : 'Cannot delete', language === 'zh' ? '至少保留一位成员' : 'Keep at least 1 member', 'error');
+      addToast(
+        language === 'zh' ? '无法删除' : 'Cannot delete',
+        language === 'zh' ? '至少保留一位成员' : 'Keep at least 1 member',
+        'error'
+      );
       return;
     }
-    setMembers((prev) => prev.filter((m) => m.id !== id));
-    if (currentUserId === id) {
-      setCurrentUserId(members[0].id);
+    const remaining = members.filter((m) => m.id !== id);
+    setMembers(remaining);
+    if (currentUserId === id && remaining[0]) {
+      setCurrentUserId(remaining[0].id);
     }
     addToast(language === 'zh' ? '成员已移除' : 'Member Removed', '', 'info');
+  };
+
+  // Project Management
+  const addProject = (projectData: Omit<ProjectItem, 'id'> & { id?: string }): ProjectItem => {
+    const newProject: ProjectItem = {
+      ...projectData,
+      id: projectData.id || `proj-${Date.now()}`,
+    };
+    setProjects((prev) => [newProject, ...prev]);
+    addToast(
+      language === 'zh' ? '课题项目已创建' : 'Project Created',
+      newProject.title,
+      'success'
+    );
+    return newProject;
   };
 
   // Venue Management
@@ -619,34 +875,42 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(language === 'zh' ? '目标会议已删除' : 'Target Venue Removed', '', 'info');
   };
 
-  // Stage customization handlers
+  // Stage Management
   const addStage = (stage: StageConfig) => {
     setStages((prev) => [...prev, stage]);
-    addToast(language === 'zh' ? '阶段已添加' : 'Stage Added', stage.labelZh || stage.labelEn, 'success');
+    addToast(
+      language === 'zh' ? '阶段已添加' : 'Stage Added',
+      stage.labelZh || stage.labelEn,
+      'success'
+    );
   };
 
   const updateStage = (stageId: string, updates: Partial<StageConfig>) => {
-    setStages((prev) =>
-      prev.map((s) => (s.id === stageId ? { ...s, ...updates } : s))
-    );
+    setStages((prev) => prev.map((s) => (s.id === stageId ? { ...s, ...updates } : s)));
     addToast(language === 'zh' ? '阶段已更新' : 'Stage Updated', '', 'info');
   };
 
   const deleteStage = (stageId: string) => {
     if (stages.length <= 1) {
-      addToast(language === 'zh' ? '无法删除' : 'Cannot delete', language === 'zh' ? '至少保留一个阶段' : 'Must keep at least 1 stage', 'error');
+      addToast(
+        language === 'zh' ? '无法删除' : 'Cannot delete',
+        language === 'zh' ? '至少保留一个阶段' : 'Must keep at least 1 stage',
+        'error'
+      );
       return;
     }
     const remainingStages = stages.filter((s) => s.id !== stageId);
     const fallbackStageId = remainingStages[0].id;
 
     setTasks((prev) =>
-      prev.map((task) =>
-        task.stage === stageId ? { ...task, stage: fallbackStageId } : task
-      )
+      prev.map((task) => (task.stage === stageId ? { ...task, stage: fallbackStageId } : task))
     );
     setStages(remainingStages);
-    addToast(language === 'zh' ? '阶段已移除' : 'Stage Removed', language === 'zh' ? '任务已自动移至第一阶段' : 'Tasks migrated to first stage', 'info');
+    addToast(
+      language === 'zh' ? '阶段已移除' : 'Stage Removed',
+      language === 'zh' ? '任务已自动移至第一阶段' : 'Tasks migrated to first stage',
+      'info'
+    );
   };
 
   const restoreDefaultStages = () => {
@@ -654,8 +918,9 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(language === 'zh' ? '已重置默认阶段' : 'Default Stages Restored', '', 'success');
   };
 
+  // Task Operations with Consistent RBAC Checks
   const moveTask = (taskId: string, targetStage: AcademicStage, newOrder?: number) => {
-    const targetTask = tasks.find((t) => t.id === taskId);
+    const targetTask = tasks.find((item) => item.id === taskId);
     if (!targetTask) return;
 
     if (!canEditTask(targetTask)) {
@@ -663,7 +928,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
 
-    if (targetStage === 'ACCEPTED' && !effectiveIsAdmin && currentAccessRole !== 'PROJECT_LEAD') {
+    if (!canAdvanceToStage(targetStage, currentAccessRole, effectiveIsAdmin)) {
       addToast(t.acceptedStageNotice, '', 'error');
       return;
     }
@@ -677,54 +942,52 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       );
     }
 
+    setTasks((prev) => moveTaskToStage(prev, taskId, targetStage, newOrder));
+  };
+
+  const reorderTasks = (
+    stage: AcademicStage,
+    sourceIndex: number,
+    destinationIndex: number,
+    visibleStageTaskIds?: string[]
+  ) => {
+    const candidateId =
+      visibleStageTaskIds?.[sourceIndex] ??
+      tasks
+        .filter((item) => item.stage === stage)
+        .sort((a, b) => a.order - b.order)[sourceIndex]?.id;
+
+    if (candidateId) {
+      const movedTask = tasks.find((item) => item.id === candidateId);
+      if (movedTask && !canEditTask(movedTask)) {
+        addToast(t.readOnlyNotice, '', 'warning');
+        return;
+      }
+    }
+
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            stage: targetStage,
-            order: newOrder !== undefined ? newOrder : t.order,
-            completedAt: targetStage === 'ACCEPTED' ? new Date().toISOString() : t.completedAt,
-            progress: targetStage === 'ACCEPTED' ? 100 : t.progress,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return t;
-      })
+      reorderStageTasks(prev, stage, sourceIndex, destinationIndex, visibleStageTaskIds)
     );
   };
 
-  const reorderTasks = (stage: AcademicStage, sourceIndex: number, destinationIndex: number) => {
-    setTasks((prev) => {
-      const stageTasks = prev.filter((t) => t.stage === stage).sort((a, b) => a.order - b.order);
-      const otherTasks = prev.filter((t) => t.stage !== stage);
-
-      const [moved] = stageTasks.splice(sourceIndex, 1);
-      stageTasks.splice(destinationIndex, 0, moved);
-
-      const updatedStageTasks = stageTasks.map((t, index) => ({
-        ...t,
-        order: index,
-        updatedAt: new Date().toISOString(),
-      }));
-
-      return [...otherTasks, ...updatedStageTasks];
-    });
-  };
-
   const reportBlocker = (taskId: string, blocker: BlockerInfo) => {
+    const target = tasks.find((item) => item.id === taskId);
+    if (target && !canEditTask(target)) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            isBlocked: true,
-            blocker,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return t;
-      })
+      prev.map((item) =>
+        item.id === taskId
+          ? {
+              ...item,
+              isBlocked: true,
+              blocker,
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      )
     );
     addToast(
       language === 'zh' ? '🚨 技术卡点已标记' : '🚨 Blocker Logged & Escalated',
@@ -734,18 +997,23 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const resolveBlocker = (taskId: string) => {
+    const target = tasks.find((item) => item.id === taskId);
+    if (target && !canEditTask(target)) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            isBlocked: false,
-            blocker: undefined,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return t;
-      })
+      prev.map((item) =>
+        item.id === taskId
+          ? {
+              ...item,
+              isBlocked: false,
+              blocker: undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      )
     );
     triggerConfetti();
     addToast(
@@ -756,145 +1024,124 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addTask = (taskData: Omit<TaskItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (currentAccessRole === 'AUDITOR_GUEST' && !effectiveIsAdmin) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+    const now = new Date().toISOString();
     const newTask: TaskItem = {
       ...taskData,
       id: `task-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
     setTasks((prev) => [newTask, ...prev]);
     addToast(language === 'zh' ? '任务已创建' : 'Task Created', newTask.title.slice(0, 30), 'success');
   };
 
   const updateTask = (taskId: string, updates: Partial<TaskItem>) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            ...updates,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return t;
-      })
-    );
-    if (selectedTask?.id === taskId) {
-      setSelectedTask((prev) => (prev ? { ...prev, ...updates } : null));
+    const target = tasks.find((item) => item.id === taskId);
+    if (target && !canEditTask(target)) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
     }
+    if (
+      updates.stage &&
+      !canAdvanceToStage(updates.stage, currentAccessRole, effectiveIsAdmin)
+    ) {
+      addToast(t.acceptedStageNotice, '', 'error');
+      return;
+    }
+
+    setTasks((prev) =>
+      prev.map((item) =>
+        item.id === taskId
+          ? {
+              ...item,
+              ...updates,
+              completedAt:
+                updates.stage === 'ACCEPTED' && item.stage !== 'ACCEPTED'
+                  ? new Date().toISOString()
+                  : item.completedAt,
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      )
+    );
     addToast(language === 'zh' ? '修改已保存' : 'Task Updated', '', 'info');
   };
 
   const updateTaskProgress = (taskId: string, progress: number) => {
+    const target = tasks.find((item) => item.id === taskId);
+    if (target && !canEditTask(target)) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, progress, updatedAt: new Date().toISOString() } : t))
+      prev.map((item) =>
+        item.id === taskId ? { ...item, progress, updatedAt: new Date().toISOString() } : item
+      )
     );
   };
 
   const updateTaskDates = (taskId: string, startDate?: string, deadline?: string) => {
+    const target = tasks.find((item) => item.id === taskId);
+    if (target && !canEditTask(target)) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            startDate: startDate || t.startDate,
-            deadline: deadline || t.deadline,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return t;
-      })
+      prev.map((item) =>
+        item.id === taskId
+          ? {
+              ...item,
+              startDate: startDate || item.startDate,
+              deadline: deadline || item.deadline,
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      )
     );
     addToast(language === 'zh' ? '排期已调整' : 'Schedule Adjusted', '', 'info');
   };
 
   const deleteTask = (taskId: string) => {
-    const target = tasks.find((t) => t.id === taskId);
+    const target = tasks.find((item) => item.id === taskId);
     if (target && !canDeleteTask(target)) {
       addToast(t.cannotDeleteNotice, '', 'error');
       return;
     }
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setTasks((prev) => prev.filter((item) => item.id !== taskId));
     if (selectedTask?.id === taskId) {
       setSelectedTask(null);
     }
     addToast(language === 'zh' ? '任务已删除' : 'Task Deleted', '', 'info');
   };
 
-  // Reverse DDL generation with custom milestones
   const generateReverseDDLPipeline = (plan: ReverseDDLForm) => {
-    const lead = members.find((m) => m.id === plan.leadAuthorId) || members[2];
-    const pi = members[0];
-
-    const projectId = `proj-${Date.now()}`;
-    const newProject: ProjectItem = {
-      id: projectId,
-      title: plan.title,
-      targetVenue: plan.targetVenue,
-      tag: plan.tag || plan.targetVenue.split(' ')[0] || 'Paper',
-      submissionDeadline: plan.deadlineDate,
-      status: stages[1]?.id || 'DATA_EXP',
-      leadAuthorId: lead.id,
-      piId: pi.id,
-      visibility: plan.visibility || 'PUBLIC',
-      assets: {
-        overleaf: plan.overleafUrl,
-        github: plan.githubUrl,
-        dataset: plan.datasetUrl,
-        zotero: plan.zoteroUrl,
-      },
-    };
+    if (currentAccessRole === 'AUDITOR_GUEST' && !effectiveIsAdmin) {
+      addToast(t.readOnlyNotice, '', 'warning');
+      return;
+    }
+    const { project: newProject, tasks: generatedTasks } = buildReverseDDLPipeline(
+      plan,
+      members,
+      stages,
+      language
+    );
 
     setProjects((prev) => [newProject, ...prev]);
-
-    // Use custom milestones if provided, otherwise default 4
-    const steps = plan.customMilestones && plan.customMilestones.length > 0
-      ? plan.customMilestones
-      : [
-          { nameEn: 'Baseline & Empirical Freeze', nameZh: '基线锁定与实验评测冻结', offsetDays: 45, stageId: stages[1]?.id || 'DATA_EXP' },
-          { nameEn: 'Full Manuscript Draft Ready', nameZh: '完整学术论文初稿就绪', offsetDays: 30, stageId: stages[2]?.id || 'DRAFTING' },
-          { nameEn: 'Submit to Advisor for Review', nameZh: '提交导师进行全篇审阅', offsetDays: 14, stageId: stages[3]?.id || 'PI_REVIEW' },
-          { nameEn: 'Camera & Formatting Check', nameZh: '格式排版与匿名复核', offsetDays: 3, stageId: stages[3]?.id || 'PI_REVIEW' },
-        ];
-
-    const ddl = plan.deadlineDate;
-    const generatedTasks: TaskItem[] = steps.map((step, idx) => {
-      const stepDeadline = subtractDays(ddl, step.offsetDays);
-      const stepStart = subtractDays(stepDeadline, 14);
-
-      return {
-        id: `task-${Date.now()}-${idx + 1}`,
-        title: `[T-${step.offsetDays}d] ${language === 'zh' ? step.nameZh : step.nameEn}: ${plan.title}`,
-        description: `${plan.targetVenue} milestone planned ${step.offsetDays} days prior to submission.`,
-        stage: step.stageId,
-        projectId,
-        projectTag: newProject.tag,
-        targetVenue: plan.targetVenue,
-        startDate: stepStart,
-        deadline: stepDeadline,
-        progress: idx === 0 ? 30 : 0,
-        leadAuthor: lead,
-        pi,
-        priority: step.offsetDays <= 7 ? 'URGENT' : 'HIGH',
-        visibility: plan.visibility || 'PUBLIC',
-        assets: newProject.assets,
-        isBlocked: false,
-        order: idx,
-        tags: [newProject.tag, `T-${step.offsetDays}d`],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    });
-
     setTasks((prev) => [...generatedTasks, ...prev]);
+
     triggerConfetti();
     addToast(
-      language === 'zh' ? '⚡ 倒排期里程碑已生成' : '⚡ Reverse Pipeline Generated',
-      `${plan.targetVenue} (${plan.deadlineDate})`,
+      language === 'zh' ? '⚡ 倒排计划已自动生成' : '⚡ Reverse-DDL Pipeline Generated',
+      `${plan.title} (${generatedTasks.length} ${language === 'zh' ? '个里程碑' : 'milestones'})`,
       'success'
     );
   };
 
+  // Lab Compute & Resources
   const claimResource = (
     resourceId: string,
     currentUser: string,
@@ -902,20 +1149,19 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     hours: number
   ) => {
     setResources((prev) =>
-      prev.map((r) => {
-        if (r.id === resourceId) {
-          return {
-            ...r,
-            status: 'OCCUPIED',
-            currentUser,
-            currentJob,
-            remainingHours: hours,
-            vramUtilPercent: r.type === 'GPU' ? 88 : 50,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return r;
-      })
+      prev.map((r) =>
+        r.id === resourceId
+          ? {
+              ...r,
+              status: 'OCCUPIED',
+              currentUser,
+              currentJob,
+              remainingHours: hours,
+              vramUtilPercent: r.type === 'GPU' ? 88 : 50,
+              updatedAt: new Date().toISOString(),
+            }
+          : r
+      )
     );
     addToast(
       language === 'zh' ? '🖥️ 算力节点已认领' : '🖥️ Resource Claimed',
@@ -945,20 +1191,19 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     setResources((prev) =>
-      prev.map((r) => {
-        if (r.id === resourceId) {
-          return {
-            ...r,
-            status: 'IDLE',
-            currentUser: undefined,
-            currentJob: undefined,
-            remainingHours: 0,
-            vramUtilPercent: 0,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return r;
-      })
+      prev.map((r) =>
+        r.id === resourceId
+          ? {
+              ...r,
+              status: 'IDLE',
+              currentUser: undefined,
+              currentJob: undefined,
+              remainingHours: 0,
+              vramUtilPercent: 0,
+              updatedAt: new Date().toISOString(),
+            }
+          : r
+      )
     );
     addToast(
       language === 'zh' ? '🖥️ 算力节点已成功释放' : '🖥️ Resource Released',
@@ -969,7 +1214,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addResource = (res: LabResource) => {
     setResources((prev) => [...prev, res]);
-    addToast(language === 'zh' ? '公共设施已添加' : 'Resource Added', res.nameZh || res.nameEn, 'success');
+    addToast(
+      language === 'zh' ? '公共设施已添加' : 'Resource Added',
+      res.nameZh || res.nameEn,
+      'success'
+    );
   };
 
   const updateResource = (id: string, updates: Partial<LabResource>) => {
@@ -1018,7 +1267,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (data.venues) setVenues(data.venues);
       if (data.resources) setResources(data.resources);
       triggerConfetti();
-      addToast(language === 'zh' ? '数据已成功恢复！' : 'Data Restored Successfully!', '', 'success');
+      addToast(
+        language === 'zh' ? '数据已成功恢复！' : 'Data Restored Successfully!',
+        '',
+        'success'
+      );
       return true;
     } catch (e) {
       console.warn('Invalid backup file', e);
@@ -1027,71 +1280,10 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Personal Weekly Digest Generator
   const generateMyWeeklyDigest = (targetMemberId?: string): string => {
     const activeId = targetMemberId || currentUserId;
     const userMember = members.find((m) => m.id === activeId) || members[0];
-    const isZh = language === 'zh';
-    const userName = isZh ? userMember.nameZh : userMember.nameEn;
-    const userRole = isZh ? userMember.titleZh : userMember.titleEn;
-
-    const userTasks = tasks.filter((t) => t.leadAuthor.id === userMember.id);
-    const completed = userTasks.filter((t) => t.stage === 'ACCEPTED' || !!t.completedAt);
-    const active = userTasks.filter((t) => !t.isBlocked && t.stage !== 'ACCEPTED' && !t.completedAt);
-    const blocked = userTasks.filter((t) => t.isBlocked);
-
-    let report = isZh
-      ? `## 📋 学术周进展汇报 - ${userName} (${userRole})\n`
-      : `## 📋 Academic Weekly Progress Report - ${userName} (${userRole})\n`;
-
-    report += isZh
-      ? `**汇报日期**: ${formatDate(new Date().toISOString(), 'zh')}\n\n`
-      : `**Date**: ${formatDate(new Date().toISOString(), 'en')}\n\n`;
-
-    // 1. Completed
-    report += isZh ? `### 1. 本周已完成 / 里程碑结项\n` : `### 1. Recently Completed & Milestones\n`;
-    if (completed.length === 0) {
-      report += isZh ? `*暂无新结项任务*\n\n` : `*No completed milestones this cycle*\n\n`;
-    } else {
-      completed.forEach((t) => {
-        report += `- ✅ **[${t.projectTag}]** ${t.title} (${t.targetVenue})\n`;
-      });
-      report += `\n`;
-    }
-
-    // 2. In Progress
-    report += isZh ? `### 2. 正在推进中课题 / 实验与初稿\n` : `### 2. Active Tasks & In-Progress Pipelines\n`;
-    if (active.length === 0) {
-      report += isZh ? `*无进行中任务*\n\n` : `*No active in-progress tasks*\n\n`;
-    } else {
-      active.forEach((t) => {
-        report += `- ⚡ **[${t.projectTag}]** ${t.title} (进度: ${t.progress || 0}%, 截稿: ${formatDate(t.deadline, language)})\n`;
-      });
-      report += `\n`;
-    }
-
-    // 3. Blockers
-    report += isZh ? `### 3. 当前技术卡点与求助需求\n` : `### 3. Critical Blockers & Assistance Needed\n`;
-    if (blocked.length === 0) {
-      report += isZh ? `*本周无技术受阻卡点，各方向按计划推进。*\n\n` : `*No active blockers reported. Proceeding on schedule.*\n\n`;
-    } else {
-      blocked.forEach((t) => {
-        report += `- 🔥 **[${t.projectTag}]** ${t.title}\n`;
-        report += isZh
-          ? `  - 卡点原因: ${t.blocker?.details || '详见系统'}\n  - 已尝试解法: ${t.blocker?.tried || '无'}\n  - 建议决断: ${t.blocker?.escalatedTo || '导师'}\n`
-          : `  - Stuck on: ${t.blocker?.details}\n  - Tried: ${t.blocker?.tried}\n  - Escalate to: ${t.blocker?.escalatedTo}\n`;
-      });
-      report += `\n`;
-    }
-
-    report += `---\n*Generated by LabFlow OS*\n`;
-
-    // Copy to clipboard
-    navigator.clipboard.writeText(report).then(() => {
-      addToast(t.myWeeklyDigest, t.digestCopied, 'success');
-    }).catch(() => {});
-
-    return report;
+    return buildWeeklyDigestMarkdown({ member: userMember, tasks, language });
   };
 
   const resetToMockData = () => {
@@ -1101,22 +1293,13 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setStages(DEFAULT_STAGES);
     setMembers(LAB_MEMBERS);
     setVenues(DEFAULT_VENUES);
+    setCurrentUserId('member-student1');
     setFilterOnlyBlockers(false);
     setSearchQuery('');
     setFilterMemberId('all');
     setSelectedStageFilter('all');
     setSelectedProjectFilter('all');
     setViewMode('kanban');
-    try {
-      localStorage.removeItem(STORAGE_KEYS.TASKS);
-      localStorage.removeItem(STORAGE_KEYS.PROJECTS);
-      localStorage.removeItem(STORAGE_KEYS.RESOURCES);
-      localStorage.removeItem(STORAGE_KEYS.STAGES);
-      localStorage.removeItem(STORAGE_KEYS.MEMBERS);
-      localStorage.removeItem(STORAGE_KEYS.VENUES);
-    } catch (e) {
-      console.warn('Could not reset localStorage', e);
-    }
     triggerConfetti();
     addToast(language === 'zh' ? '示例数据已重置' : 'Demo State Reset', '', 'success');
   };
@@ -1127,10 +1310,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       nameEn: 'Researcher 1',
       nameZh: '研究员 1',
       role: 'PI',
+      accessRole: 'ADMIN_PI',
       titleEn: 'Principal Investigator',
       titleZh: '课题组长 (PI)',
-      avatar: '🧑‍💻',
-      email: 'pi@lab.edu'
+      avatar: generateInitialsAvatar('研究员 1', 'member-me'),
+      email: 'pi@lab.edu',
     };
     setTasks([]);
     setProjects([]);
@@ -1142,20 +1326,17 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setFilterMemberId('all');
     setSelectedStageFilter('all');
     setSelectedProjectFilter('all');
-    try {
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify([initialUser]));
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, 'member-me');
-    } catch (e) {
-      console.warn('Could not wipe localStorage', e);
-    }
-    addToast(t.cleanSlateSuccess || (language === 'zh' ? '已一键清空所有任务和人员，开启全新实验室' : 'All tasks and members wiped. Blank canvas ready.'), '', 'warning');
+    addToast(
+      t.cleanSlateSuccess ||
+        (language === 'zh'
+          ? '已一键清空所有任务和人员，开启全新实验室'
+          : 'All tasks and members wiped. Blank canvas ready.'),
+      '',
+      'warning'
+    );
   };
 
   const applyAIImport = (data: ParsedAIData, mode: 'overwrite' | 'append') => {
-    // 1. Members
     let updatedMembers = [...members];
     if (mode === 'overwrite') {
       const newMembers: LabMember[] = data.members.map((m) => ({
@@ -1176,10 +1357,8 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       updatedMembers = newMembers.length > 0 ? newMembers : members;
       setMembers(updatedMembers);
-      const piUser = updatedMembers.find((m) => m.role === 'PI' || m.accessRole === 'ADMIN_PI') || updatedMembers[0];
-      if (piUser) {
-        setCurrentUserId(piUser.id);
-      }
+      const piUser = getSafePI(updatedMembers);
+      if (piUser) setCurrentUserId(piUser.id);
     } else {
       const existingNames = new Set(
         members.map((m) => m.nameZh.toLowerCase()).concat(members.map((m) => m.nameEn.toLowerCase()))
@@ -1208,17 +1387,13 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const getMemberByName = (name: string): LabMember => {
       const match = updatedMembers.find(
-        (m) =>
-          m.nameZh === name ||
-          m.nameEn.toLowerCase() === name.toLowerCase() ||
-          m.id === name
+        (m) => m.nameZh === name || m.nameEn.toLowerCase() === name.toLowerCase() || m.id === name
       );
       return match || updatedMembers[0];
     };
 
-    const piMember = updatedMembers.find((m) => m.role === 'PI' || m.accessRole === 'ADMIN_PI') || updatedMembers[0];
+    const piMember = getSafePI(updatedMembers) || updatedMembers[0];
 
-    // 2. Projects
     let updatedProjects = [...projects];
     if (mode === 'overwrite') {
       updatedProjects = data.projects.map((p) => {
@@ -1262,33 +1437,38 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setProjects(updatedProjects);
     }
 
-    // 3. Tasks
     const projectLookup = new Map<string, ProjectItem>();
     updatedProjects.forEach((p) => {
       projectLookup.set(p.title, p);
       projectLookup.set(p.id, p);
     });
 
-    const newTasks: TaskItem[] = data.tasks.map((t, idx) => {
-      const lead = getMemberByName(t.leadAuthorName);
-      const proj = projectLookup.get(t.projectName) || projectLookup.get(t.projectId) || updatedProjects[0];
-      const validStage = stages.some((s) => s.id === t.stage) ? t.stage : (stages[0]?.id || 'IDEATION');
+    const newTasks: TaskItem[] = data.tasks.map((item, idx) => {
+      const lead = getMemberByName(item.leadAuthorName);
+      const proj =
+        projectLookup.get(item.projectName) ||
+        projectLookup.get(item.projectId) ||
+        updatedProjects[0];
+      const validStage = stages.some((s) => s.id === item.stage)
+        ? item.stage
+        : stages[0]?.id || 'IDEATION';
 
       return {
-        id: t.id || `task-ai-${Date.now()}-${idx}`,
-        title: t.title,
-        description: t.description,
+        id: item.id || `task-ai-${Date.now()}-${idx}`,
+        title: item.title,
+        description: item.description,
         stage: validStage,
         projectId: proj ? proj.id : 'proj-general',
         projectTag: proj ? proj.tag : 'AI-LAB',
         targetVenue: proj ? proj.targetVenue : 'Conference',
         startDate: new Date().toISOString().split('T')[0],
-        deadline: t.deadline || new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0],
-        progress: t.progress || 0,
+        deadline:
+          item.deadline || new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        progress: item.progress || 0,
         leadAuthor: lead,
         pi: piMember,
-        priority: t.priority,
-        visibility: t.visibility,
+        priority: item.priority,
+        visibility: item.visibility,
         assets: {},
         isBlocked: false,
         order: idx,
@@ -1303,7 +1483,6 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTasks((prev) => [...prev, ...newTasks]);
     }
 
-    // 4. Resources
     if (data.resources && data.resources.length > 0) {
       if (mode === 'overwrite') {
         const newResources: LabResource[] = data.resources.map((r) => ({
@@ -1342,8 +1521,12 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const isZh = language === 'zh';
     addToast(
       isZh
-        ? (mode === 'overwrite' ? '🎉 AI 智能冷启动导入成功！' : '✨ 成功追加导入 AI 数据！')
-        : (mode === 'overwrite' ? '🎉 AI Onboarding Imported!' : '✨ AI Data Appended!'),
+        ? mode === 'overwrite'
+          ? '🎉 AI 智能冷启动导入成功！'
+          : '✨ 成功追加导入 AI 数据！'
+        : mode === 'overwrite'
+        ? '🎉 AI Onboarding Imported!'
+        : '✨ AI Data Appended!',
       isZh
         ? `成功载入 ${countMembers} 位成员、${countProjects} 个课题项目与 ${countTasks} 项学术任务`
         : `Imported ${countMembers} members, ${countProjects} projects, and ${countTasks} tasks`,
@@ -1353,7 +1536,7 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleSetCurrentUserId = (newId: string) => {
     const target = members.find((m) => m.id === newId);
-    const targetRole = target?.accessRole || (target?.role === 'PI' ? 'ADMIN_PI' : 'STUDENT_RA');
+    const targetRole = deriveAccessRole(target);
     if (targetRole === 'ADMIN_PI' && !isAdminUnlocked) {
       setPasswordCallback(() => () => {
         setCurrentUserId(newId);
@@ -1365,18 +1548,21 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <LabFlowContext.Provider
+    <LabDataContext.Provider
       value={{
         language,
         setLanguage,
         t,
+        storageMode,
+        syncStatus,
+        lastSyncError,
+        lastSyncedAt,
+        retryServerSync,
         stages,
         addStage,
         updateStage,
         deleteStage,
         restoreDefaultStages,
-        isStageSettingsOpen,
-        setIsStageSettingsOpen,
         venues,
         addVenue,
         deleteVenue,
@@ -1386,53 +1572,11 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addMember,
         updateMember,
         deleteMember,
-        isMemberManagerOpen,
-        setIsMemberManagerOpen,
         tasks: visibleTasks,
         projects: visibleProjects,
         resources,
-        filterOnlyBlockers,
-        searchQuery,
-        filterMemberId,
-        selectedStageFilter,
-        setSelectedStageFilter,
-        selectedProjectFilter,
-        setSelectedProjectFilter,
-        sortByDDLUrgency,
-        setSortByDDLUrgency,
-        viewMode,
-        theme,
-        accentColor,
-        setAccentColor,
-        bgStyle,
-        setBgStyle,
-        fontSize,
-        setFontSize,
-        enableComputeStrip,
-        setEnableComputeStrip,
-        isSettingsOpen,
-        setIsSettingsOpen,
-        activeSettingsTab,
-        setActiveSettingsTab,
-        activeBlockerTask,
-        isReverseDDLOpen,
-        isNewTaskOpen,
-        isResourceModalOpen,
-        isAIImportOpen,
-        setIsAIImportOpen,
+        addProject,
         applyAIImport,
-        selectedTask,
-        toasts,
-        setFilterOnlyBlockers,
-        setSearchQuery,
-        setFilterMemberId,
-        setViewMode,
-        setTheme,
-        setActiveBlockerTask,
-        setIsReverseDDLOpen,
-        setIsNewTaskOpen,
-        setIsResourceModalOpen,
-        setSelectedTask,
         moveTask,
         reorderTasks,
         reportBlocker,
@@ -1453,9 +1597,6 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         exportDataBackup,
         importDataBackup,
         generateMyWeeklyDigest,
-        addToast,
-        removeToast,
-        adminPassword,
         isAdminUnlocked,
         currentMember,
         currentAccessRole,
@@ -1464,10 +1605,6 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
         lockAdmin,
         updateAdminPassword,
         requireAdminAuth,
-        isPasswordModalOpen,
-        setIsPasswordModalOpen,
-        isRegisterModalOpen,
-        setIsRegisterModalOpen,
         canEditTask,
         canDeleteTask,
         canManageLab,
@@ -1475,14 +1612,30 @@ export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }}
     >
       {children}
-    </LabFlowContext.Provider>
+    </LabDataContext.Provider>
   );
 };
 
-export const useLabFlow = () => {
-  const context = useContext(LabFlowContext);
-  if (!context) {
+export const LabFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <ThemeProvider>
+      <UIProvider>
+        <LabDataProvider>{children}</LabDataProvider>
+      </UIProvider>
+    </ThemeProvider>
+  );
+};
+
+export const useLabFlow = (): LabFlowContextType => {
+  const themeCtx = useLabTheme();
+  const uiCtx = useLabUI();
+  const dataCtx = useContext(LabDataContext);
+  if (!dataCtx) {
     throw new Error('useLabFlow must be used within a LabFlowProvider');
   }
-  return context;
+  return {
+    ...themeCtx,
+    ...uiCtx,
+    ...dataCtx,
+  };
 };

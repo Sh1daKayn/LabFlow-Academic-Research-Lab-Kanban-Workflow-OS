@@ -20,6 +20,10 @@ import {
   Lock,
   Unlock,
   Sparkles,
+  Database,
+  HardDrive,
+  RefreshCw,
+  WifiOff,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -41,6 +45,11 @@ export const Header: React.FC = () => {
     members,
     currentMember,
     currentAccessRole,
+    effectiveIsAdmin,
+    storageMode,
+    syncStatus,
+    lastSyncError,
+    retryServerSync,
     isAdminUnlocked,
     lockAdmin,
     setIsPasswordModalOpen,
@@ -50,6 +59,7 @@ export const Header: React.FC = () => {
     setIsNewTaskOpen,
     setIsAIImportOpen,
     setIsSettingsOpen,
+    setActiveSettingsTab,
   } = useLabFlow();
 
   const totalBlockers = tasks.filter((t) => t.isBlocked).length;
@@ -279,6 +289,75 @@ export const Header: React.FC = () => {
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t.newTask}</span>
+            </button>
+
+            {/* Live Server Sync & Storage Mode Pill */}
+            <button
+              type="button"
+              onClick={() => {
+                if (syncStatus === 'offline') {
+                  void retryServerSync();
+                  return;
+                }
+                if (effectiveIsAdmin) {
+                  setActiveSettingsTab('backup');
+                  setIsSettingsOpen(true);
+                } else {
+                  void retryServerSync();
+                }
+              }}
+              title={
+                syncStatus === 'offline'
+                  ? lastSyncError ||
+                    (language === 'zh'
+                      ? '当前仅保存在本机浏览器缓存，点击重试同步至服务器'
+                      : 'Saved in browser cache only; click to retry server sync')
+                  : storageMode === 'postgres'
+                  ? language === 'zh'
+                    ? '已连接 PostgreSQL 服务器数据库，跨设备实时持久化'
+                    : 'Connected to PostgreSQL server database'
+                  : language === 'zh'
+                  ? '已保存至本机服务端 (.data/labflow-state.json)；如需云端/远程服务器保存，请在 .env 中配置 DATABASE_URL (PostgreSQL)'
+                  : 'Saved to host server store (.data/labflow-state.json); configure DATABASE_URL for remote PostgreSQL persistence'
+              }
+              className={`${
+                syncStatus === 'offline' ? 'flex' : 'hidden md:flex'
+              } items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                syncStatus === 'offline'
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/25'
+                  : syncStatus === 'syncing'
+                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                  : storageMode === 'postgres'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20'
+                  : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20'
+              }`}
+            >
+              {syncStatus === 'offline' ? (
+                <WifiOff className="w-3.5 h-3.5 shrink-0" />
+              ) : syncStatus === 'syncing' ? (
+                <RefreshCw className="w-3.5 h-3.5 shrink-0 animate-spin" />
+              ) : storageMode === 'postgres' ? (
+                <Database className="w-3.5 h-3.5 shrink-0" />
+              ) : (
+                <HardDrive className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span className="hidden xl:inline">
+                {syncStatus === 'offline'
+                  ? language === 'zh'
+                    ? '仅本机缓存·点击重试'
+                    : 'Local Only · Retry'
+                  : syncStatus === 'syncing'
+                  ? language === 'zh'
+                    ? '正在保存...'
+                    : 'Saving...'
+                  : storageMode === 'postgres'
+                  ? language === 'zh'
+                    ? '服务器DB已同步'
+                    : 'DB Synced'
+                  : language === 'zh'
+                  ? '本机服务已保存'
+                  : 'Host Saved'}
+              </span>
             </button>
 
             {/* Unified Settings Center Button (系统整体设置) */}

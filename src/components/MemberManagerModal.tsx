@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { LabMember } from '@/types';
+import { generateInitialsAvatar } from '@/utils/avatar';
 import {
   Users,
   X,
@@ -45,7 +46,7 @@ export const MemberManagerModal: React.FC = () => {
       role,
       titleZh: titleZh.trim() || '研究生 / 课题成员',
       titleEn: titleEn.trim() || 'Researcher',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      avatar: generateInitialsAvatar(nameZh.trim() || nameEn.trim(), newId),
       email: email.trim() || `${newId}@labflow.edu`,
     };
 
