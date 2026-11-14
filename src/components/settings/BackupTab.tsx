@@ -28,6 +28,7 @@ export const BackupTab: React.FC = () => {
     lastSyncError,
     lastSyncedAt,
     retryServerSync,
+    effectiveIsAdmin,
     language,
     t,
   } = useLabFlow();
@@ -249,10 +250,10 @@ export const BackupTab: React.FC = () => {
         />
       </div>
 
-      {/* Admin Password Setting (Server-Side Scrypt Hash) */}
+      {/* Admin Password Setting (PI Exclusive) */}
       <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
         <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <KeyRound className="w-4 h-4 text-indigo-500" />
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -260,12 +261,19 @@ export const BackupTab: React.FC = () => {
               </span>
             </div>
             <span className="text-[10px] text-slate-500 font-mono">
-              {language === 'zh' ? '服务端哈希加密保护' : 'Server Hashed (scrypt)'}
+              {effectiveIsAdmin
+                ? language === 'zh'
+                  ? '服务端哈希加密保护'
+                  : 'Server Hashed (scrypt)'
+                : language === 'zh'
+                ? '👑 仅导师最高权限可修改'
+                : '👑 PI Exclusive'}
             </span>
           </div>
           <div className="flex items-center gap-2 max-w-md">
             <input
               type="password"
+              disabled={!effectiveIsAdmin}
               value={newAdminPass}
               onChange={(e) => setNewAdminPass(e.target.value)}
               placeholder={
@@ -273,11 +281,11 @@ export const BackupTab: React.FC = () => {
                   ? '输入新密码（至少4位，默认: admin888）'
                   : 'New password (min 4 chars)'
               }
-              className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
             />
             <button
               type="button"
-              disabled={isUpdatingPass || newAdminPass.trim().length < 4}
+              disabled={!effectiveIsAdmin || isUpdatingPass || newAdminPass.trim().length < 4}
               onClick={handleUpdatePassword}
               className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold shrink-0"
             >
@@ -287,23 +295,24 @@ export const BackupTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Reset to Mock */}
+      {/* Reset to Mock (PI Exclusive) */}
       <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
-        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <div>
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
               {t.resetDemo}
             </span>
             <span className="text-[10px] text-slate-500">
               {language === 'zh'
-                ? '恢复初始的国际高水平论文、阶段及卡点示例数据'
-                : 'Restore default sample papers, pipelines, and blocker mock state'}
+                ? '恢复初始的国际高水平论文、阶段及卡点示例数据（仅导师最高权限可执行）'
+                : 'Restore default sample papers, pipelines, and blocker mock state (PI exclusive)'}
             </span>
           </div>
           <button
             type="button"
+            disabled={!effectiveIsAdmin}
             onClick={resetToMockData}
-            className="px-3.5 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-45 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{t.resetDemo}</span>
@@ -311,9 +320,9 @@ export const BackupTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Clean Slate Wipe */}
+      {/* Clean Slate Wipe (PI Exclusive) */}
       <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
-        <div className="flex items-center justify-between p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
+        <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
           <div>
             <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block">
               {language === 'zh'
@@ -322,12 +331,13 @@ export const BackupTab: React.FC = () => {
             </span>
             <span className="text-[10px] text-slate-500">
               {language === 'zh'
-                ? '清空全部任务、项目、算力与预设人员，从零开始搭建属于自己的课题组'
-                : 'Wipe all tasks, projects, resources, and members to build your lab from scratch'}
+                ? '清空全部任务、项目、算力与预设人员（仅导师最高权限解锁后可执行）'
+                : 'Wipe all tasks, projects, resources, and members (PI exclusive)'}
             </span>
           </div>
           <button
             type="button"
+            disabled={!effectiveIsAdmin}
             onClick={() => {
               if (
                 confirm(
@@ -339,7 +349,7 @@ export const BackupTab: React.FC = () => {
                 cleanSlateWipe();
               }
             }}
-            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-45 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 shrink-0"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{language === 'zh' ? '清空并初始化' : 'Wipe & Initialize'}</span>

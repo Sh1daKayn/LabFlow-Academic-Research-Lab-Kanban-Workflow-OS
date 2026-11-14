@@ -79,7 +79,7 @@ export const AI_IMPORT_PROMPT_ZH = `你是一位顶尖的高校与科研实验�
       "nameZh": "中文名（如：王伟）",
       "nameEn": "英文或拼音（如：Wei Wang）",
       "role": "PI | POSTDOC | SENIOR_PHD | PHD_CANDIDATE | RA | VISITING_SCHOLAR",
-      "accessRole": "ADMIN_PI | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
+      "accessRole": "ADMIN_PI | SYS_ADMIN | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
       "titleZh": "身份或研究方向（如：副教授 / 具身智能方向）",
       "email": "工作邮箱（如无写空字符串）"
     }
@@ -142,7 +142,7 @@ Output Rules:
       "nameZh": "Chinese Name",
       "nameEn": "English Name",
       "role": "PI | POSTDOC | SENIOR_PHD | PHD_CANDIDATE | RA | VISITING_SCHOLAR",
-      "accessRole": "ADMIN_PI | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
+      "accessRole": "ADMIN_PI | SYS_ADMIN | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
       "titleZh": "Role or research focus",
       "email": "Email address"
     }
@@ -448,6 +448,14 @@ function normalizeMemberRole(
 ): { role: LabMember['role']; accessRole: AccessRole } {
   const text = `${roleInput || ''} ${titleInput || ''}`.toLowerCase();
 
+  if (
+    text.includes('sys_admin') ||
+    text.includes('系统管理员') ||
+    text.includes('学生管理员') ||
+    text.includes('lab manager')
+  ) {
+    return { role: 'SENIOR_PHD', accessRole: 'SYS_ADMIN' };
+  }
   if (text.includes('pi') || text.includes('导师') || text.includes('教授') || text.includes('负责人')) {
     return { role: 'PI', accessRole: 'ADMIN_PI' };
   }
@@ -559,7 +567,7 @@ export function parseAIDocumentText(
         nameZh,
         nameEn,
         role: rm.role && ['PI', 'POSTDOC', 'SENIOR_PHD', 'PHD_CANDIDATE', 'RA', 'VISITING_SCHOLAR'].includes(rm.role) ? (rm.role as LabMember['role']) : role,
-        accessRole: rm.accessRole && ['ADMIN_PI', 'PROJECT_LEAD', 'STUDENT_RA', 'AUDITOR_GUEST'].includes(rm.accessRole) ? (rm.accessRole as AccessRole) : accessRole,
+        accessRole: rm.accessRole && ['ADMIN_PI', 'SYS_ADMIN', 'PROJECT_LEAD', 'STUDENT_RA', 'AUDITOR_GUEST'].includes(rm.accessRole) ? (rm.accessRole as AccessRole) : accessRole,
         titleZh: rm.titleZh || `${nameZh} 的研究方向`,
         titleEn: rm.titleEn || nameEn,
         email: rm.email || `${nameEn.toLowerCase().replace(/\s+/g, '.')}@lab.edu.cn`,

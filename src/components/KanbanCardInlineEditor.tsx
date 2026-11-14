@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { AcademicStage, ChecklistItem, Priority, TaskItem, VisibilityLevel } from '@/types';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { Flame, Lock, Plus, Save, Sparkles, Trash2, X } from 'lucide-react';
+import { Flame, GitBranch, ListPlus, Lock, Plus, Save, Trash2, X } from 'lucide-react';
+import { TaskChecklistTemplateBar } from '@/components/TaskChecklistTemplateBar';
 
 interface KanbanCardInlineEditorProps {
   task: TaskItem;
@@ -17,6 +18,9 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
   const {
     setSelectedTask,
     setActiveBlockerTask,
+    setLogicTreeTaskId,
+    pushChecklistItemToWeeklyTodo,
+    currentUserId,
     moveTask,
     updateTask,
     deleteTask,
@@ -138,35 +142,6 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
     const updated = checklist.filter((c) => c.id !== subId);
     setChecklist(updated);
     updateTask(task.id, { checklist: updated });
-  };
-
-  const handleInsertRubric = () => {
-    if (!hasEditPermission) return;
-    const isZh = language === 'zh';
-    const rubricItems = isZh
-      ? [
-          '【双盲匿名】清除论文及附录中所有作者姓名、致谢、机构标识与非匿名仓库链接',
-          '【可复现性】提供随机数种子配置、超参数网格列表与环境依赖清单 (conda/docker)',
-          '【实验统计】核心实验完成至少 5 次不同随机种子运行并报告均值与置信区间 (std/CI)',
-          '【理论与伦理】补充引理完整数学推导附录、潜在社会负面影响与合规伦理声明',
-        ]
-      : [
-          '[Double-Blind] Remove all author names, acknowledgments, affiliations, and de-anonymized links',
-          '[Reproducibility] Specify random seeds, hyperparameter search grids, and conda/docker environment',
-          '[Significance] Run models with >=5 random seeds and report std / confidence intervals',
-          '[Ethics & Proofs] Complete supplementary mathematical proofs, limitations, and ethical statements',
-        ];
-
-    const newItems = rubricItems.map((text, idx) => ({
-      id: `rubric-${Date.now()}-${idx}`,
-      text,
-      done: false,
-    }));
-
-    const updated = [...checklist, ...newItems];
-    setChecklist(updated);
-    updateTask(task.id, { checklist: updated });
-    addToast(t.insertRubricChecklist, t.rubricInserted, 'success');
   };
 
   const fieldClass =
@@ -375,22 +350,19 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
           />
         </div>
 
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-2.5 space-y-1.5">
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-2.5 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
               {t.checklist}
             </span>
-            {hasEditPermission && (
-              <button
-                type="button"
-                onClick={handleInsertRubric}
-                className="text-[10px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>{t.insertRubricChecklist}</span>
-              </button>
-            )}
           </div>
+
+          <TaskChecklistTemplateBar
+            task={task}
+            currentChecklist={checklist}
+            editable={hasEditPermission}
+            compact
+          />
 
           <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
             {checklist.map((c) => (
@@ -419,15 +391,34 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
                     {c.text}
                   </span>
                 </div>
-                {hasEditPermission && (
+                <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => handleDeleteSubtask(c.id)}
-                    className="text-slate-400 hover:text-rose-500 p-0.5"
+                    onClick={() => {
+                      if (!task.checklist?.some((item) => item.id === c.id)) {
+                        updateTask(task.id, { checklist });
+                      }
+                      pushChecklistItemToWeeklyTodo({
+                        task: { ...task, checklist },
+                        checklistItem: c,
+                        memberId: task.leadAuthor?.id || currentUserId,
+                      });
+                    }}
+                    className="p-0.5 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400"
+                    title={language === 'zh' ? '推入本周 To-Do' : 'Push to Weekly To-Do'}
                   >
-                    ✕
+                    <ListPlus className="w-3.5 h-3.5" />
                   </button>
-                )}
+                  {hasEditPermission && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSubtask(c.id)}
+                      className="text-slate-400 hover:text-rose-500 p-0.5"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -512,7 +503,16 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
             <div />
           )}
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setLogicTreeTaskId(task.id)}
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-medium transition-colors flex items-center gap-1"
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              <span>{t.logicTreeTab}</span>
+            </button>
+
             {hasEditPermission && (
               <button
                 type="button"

@@ -14,6 +14,7 @@ import {
   Calendar,
   FileText,
 } from 'lucide-react';
+import { MemberAvatar } from '@/components/MemberAvatar';
 import { generateMeetingMinutesMarkdown, formatDate, formatCountdownBadge } from '@/utils/date';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
 
@@ -134,46 +135,46 @@ export const GroupMeetingView: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col p-4 lg:p-6 max-w-[1720px] mx-auto w-full">
       {/* Top Standup Presenter Bar */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 p-5 mb-6 shadow-xl">
+      <div className="rounded-2xl bg-gradient-to-r from-white via-indigo-50/70 to-white dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-slate-200 dark:border-slate-800 p-5 mb-6 shadow-sm dark:shadow-xl transition-colors">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Left info */}
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+            <div className="p-3 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
               <Presentation className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
                   {t.meeting}
                 </span>
-                <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   {formatDate(new Date().toISOString(), language)}
                 </span>
               </div>
-              <h1 className="text-lg font-bold text-slate-100 mt-0.5">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                 {t.standupTitle}
               </h1>
-              <p className="text-xs text-slate-400">{t.standupDesc}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">{t.standupDesc}</p>
             </div>
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
             {/* Live Standup Timer */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
-              <Timer className="w-4 h-4 text-cyan-400 animate-spin-slow" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs">
+              <Timer className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-spin-slow" />
               <div className="flex flex-col">
                 <span className="text-[9px] uppercase font-semibold text-slate-500">
                   {t.timerLabel}
                 </span>
-                <span className="font-mono text-xs font-bold text-cyan-300">
+                <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-300">
                   {formatTimer(meetingSeconds)}
                 </span>
               </div>
               <button
                 onClick={() => setIsTimerRunning(!isTimerRunning)}
-                className="ml-1 text-[10px] text-slate-400 hover:text-white"
+                className="ml-1 text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               >
                 {isTimerRunning ? (language === 'zh' ? '暂停' : 'Pause') : (language === 'zh' ? '继续' : 'Resume')}
               </button>
@@ -182,10 +183,10 @@ export const GroupMeetingView: React.FC = () => {
             {/* Personal Weekly Digest */}
             <button
               onClick={() => generateMyWeeklyDigest(selectedMember !== 'all' ? selectedMember : undefined)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-slate-200 hover:text-white font-medium text-xs transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-cyan-500/50 text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white font-medium text-xs transition-all shadow-sm"
               title={t.myWeeklyDigest}
             >
-              <FileText className="w-3.5 h-3.5 text-cyan-400" />
+              <FileText className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span>{t.myWeeklyDigest}</span>
             </button>
 
@@ -201,7 +202,7 @@ export const GroupMeetingView: React.FC = () => {
             {/* Download .md */}
             <button
               onClick={handleDownloadMinutes}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title={t.downloadMinutes}
             >
               <Download className="w-4 h-4" />
@@ -210,8 +211,8 @@ export const GroupMeetingView: React.FC = () => {
         </div>
 
         {/* Presenter Selector Pills */}
-        <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-semibold text-slate-400 shrink-0 mr-1 flex items-center gap-1">
+        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0 mr-1 flex items-center gap-1">
             <Users className="w-3.5 h-3.5" />
             {language === 'zh' ? '汇报人:' : 'Presenter:'}
           </span>
@@ -223,12 +224,12 @@ export const GroupMeetingView: React.FC = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border shrink-0 transition-all ${
               selectedMember === 'all'
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 font-bold shadow-sm'
-                : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                ? 'bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/50 dark:border-cyan-500/60 font-bold shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <span>{t.allMembers}</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400">
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
               {tasks.length}
             </span>
           </button>
@@ -248,16 +249,17 @@ export const GroupMeetingView: React.FC = () => {
                 }}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium border shrink-0 transition-all ${
                   isSelected
-                    ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/60 font-bold shadow-sm'
-                    : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                    ? 'bg-indigo-500/15 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/50 dark:border-indigo-500/60 font-bold shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
+                <MemberAvatar member={m} size="xs" />
                 <span>{mName}</span>
-                <span className="text-[10px] text-slate-400">[{m.role}]</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">[{m.role}]</span>
                 {hasBlockers && (
                   <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
                 )}
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400">
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   {memberTaskCount}
                 </span>
               </button>
@@ -269,22 +271,22 @@ export const GroupMeetingView: React.FC = () => {
       {/* 3-Column Executive Summary Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 items-start pb-8">
         {/* Column 1: Completed Recently */}
-        <div className="flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <div className="flex flex-col rounded-2xl bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 p-4 shadow-sm transition-colors">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+              <div className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                   {t.colCompleted}
                 </h2>
-                <span className="text-[11px] text-emerald-400 font-medium">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                   {t.colCompletedSub}
                 </span>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
               {completedTasks.length}
             </span>
           </div>
@@ -294,28 +296,28 @@ export const GroupMeetingView: React.FC = () => {
               <div
                 key={t.id}
                 onClick={() => setSelectedTask(t)}
-                className="cursor-pointer p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 transition-all space-y-2 group"
+                className="cursor-pointer p-3.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 shadow-sm transition-all space-y-2 group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                     {t.projectTag}
                   </span>
-                  <span className="text-[11px] text-slate-400 font-mono">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                     {formatDate(t.completedAt || t.deadline, language)}
                   </span>
                 </div>
-                <h3 className="text-xs font-semibold text-slate-100 group-hover:text-emerald-300 transition-colors leading-snug">
+                <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors leading-snug">
                   {t.title}
                 </h3>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/80 dark:border-slate-800/60">
                   <span>{language === 'zh' ? t.leadAuthor.nameZh : t.leadAuthor.nameEn}</span>
-                  <span className="text-emerald-400 font-mono">{t.progress || 100}%</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-mono">{t.progress || 100}%</span>
                 </div>
               </div>
             ))}
 
             {completedTasks.length === 0 && (
-              <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
                 {language === 'zh' ? '暂无归档成果' : 'No archived items'}
               </div>
             )}
@@ -323,22 +325,22 @@ export const GroupMeetingView: React.FC = () => {
         </div>
 
         {/* Column 2: Active & In Progress */}
-        <div className="flex flex-col rounded-2xl bg-slate-950/70 border border-slate-800/90 p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <div className="flex flex-col rounded-2xl bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 p-4 shadow-sm transition-colors">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+              <div className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                   {t.colActive}
                 </h2>
-                <span className="text-[11px] text-cyan-400 font-medium">
+                <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
                   {t.colActiveSub}
                 </span>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/30">
               {activeTasks.length}
             </span>
           </div>
@@ -350,29 +352,29 @@ export const GroupMeetingView: React.FC = () => {
                 <div
                   key={t.id}
                   onClick={() => setSelectedTask(t)}
-                  className="cursor-pointer p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition-all space-y-2 group"
+                  className="cursor-pointer p-3.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 shadow-sm transition-all space-y-2 group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
                       {t.projectTag}
                     </span>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ddl.className}`}>
                       {ddl.text}
                     </span>
                   </div>
-                  <h3 className="text-xs font-semibold text-slate-100 group-hover:text-cyan-300 transition-colors leading-snug">
+                  <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors leading-snug">
                     {t.title}
                   </h3>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/80 dark:border-slate-800/60">
                     <span>{language === 'zh' ? t.leadAuthor.nameZh : t.leadAuthor.nameEn}</span>
-                    <span className="text-cyan-400 font-mono">{t.progress || 0}%</span>
+                    <span className="text-cyan-600 dark:text-cyan-400 font-mono">{t.progress || 0}%</span>
                   </div>
                 </div>
               );
             })}
 
             {activeTasks.length === 0 && (
-              <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
                 {language === 'zh' ? '暂无进行中课题' : 'No active tasks'}
               </div>
             )}
@@ -380,22 +382,22 @@ export const GroupMeetingView: React.FC = () => {
         </div>
 
         {/* Column 3: Critical Blockers Requiring PI Decision */}
-        <div className="flex flex-col rounded-2xl bg-red-950/20 border-2 border-red-500/50 p-4 shadow-xl shadow-red-950/20">
-          <div className="flex items-center justify-between pb-3 border-b border-red-500/30 mb-3">
+        <div className="flex flex-col rounded-2xl bg-red-50/70 dark:bg-red-950/20 border-2 border-red-400/60 dark:border-red-500/50 p-4 shadow-sm dark:shadow-xl dark:shadow-red-950/20 transition-colors">
+          <div className="flex items-center justify-between pb-3 border-b border-red-200 dark:border-red-500/30 mb-3">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400">
+              <div className="p-1.5 rounded-lg bg-red-500/15 dark:bg-red-500/20 border border-red-400/40 dark:border-red-500/40 text-red-600 dark:text-red-400">
                 <Flame className="w-4 h-4 animate-pulse" />
               </div>
               <div>
-                <h2 className="text-xs font-bold text-red-200 uppercase tracking-wider">
+                <h2 className="text-xs font-bold text-red-900 dark:text-red-200 uppercase tracking-wider">
                   {t.colBlockers}
                 </h2>
-                <span className="text-[11px] text-red-300 font-medium">
+                <span className="text-[11px] text-red-700 dark:text-red-300 font-medium">
                   {t.colBlockersSub}
                 </span>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500/15 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-400/40 dark:border-red-500/40 animate-pulse">
               {blockedTasks.length}
             </span>
           </div>
@@ -410,36 +412,36 @@ export const GroupMeetingView: React.FC = () => {
               return (
                 <div
                   key={t.id}
-                  className="p-4 rounded-xl bg-slate-900 border border-red-500/50 space-y-2.5 shadow-md"
+                  className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-red-300 dark:border-red-500/50 space-y-2.5 shadow-sm dark:shadow-md"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-400/40 dark:border-red-500/40">
                       {t.projectTag}
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-red-500/20 text-red-300 border border-red-500/40">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-400/40 dark:border-red-500/40">
                       {catLabel || '卡点'}
                     </span>
                   </div>
 
                   <h3
                     onClick={() => setSelectedTask(t)}
-                    className="text-xs font-bold text-slate-100 hover:text-red-300 cursor-pointer transition-colors leading-snug"
+                    className="text-xs font-bold text-slate-900 dark:text-slate-100 hover:text-red-600 dark:hover:text-red-300 cursor-pointer transition-colors leading-snug"
                   >
                     {t.title}
                   </h3>
 
                   {/* Where stuck */}
-                  <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-500/30 text-xs">
-                    <p className="text-slate-200 leading-relaxed text-[11px]">
+                  <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 text-xs">
+                    <p className="text-slate-700 dark:text-slate-200 leading-relaxed text-[11px]">
                       {t.blocker?.details}
                     </p>
                   </div>
 
                   {/* Decision Needed from PI & Quick Unblock button */}
                   <div className="pt-1 flex items-center justify-between gap-2">
-                    <div className="text-[11px] text-slate-300">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300">
                       <span className="text-slate-500">{language === 'zh' ? '决断对象: ' : 'Escalated to: '}</span>
-                      <span className="font-bold text-cyan-300">
+                      <span className="font-bold text-cyan-700 dark:text-cyan-300">
                         {t.blocker?.escalatedTo || (language === 'zh' ? t.pi.nameZh : t.pi.nameEn)}
                       </span>
                     </div>
@@ -448,7 +450,7 @@ export const GroupMeetingView: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => setActiveBlockerTask(t)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium transition-colors"
                         >
                           {language === 'zh' ? '编辑' : 'Edit'}
                         </button>
@@ -467,7 +469,7 @@ export const GroupMeetingView: React.FC = () => {
             })}
 
             {blockedTasks.length === 0 && (
-              <div className="p-8 text-center text-emerald-400 text-xs border border-dashed border-emerald-500/30 rounded-xl bg-emerald-950/10">
+              <div className="p-8 text-center text-emerald-700 dark:text-emerald-400 text-xs border border-dashed border-emerald-400/50 dark:border-emerald-500/30 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/10">
                 🎉 {t.noBlockers}
               </div>
             )}
@@ -477,21 +479,21 @@ export const GroupMeetingView: React.FC = () => {
 
       {/* Minutes Preview Modal if clipboard fallback */}
       {minutesPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-800 p-6 text-slate-100 max-h-[85vh] flex flex-col">
-            <h3 className="text-sm font-bold text-slate-100 mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 text-slate-900 dark:text-slate-100 max-h-[85vh] flex flex-col shadow-xl">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
               {language === 'zh' ? '会议纪要文档预览' : 'Meeting Minutes Markdown Preview'}
             </h3>
             <textarea
               readOnly
               value={minutesPreview}
               rows={15}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-300 leading-relaxed mb-4 flex-1"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-300 leading-relaxed mb-4 flex-1"
             />
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setMinutesPreview(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-200 font-medium"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 font-medium transition-colors"
               >
                 {t.cancel}
               </button>

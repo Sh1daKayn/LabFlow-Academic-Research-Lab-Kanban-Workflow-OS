@@ -1,12 +1,13 @@
 export const en = {
   brand: 'LabFlow',
-  academicOS: 'Academic OS',
   labTitle: 'LabFlow OS',
 
   // View modes
   kanban: 'Kanban',
   gantt: 'Gantt Chart',
-  meeting: 'Group Standup',
+  architecture: 'Tree & Cloud',
+  todos: 'Weekly Todos',
+  meeting: 'Standup',
   pipelineSettings: 'Stages',
   membersManager: 'Members',
 
@@ -14,6 +15,7 @@ export const en = {
   onlyBlockers: 'Only Blockers',
   reverseDDL: 'Reverse DDL',
   newTask: 'New Task',
+  featureGuide: 'Features',
   resetDemo: 'Reset Demo',
   toggleTheme: 'Toggle Theme',
   switchLang: '中文',
@@ -177,7 +179,8 @@ export const en = {
   cleanSlateSuccess: 'Wiped all tasks and historical members. Ready for a fresh start!',
 
   // Permission & RBAC
-  roleAdminPI: 'PI / Lab Admin',
+  roleAdminPI: 'PI / Lab Owner',
+  roleSysAdmin: 'System Admin (Student Manager)',
   roleProjectLead: 'Project Lead / Senior',
   roleStudentRA: 'Student / RA',
   roleAuditorGuest: 'Auditor / Read-Only Guest',
@@ -196,7 +199,7 @@ export const en = {
   requireAdminNotice: 'Only PI / Lab Admin can modify this configuration',
   readOnlyNotice: 'Read-only mode: You do not own this card',
   cannotDeleteNotice: 'You cannot delete tasks assigned to others',
-  acceptedStageNotice: 'Archiving/accepting papers requires PI sign-off',
+  acceptedStageNotice: 'Archiving/accepting papers requires PI, System Admin, or Lead sign-off',
   forceRelease: 'Admin Force Release',
   forceReleaseConfirm: 'Force release this compute node as Admin?',
   visibility: 'Visibility Scope',
@@ -238,6 +241,45 @@ export const en = {
   confirmImport: 'Confirm & Launch Workspace',
   parsingFailed: 'Failed to parse text',
   reparse: 'Re-parse Text',
+
+  // Member Profile & Avatar
+  editProfile: 'Edit Profile',
+  myProfile: 'My Profile & Avatar',
+  uploadAvatar: 'Upload Photo',
+  resetAvatar: 'Reset Initials',
+  saveMemberChanges: 'Save Member',
+
+  // Project Categories, Word Cloud & Architecture Tree
+  projectCategoriesTitle: 'Project Categories, Cloud & Architecture Tree',
+  projectCategoriesDesc:
+    'Group research papers into thematic directions, inspect team headcount per category, and explore keyword clouds and hierarchical architecture trees.',
+  manageProjectCategories: 'New / Edit Project',
+  projectCategoryLabel: 'Research Category',
+  uncategorized: 'General Research',
+  responsibleCount: 'Members',
+  wordCloudTitle: 'Research Keyword Cloud',
+  architectureTreeTitle: 'Project Architecture Tree',
+  exportSvg: 'Export SVG',
+  exportMarkdown: 'Export Markdown',
+
+  // Weekly To-Do & Acceptance
+  weeklyTodosTitle: 'Member Weekly To-Do & Acceptance',
+  weeklyTodosDesc:
+    'Inspect weekly commitments beneath each member, link items to projects & checklists, and run acceptance sign-off.',
+  peerAcceptanceOpen: 'Unlocked Mode: Peer Acceptance Enabled',
+  peerAcceptanceStrict: 'Strict Acceptance (PI / Lead)',
+  acceptanceCriteriaLabel: 'Acceptance Criteria',
+  submitForAcceptance: 'Done · Submit',
+  confirmAcceptance: 'Confirm Acceptance',
+  requestRevision: 'Needs Revision',
+
+  // Task Logic Tree
+  logicTreeTab: 'Logic Tree',
+  basicAndChecklistTab: 'Details & Checklist',
+  generateLogicTree: 'Auto-Generate Tree',
+  addChildNode: 'Add Child',
+  addSiblingNode: 'Add Sibling',
+  syncNodeToChecklist: 'Push to Checklist',
 };
 
 export type LocaleTranslations = typeof en;

@@ -46,6 +46,21 @@ describe('Task pipeline operations', () => {
     expect(moved?.order).toBe(0);
   });
 
+  it('moves task cleanly backward across stages and clears completedAt when leaving ACCEPTED', () => {
+    const accepted = moveTaskToStage(makeTasks(), 't2', 'ACCEPTED', 0);
+    expect(accepted.find((t) => t.id === 't2')?.completedAt).toBeTruthy();
+
+    const rolledBack = moveTaskToStage(accepted, 't2', 'DRAFTING', 0);
+    const movedBack = rolledBack.find((t) => t.id === 't2');
+    expect(movedBack?.stage).toBe('DRAFTING');
+    expect(movedBack?.completedAt).toBeUndefined();
+    expect(movedBack?.order).toBe(0);
+
+    const movedToFirst = moveTaskToStage(rolledBack, 't2', 'IDEATION');
+    expect(movedToFirst.find((t) => t.id === 't2')?.stage).toBe('IDEATION');
+    expect(movedToFirst.find((t) => t.id === 't2')?.completedAt).toBeUndefined();
+  });
+
   it('generates reverse-DDL project & milestone tasks cleanly even with 1 lab member', () => {
     const result = buildReverseDDLPipeline(
       {

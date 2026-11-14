@@ -7,6 +7,7 @@ import { useLabFlow } from '@/context/LabFlowContext';
 import { formatCountdownBadge } from '@/utils/date';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpen,
   CheckSquare,
@@ -16,12 +17,15 @@ import {
   ExternalLink,
   FileText,
   Flame,
+  GitBranch,
   GripVertical,
   Lock,
   Shield,
 } from 'lucide-react';
 import { GitHubIcon } from '@/components/icons/BrandIcons';
 import { KanbanCardInlineEditor } from '@/components/KanbanCardInlineEditor';
+import { MemberAvatar } from '@/components/MemberAvatar';
+import { countLogicTreeStats } from '@/utils/taskLogicTree';
 
 interface KanbanCardProps {
   task: TaskItem;
@@ -33,6 +37,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
     selectedTask,
     setSelectedTask,
     setActiveBlockerTask,
+    setLogicTreeTaskId,
     moveTask,
     stages,
     language,
@@ -56,6 +61,11 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
     setSelectedTask(isExpanded ? null : task);
   };
 
+  const stageIds = stages.map((s) => s.id);
+  const curStageIndex = stageIds.indexOf(task.stage);
+  const canStepBack = curStageIndex > 0;
+  const canStepForward = curStageIndex >= 0 && curStageIndex < stageIds.length - 1;
+
   return (
     <Draggable draggableId={task.id} index={index} isDragDisabled={!hasEditPermission}>
       {(provided, snapshot) => (
@@ -71,16 +81,29 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
           } ${task.isBlocked ? 'border-2 border-red-500/80 ring-1 ring-red-500/30' : ''}`}
           style={provided.draggableProps.style}
         >
-          {/* Card Content Summary Container */}
-          <div className="p-3 space-y-2.5">
+          {/* Card Content Summary Container — entire collapsed card acts as draggable cell */}
+          <div
+            {...(hasEditPermission && !isExpanded ? provided.dragHandleProps : {})}
+            className={`p-3 space-y-2.5 ${
+              hasEditPermission && !isExpanded ? 'cursor-grab active:cursor-grabbing' : ''
+            }`}
+          >
             {/* Top row: Drag handle + Project tag + Countdown */}
-            <div className="flex items-center justify-between gap-1.5">
+            <div
+              {...(hasEditPermission && isExpanded ? provided.dragHandleProps : {})}
+              className={`flex items-center justify-between gap-1.5 ${
+                hasEditPermission && isExpanded ? 'cursor-grab active:cursor-grabbing' : ''
+              }`}
+            >
               <div className="flex items-center gap-1.5 min-w-0">
                 {hasEditPermission ? (
                   <div
-                    {...provided.dragHandleProps}
-                    className="cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 p-0.5 -ml-1 rounded transition-colors"
-                    title={language === 'zh' ? '拖拽调整排期或阶段' : 'Drag to move'}
+                    className="cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 p-0.5 -ml-1 rounded transition-colors"
+                    title={
+                      language === 'zh'
+                        ? '拖拽此卡片单元格即可调整阶段或排序'
+                        : 'Drag this card cell to change stage or order'
+                    }
                   >
                     <GripVertical className="w-3.5 h-3.5" />
                   </div>
@@ -275,47 +298,98 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               )}
             </div>
 
-            {/* Bottom Row: Authors + Advance Button */}
+            {/* Bottom Row: Authors + Logic Tree + Advance Button */}
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-1.5 text-[10px]">
-              <div className="flex items-center gap-1 truncate text-slate-500 dark:text-slate-400">
-                <span className="font-medium text-slate-700 dark:text-slate-300">{leadName}</span>
+              <div className="flex items-center gap-1.5 truncate text-slate-500 dark:text-slate-400">
+                <MemberAvatar member={task.leadAuthor} size="xs" />
+                <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                  {leadName}
+                </span>
                 <span className="text-slate-400 dark:text-slate-600">/</span>
-                <span className="text-slate-500 dark:text-slate-400">{piName}</span>
+                <span className="text-slate-500 dark:text-slate-400 truncate">{piName}</span>
               </div>
 
-              {hasEditPermission && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveBlockerTask(task);
-                    }}
-                    className={`p-1 rounded text-xs transition-colors ${
-                      task.isBlocked
-                        ? 'text-red-500 hover:text-red-600 hover:bg-red-500/20'
-                        : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                    title={language === 'zh' ? '标记/解除卡点' : 'Report/Resolve Blocker'}
-                  >
-                    <Flame className="w-3.5 h-3.5" />
-                  </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLogicTreeTaskId(task.id);
+                  }}
+                  className={`px-1.5 py-1 rounded text-[10px] flex items-center gap-0.5 transition-colors ${
+                    task.logicTree
+                      ? 'bg-indigo-500/12 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20'
+                      : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title={language === 'zh' ? '查看/编辑任务树状逻辑图' : 'Open Task Logic Tree'}
+                >
+                  <GitBranch className="w-3 h-3" />
+                  {task.logicTree && (
+                    <span className="font-semibold">
+                      {countLogicTreeStats(task.logicTree).total}
+                    </span>
+                  )}
+                </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const stageIds = stages.map((s) => s.id);
-                      const curIndex = stageIds.indexOf(task.stage);
-                      if (curIndex >= 0 && curIndex < stageIds.length - 1) {
-                        moveTask(task.id, stageIds[curIndex + 1]);
-                      }
-                    }}
-                    className="p-1 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    title={language === 'zh' ? '推进至下一阶段' : 'Advance Stage'}
-                  >
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
+                {hasEditPermission && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveBlockerTask(task);
+                      }}
+                      className={`p-1 rounded text-xs transition-colors ${
+                        task.isBlocked
+                          ? 'text-red-500 hover:text-red-600 hover:bg-red-500/20'
+                          : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                      title={language === 'zh' ? '标记/解除卡点' : 'Report/Resolve Blocker'}
+                    >
+                      <Flame className="w-3.5 h-3.5" />
+                    </button>
+
+                    <div className="inline-flex items-center rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-0.5">
+                      <button
+                        type="button"
+                        disabled={!canStepBack}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (canStepBack) {
+                            moveTask(task.id, stageIds[curStageIndex - 1]);
+                          }
+                        }}
+                        className={`p-0.5 rounded transition-colors ${
+                          canStepBack
+                            ? 'text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-white dark:hover:bg-slate-800'
+                            : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                        }`}
+                        title={language === 'zh' ? '退回上一阶段' : 'Move Back to Previous Stage'}
+                        aria-label={language === 'zh' ? '退回上一阶段' : 'Move Back to Previous Stage'}
+                      >
+                        <ArrowLeft className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canStepForward}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (canStepForward) {
+                            moveTask(task.id, stageIds[curStageIndex + 1]);
+                          }
+                        }}
+                        className={`p-0.5 rounded transition-colors ${
+                          canStepForward
+                            ? 'text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-white dark:hover:bg-slate-800'
+                            : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                        }`}
+                        title={language === 'zh' ? '推进至下一阶段' : 'Advance Stage'}
+                        aria-label={language === 'zh' ? '推进至下一阶段' : 'Advance Stage'}
+                      >
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

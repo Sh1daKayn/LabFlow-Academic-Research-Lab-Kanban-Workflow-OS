@@ -5,7 +5,8 @@ import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, TaskItem } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
-import { Plus, FilterX, Clock, Sparkles, FolderKanban } from 'lucide-react';
+import { StageDragMatrix } from '@/components/StageDragMatrix';
+import { Plus, FilterX, Clock, Sparkles, FolderKanban, Columns3, Table2 } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
   const {
@@ -31,6 +32,7 @@ export const KanbanBoard: React.FC = () => {
   } = useLabFlow();
 
   const [mounted, setMounted] = useState(false);
+  const [boardLayout, setBoardLayout] = useState<'columns' | 'matrix'>('columns');
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -67,31 +69,44 @@ export const KanbanBoard: React.FC = () => {
     }
   };
 
-  const getFilteredTasksForStage = (stageId: AcademicStage): TaskItem[] => {
-    return tasks
-      .filter((task) => task.stage === stageId)
-      .filter((task) => {
-        if (filterOnlyBlockers && !task.isBlocked) return false;
-        if (filterMemberId !== 'all' && task.leadAuthor.id !== filterMemberId) return false;
-        if (selectedProjectFilter !== 'all' && task.projectId !== selectedProjectFilter) return false;
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const matchTitle = task.title.toLowerCase().includes(q);
-          const matchTag = task.projectTag.toLowerCase().includes(q);
-          const matchVenue = task.targetVenue.toLowerCase().includes(q);
-          if (!matchTitle && !matchTag && !matchVenue) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortByDDLUrgency) {
-          const timeA = new Date(a.deadline).getTime() || 9999999999999;
-          const timeB = new Date(b.deadline).getTime() || 9999999999999;
-          return timeA - timeB;
-        }
-        return a.order - b.order;
-      });
+  const matchesTaskFilters = (task: TaskItem): boolean => {
+    if (filterOnlyBlockers && !task.isBlocked) return false;
+    if (filterMemberId !== 'all' && task.leadAuthor.id !== filterMemberId) return false;
+    if (selectedProjectFilter !== 'all' && task.projectId !== selectedProjectFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = task.title.toLowerCase().includes(q);
+      const matchTag = task.projectTag.toLowerCase().includes(q);
+      const matchVenue = task.targetVenue.toLowerCase().includes(q);
+      if (!matchTitle && !matchTag && !matchVenue) return false;
+    }
+    return true;
   };
+
+  const sortStageTasks = (list: TaskItem[]): TaskItem[] => {
+    return [...list].sort((a, b) => {
+      if (sortByDDLUrgency) {
+        const timeA = new Date(a.deadline).getTime() || 9999999999999;
+        const timeB = new Date(b.deadline).getTime() || 9999999999999;
+        return timeA - timeB;
+      }
+      return a.order - b.order;
+    });
+  };
+
+  const getFilteredTasksForStage = (stageId: AcademicStage): TaskItem[] => {
+    return sortStageTasks(
+      tasks.filter((task) => task.stage === stageId && matchesTaskFilters(task))
+    );
+  };
+
+  const allFilteredTasks = sortStageTasks(
+    tasks.filter(
+      (task) =>
+        matchesTaskFilters(task) &&
+        (selectedStageFilter === 'all' || task.stage === selectedStageFilter)
+    )
+  );
 
   if (!mounted) {
     return (
@@ -175,14 +190,48 @@ export const KanbanBoard: React.FC = () => {
             onClick={() => setSortByDDLUrgency(!sortByDDLUrgency)}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${
               sortByDDLUrgency
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border-slate-800'
+                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/40 shadow-sm'
+                : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-slate-200 dark:border-slate-800'
             }`}
             title={t.sortByDDLUrgency}
           >
             <Clock className="w-3.5 h-3.5" />
             <span>{t.sortByDDLUrgency}</span>
           </button>
+
+          {/* Board Mode Switcher: Columns vs Stage Drag Matrix */}
+          <div className="inline-flex items-center rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-0.5 text-xs shadow-sm">
+            <button
+              type="button"
+              onClick={() => setBoardLayout('columns')}
+              className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
+                boardLayout === 'columns'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+              title={language === 'zh' ? '传统多列任务看板' : 'Kanban Columns'}
+            >
+              <Columns3 className="w-3.5 h-3.5" />
+              <span>{language === 'zh' ? '看板列' : 'Columns'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBoardLayout('matrix')}
+              className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
+                boardLayout === 'matrix'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+              title={
+                language === 'zh'
+                  ? '拖拽阶段单元格矩阵（支持前移/退回项目与任务阶段）'
+                  : 'Draggable Stage Cells Matrix'
+              }
+            >
+              <Table2 className="w-3.5 h-3.5" />
+              <span>{language === 'zh' ? '阶段拖拽单元格' : 'Stage Cells'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -248,89 +297,99 @@ export const KanbanBoard: React.FC = () => {
         </div>
       )}
 
-      {/* DND Context */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div
-          className={`flex gap-4 items-start pb-8 ${
-            isSingleStage ? 'w-full max-w-4xl mx-auto' : 'min-w-[1550px]'
-          }`}
-        >
-          {visibleStages.map((stage) => {
-            const stageTasks = getFilteredTasksForStage(stage.id);
-            const blockedInStage = stageTasks.filter((t) => t.isBlocked).length;
-            const stageName = language === 'zh' ? stage.labelZh : stage.labelEn;
+      {boardLayout === 'matrix' ? (
+        <StageDragMatrix filteredTasks={allFilteredTasks} />
+      ) : (
+        /* DND Context */
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div
+            className={`flex gap-4 items-start pb-8 ${
+              isSingleStage ? 'w-full max-w-4xl mx-auto' : 'min-w-[1550px]'
+            }`}
+          >
+            {visibleStages.map((stage) => {
+              const stageTasks = getFilteredTasksForStage(stage.id);
+              const blockedInStage = stageTasks.filter((t) => t.isBlocked).length;
+              const stageName = language === 'zh' ? stage.labelZh : stage.labelEn;
 
-            return (
-              <div
-                key={stage.id}
-                className={`shrink-0 flex flex-col rounded-2xl bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 shadow-sm ${
-                  isSingleStage ? 'w-full' : 'w-72'
-                }`}
-              >
-                {/* Stage Header */}
-                <div className="p-3 border-b border-slate-200 dark:border-slate-800/80">
-                  <div className="flex items-center justify-between gap-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className={`w-2.5 h-2.5 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
-                      <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate">
-                        {stageName}
-                      </h2>
-                    </div>
+              return (
+                <div
+                  key={stage.id}
+                  className={`shrink-0 flex flex-col rounded-2xl bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 shadow-sm ${
+                    isSingleStage ? 'w-full' : 'w-72'
+                  }`}
+                >
+                  {/* Stage Header */}
+                  <div className="p-3 border-b border-slate-200 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-2.5 h-2.5 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
+                        <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate">
+                          {stageName}
+                        </h2>
+                      </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {blockedInStage > 0 && (
-                        <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-600 dark:text-rose-300 animate-pulse">
-                          {blockedInStage} {language === 'zh' ? '卡点' : 'blocked'}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {blockedInStage > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-600 dark:text-rose-300 animate-pulse">
+                            {blockedInStage} {language === 'zh' ? '卡点' : 'blocked'}
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+                          {stageTasks.length}
                         </span>
-                      )}
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
-                        {stageTasks.length}
-                      </span>
-                      <button
-                        onClick={() => setIsNewTaskOpen(true)}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-                        title={language === 'zh' ? '添加任务' : 'Add task'}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
+                        <button
+                          onClick={() => setIsNewTaskOpen(true)}
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                          title={language === 'zh' ? '添加任务' : 'Add task'}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Droppable Area */}
+                  <Droppable droppableId={stage.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`p-2.5 flex-1 flex flex-col gap-2.5 min-h-[460px] transition-colors rounded-b-2xl ${
+                          snapshot.isDraggingOver
+                            ? 'bg-indigo-50/80 dark:bg-indigo-950/35 ring-2 ring-inset ring-indigo-500/50'
+                            : 'bg-transparent'
+                        }`}
+                      >
+                        {snapshot.isDraggingOver && (
+                          <div className="px-2.5 py-1 rounded-lg bg-indigo-600/15 border border-indigo-500/30 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 text-center">
+                            {language === 'zh' ? `松手移入「${stageName}」` : `Drop into ${stageName}`}
+                          </div>
+                        )}
+
+                        {stageTasks.map((task, idx) => (
+                          <KanbanCard key={task.id} task={task} index={idx} />
+                        ))}
+
+                        {provided.placeholder}
+
+                        {/* Empty Column Placeholder */}
+                        {stageTasks.length === 0 && (
+                          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center border border-dashed border-slate-300 dark:border-slate-800/80 rounded-xl my-2">
+                            <FilterX className="w-5 h-5 text-slate-400 dark:text-slate-600 mb-1" />
+                            <p className="text-xs text-slate-500 font-medium">{t.noTasksInStage}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{t.dragHint}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
-
-                {/* Droppable Area */}
-                <Droppable droppableId={stage.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`p-2.5 flex-1 flex flex-col gap-2.5 min-h-[460px] transition-colors rounded-b-2xl ${
-                        snapshot.isDraggingOver
-                          ? 'bg-indigo-50/60 dark:bg-slate-900/70 ring-1 ring-inset ring-indigo-500/40'
-                          : 'bg-transparent'
-                      }`}
-                    >
-                      {stageTasks.map((task, idx) => (
-                        <KanbanCard key={task.id} task={task} index={idx} />
-                      ))}
-
-                      {provided.placeholder}
-
-                      {/* Empty Column Placeholder */}
-                      {stageTasks.length === 0 && (
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center border border-dashed border-slate-800/80 rounded-xl my-2">
-                          <FilterX className="w-5 h-5 text-slate-600 mb-1" />
-                          <p className="text-xs text-slate-500 font-medium">{t.noTasksInStage}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">{t.dragHint}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            );
-          })}
-        </div>
-      </DragDropContext>
+              );
+            })}
+          </div>
+        </DragDropContext>
+      )}
     </div>
   );
 };

@@ -84,7 +84,7 @@ export function moveTaskToStage(
   const updatedMovedTask: TaskItem = {
     ...targetTask,
     stage: targetStage,
-    completedAt: targetStage === 'ACCEPTED' ? now : targetTask.completedAt,
+    completedAt: targetStage === 'ACCEPTED' ? targetTask.completedAt || now : undefined,
     progress: targetStage === 'ACCEPTED' ? 100 : targetTask.progress,
     updatedAt: now,
   };
@@ -141,12 +141,14 @@ export function buildReverseDDLPipeline(
   const project: ProjectItem = {
     id: projectId,
     title: plan.title,
+    category: plan.category?.trim() || undefined,
     targetVenue: plan.targetVenue,
     tag: plan.tag || plan.targetVenue.split(' ')[0] || 'Paper',
     submissionDeadline: plan.deadlineDate,
     status: defaultStage,
     leadAuthorId: lead.id,
     piId: pi.id,
+    memberIds: Array.from(new Set([lead.id, pi.id])),
     visibility: plan.visibility || 'PUBLIC',
     assets: {
       overleaf: plan.overleafUrl,

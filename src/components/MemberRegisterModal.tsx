@@ -114,8 +114,8 @@ export const MemberRegisterModal: React.FC = () => {
             </select>
             <span className="text-[10px] text-slate-500 block">
               {language === 'zh'
-                ? '自主登记默认赋予【组内成员】权限，若需管理员权限请由导师分配。'
-                : 'Assigned Student / RA access by default. PI can elevate permissions.'}
+                ? '自主登记默认赋予【组内成员】权限；系统管理员（学生协管）或导师权限由导师在成员设置中委派。'
+                : 'Assigned Student / RA access by default. PI can appoint System Admin or elevate permissions.'}
             </span>
           </div>
 

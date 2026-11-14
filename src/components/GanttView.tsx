@@ -14,6 +14,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { TaskItem, ProjectItem, StageConfig, AcademicStage } from '@/types';
+import { MemberAvatar } from '@/components/MemberAvatar';
 
 export const GanttView: React.FC = () => {
   const {
@@ -625,8 +626,11 @@ export const GanttView: React.FC = () => {
                           </h4>
 
                           <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                            <span className="truncate">
-                              {language === 'zh' ? task.leadAuthor.nameZh : task.leadAuthor.nameEn}
+                            <span className="inline-flex items-center gap-1.5 truncate">
+                              <MemberAvatar member={task.leadAuthor} size="xs" />
+                              <span className="truncate">
+                                {language === 'zh' ? task.leadAuthor.nameZh : task.leadAuthor.nameEn}
+                              </span>
                             </span>
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono text-cyan-400">{task.progress || 0}%</span>

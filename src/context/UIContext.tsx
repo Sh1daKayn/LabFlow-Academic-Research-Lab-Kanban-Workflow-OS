@@ -1,7 +1,18 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { SettingsTab, TaskItem } from '@/types';
+import { ChecklistTemplateEntry, SettingsTab, TaskItem, ViewMode } from '@/types';
+
+export interface TemplateDraftSeed {
+  templateId?: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  items?: ChecklistTemplateEntry[];
+  targetTaskId?: string;
+  targetMemberId?: string;
+  targetWeekKey?: string;
+}
 
 export interface ToastItem {
   id: string;
@@ -24,8 +35,8 @@ export interface UIContextType {
   setSelectedProjectFilter: (val: string) => void;
   sortByDDLUrgency: boolean;
   setSortByDDLUrgency: (val: boolean) => void;
-  viewMode: 'kanban' | 'gantt' | 'meeting';
-  setViewMode: (val: 'kanban' | 'gantt' | 'meeting') => void;
+  viewMode: ViewMode;
+  setViewMode: (val: ViewMode) => void;
 
   // Modals & Drawers
   isSettingsOpen: boolean;
@@ -52,6 +63,17 @@ export interface UIContextType {
   setIsRegisterModalOpen: (open: boolean) => void;
   selectedTask: TaskItem | null;
   setSelectedTask: React.Dispatch<React.SetStateAction<TaskItem | null>>;
+  logicTreeTaskId: string | null;
+  setLogicTreeTaskId: (taskId: string | null) => void;
+  isMyProfileModalOpen: boolean;
+  setIsMyProfileModalOpen: (open: boolean) => void;
+  isFeatureGuideOpen: boolean;
+  setIsFeatureGuideOpen: (open: boolean) => void;
+  isTemplateModalOpen: boolean;
+  setIsTemplateModalOpen: (open: boolean) => void;
+  templateDraftSeed: TemplateDraftSeed | null;
+  setTemplateDraftSeed: (seed: TemplateDraftSeed | null) => void;
+  openTemplateModal: (seed?: TemplateDraftSeed | null) => void;
 
   // Notifications
   toasts: ToastItem[];
@@ -72,7 +94,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [selectedStageFilter, setSelectedStageFilter] = useState<string>('all');
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
   const [sortByDDLUrgency, setSortByDDLUrgency] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'kanban' | 'gantt' | 'meeting'>('kanban');
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
 
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('appearance');
@@ -86,6 +108,16 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+  const [logicTreeTaskId, setLogicTreeTaskId] = useState<string | null>(null);
+  const [isMyProfileModalOpen, setIsMyProfileModalOpen] = useState<boolean>(false);
+  const [isFeatureGuideOpen, setIsFeatureGuideOpen] = useState<boolean>(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [templateDraftSeed, setTemplateDraftSeed] = useState<TemplateDraftSeed | null>(null);
+
+  const openTemplateModal = useCallback((seed: TemplateDraftSeed | null = null) => {
+    setTemplateDraftSeed(seed);
+    setIsTemplateModalOpen(true);
+  }, []);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
@@ -145,6 +177,17 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         setIsRegisterModalOpen,
         selectedTask,
         setSelectedTask,
+        logicTreeTaskId,
+        setLogicTreeTaskId,
+        isMyProfileModalOpen,
+        setIsMyProfileModalOpen,
+        isFeatureGuideOpen,
+        setIsFeatureGuideOpen,
+        isTemplateModalOpen,
+        setIsTemplateModalOpen,
+        templateDraftSeed,
+        setTemplateDraftSeed,
+        openTemplateModal,
         toasts,
         addToast,
         removeToast,

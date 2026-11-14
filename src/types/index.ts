@@ -19,18 +19,31 @@ export type EnglishFontPreset =
   | 'times'
   | 'georgia'
   | 'palatino'
+  | 'garamond'
+  | 'baskerville'
+  | 'cambria'
   | 'geist'
+  | 'inter'
+  | 'helvetica'
   | 'system-sans'
   | 'jetbrains'
+  | 'fira-code'
   | 'custom';
 export type ChineseFontPreset =
   | 'yahei-pingfang'
+  | 'youyuan'
   | 'songti'
+  | 'zhongsong'
   | 'kaiti'
+  | 'lxgw-wenkai'
   | 'fangsong'
   | 'heiti'
+  | 'lishu'
+  | 'xingkai'
+  | 'dengxian'
   | 'system-zh'
   | 'custom';
+export type ViewMode = 'kanban' | 'gantt' | 'architecture' | 'todos' | 'meeting';
 export type SettingsTab = 'appearance' | 'members' | 'resources' | 'stages' | 'venues' | 'backup';
 
 export type AcademicStage = string;
@@ -67,7 +80,12 @@ export interface BlockerCategoryMeta {
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
-export type AccessRole = 'ADMIN_PI' | 'PROJECT_LEAD' | 'STUDENT_RA' | 'AUDITOR_GUEST';
+export type AccessRole =
+  | 'ADMIN_PI'
+  | 'SYS_ADMIN'
+  | 'PROJECT_LEAD'
+  | 'STUDENT_RA'
+  | 'AUDITOR_GUEST';
 
 export type VisibilityLevel = 'PUBLIC' | 'TEAM_ONLY' | 'PI_ONLY';
 
@@ -105,6 +123,44 @@ export interface ChecklistItem {
   done: boolean;
 }
 
+export interface ChecklistTemplateEntry {
+  text: string;
+  acceptanceCriteria?: string;
+  priority?: Priority;
+}
+
+export interface ChecklistAcceptanceTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  items: ChecklistTemplateEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TaskLogicNodeType =
+  | 'goal'
+  | 'hypothesis'
+  | 'method'
+  | 'experiment'
+  | 'validation'
+  | 'milestone';
+
+export type TaskLogicNodeStatus = 'todo' | 'doing' | 'done' | 'blocked';
+
+export interface TaskLogicNode {
+  id: string;
+  label: string;
+  nodeType: TaskLogicNodeType;
+  status: TaskLogicNodeStatus;
+  note?: string;
+  assigneeId?: string;
+  linkedChecklistId?: string;
+  collapsed?: boolean;
+  children: TaskLogicNode[];
+}
+
 export interface TaskItem {
   id: string;
   title: string;
@@ -126,6 +182,7 @@ export interface TaskItem {
   order: number;
   tags?: string[];
   checklist?: ChecklistItem[];
+  logicTree?: TaskLogicNode;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -135,6 +192,9 @@ export interface ProjectItem {
   id: string;
   title: string;
   abstract?: string;
+  category?: string;
+  categoryColor?: string;
+  memberIds?: string[];
   targetVenue: string;
   tag: string;
   submissionDeadline?: string;
@@ -143,6 +203,31 @@ export interface ProjectItem {
   piId: string;
   assets: AssetLinks;
   visibility?: VisibilityLevel;
+}
+
+export type WeeklyTodoAcceptanceStatus =
+  | 'PENDING'
+  | 'SUBMITTED'
+  | 'ACCEPTED'
+  | 'REVISION_REQUESTED';
+
+export interface WeeklyTodoItem {
+  id: string;
+  memberId: string;
+  weekKey: string; // Monday ISO date e.g. "2026-11-09"
+  title: string;
+  done: boolean;
+  priority?: Priority;
+  projectId?: string;
+  taskId?: string;
+  checklistItemId?: string;
+  acceptanceCriteria?: string;
+  acceptanceStatus: WeeklyTodoAcceptanceStatus;
+  acceptedById?: string;
+  acceptedAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ResourceType = 'GPU' | 'SERVER' | 'CLUSTER' | 'EQUIPMENT';
@@ -179,6 +264,7 @@ export interface VenuePreset {
 
 export interface ReverseDDLForm {
   title: string;
+  category?: string;
   targetVenue: string;
   deadlineDate: string;
   leadAuthorId: string;
@@ -201,4 +287,7 @@ export interface LabWorkspaceData {
   members: LabMember[];
   venues: VenuePreset[];
   resources: LabResource[];
+  weeklyTodos?: WeeklyTodoItem[];
+  allowPeerAcceptance?: boolean;
+  checklistTemplates?: ChecklistAcceptanceTemplate[];
 }

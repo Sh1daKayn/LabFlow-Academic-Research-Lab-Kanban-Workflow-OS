@@ -23,6 +23,7 @@ enum LabRole {
 
 enum AccessRole {
   ADMIN_PI
+  SYS_ADMIN
   PROJECT_LEAD
   STUDENT_RA
   AUDITOR_GUEST
@@ -66,12 +67,15 @@ enum ResourceStatus {
 }
 
 model WorkspaceConfig {
-  id                String   @id @default("default")
-  adminPasswordHash String
-  sessionSecret     String
-  revision          Int      @default(1)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String   @id @default("default")
+  adminPasswordHash   String
+  sessionSecret       String
+  revision            Int      @default(1)
+  allowPeerAcceptance Boolean  @default(false)
+  weeklyTodos         Json?
+  checklistTemplates  Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model Lab {
@@ -149,6 +153,9 @@ model Project {
   id                 String          @id @default(uuid())
   title              String
   abstract           String?
+  category           String?
+  categoryColor      String?
+  memberIds          Json?
   targetVenue        String          // e.g. "AAAI 2027", "AEPP", "Management Science"
   tag                String          // Short badge tag, e.g. "AAAI '27"
   submissionDeadline DateTime?
@@ -191,6 +198,7 @@ model Task {
   zoteroUrl            String?
   tags                 Json?
   checklist            Json?
+  logicTree            Json?
 
   // Blocker Status & Escalation fields
   isBlocked            Boolean          @default(false)

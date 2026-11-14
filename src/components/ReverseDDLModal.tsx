@@ -22,6 +22,7 @@ export const ReverseDDLModal: React.FC = () => {
   } = useLabFlow();
 
   const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
   const [targetVenue, setTargetVenue] = useState('NeurIPS 2027');
   const [tag, setTag] = useState("NeurIPS '27");
   const [visibility, setVisibility] = useState<VisibilityLevel>('PUBLIC');
@@ -64,6 +65,7 @@ export const ReverseDDLModal: React.FC = () => {
 
     const form: ReverseDDLForm = {
       title,
+      category: category.trim() || undefined,
       targetVenue,
       deadlineDate,
       leadAuthorId,
@@ -271,7 +273,7 @@ export const ReverseDDLModal: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
                 required
@@ -286,6 +288,13 @@ export const ReverseDDLModal: React.FC = () => {
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
                 placeholder={t.badgeTag}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+              />
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder={language === 'zh' ? '所属研究大类（可选）' : 'Project Category (optional)'}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
             </div>

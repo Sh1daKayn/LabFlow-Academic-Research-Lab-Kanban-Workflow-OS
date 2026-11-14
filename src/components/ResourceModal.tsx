@@ -21,6 +21,7 @@ export const ResourceModal: React.FC = () => {
     members,
     currentMember,
     effectiveIsAdmin,
+    canManageLab,
     language,
     t,
   } = useLabFlow();
@@ -142,12 +143,12 @@ export const ResourceModal: React.FC = () => {
                       <button
                         onClick={() => releaseResource(res.id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                          effectiveIsAdmin && res.currentUser !== currentMember.nameZh && res.currentUser !== currentMember.nameEn
+                          (effectiveIsAdmin || canManageLab()) && res.currentUser !== currentMember.nameZh && res.currentUser !== currentMember.nameEn
                             ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30'
                             : 'bg-slate-800 hover:bg-slate-700 text-rose-300 hover:text-rose-200 border-slate-700'
                         }`}
                       >
-                        {effectiveIsAdmin && res.currentUser !== currentMember.nameZh && res.currentUser !== currentMember.nameEn
+                        {(effectiveIsAdmin || canManageLab()) && res.currentUser !== currentMember.nameZh && res.currentUser !== currentMember.nameEn
                           ? t.forceRelease
                           : (language === 'zh' ? '释放节点' : 'Release Node')}
                       </button>

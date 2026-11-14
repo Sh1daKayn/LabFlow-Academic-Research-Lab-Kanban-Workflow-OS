@@ -27,8 +27,11 @@ export const SettingsModal: React.FC = () => {
     setIsSettingsOpen,
     activeSettingsTab,
     setActiveSettingsTab,
+    canManageLab,
+    isSysAdmin,
     effectiveIsAdmin,
     requireAdminAuth,
+    language,
     t,
   } = useLabFlow();
 
@@ -75,7 +78,7 @@ export const SettingsModal: React.FC = () => {
           <div className="w-full sm:w-56 shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-800 p-2.5 sm:p-4 space-y-1 bg-slate-50/60 dark:bg-slate-950/50 overflow-x-auto sm:overflow-y-auto flex sm:flex-col gap-1 sm:gap-0">
             {tabs.map((tab) => {
               const isActive = activeSettingsTab === tab.id;
-              const isRestricted = tab.id !== 'appearance' && !effectiveIsAdmin;
+              const isRestricted = tab.id !== 'appearance' && !canManageLab();
               return (
                 <button
                   key={tab.id}
@@ -110,6 +113,15 @@ export const SettingsModal: React.FC = () => {
           </div>
 
           <div className="flex-1 p-5 sm:p-7 overflow-y-auto space-y-6">
+            {isSysAdmin && !effectiveIsAdmin && activeSettingsTab !== 'appearance' && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-200 flex items-center justify-between gap-2">
+                <span>
+                  {language === 'zh'
+                    ? '🛡️ 您当前处于「系统管理员（学生协管）」权限：可统筹成员协作、算力调度、阶段与会议配置（高危清空与导师密码仍由导师专属管控）。'
+                    : '🛡️ System Admin (Student Manager) active: manage daily operations, members & compute. PI-only destructive controls remain locked.'}
+                </span>
+              </div>
+            )}
             {activeSettingsTab === 'appearance' && <AppearanceTab />}
             {activeSettingsTab === 'members' && <MembersTab />}
             {activeSettingsTab === 'resources' && <ResourcesTab />}

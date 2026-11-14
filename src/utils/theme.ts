@@ -7,6 +7,7 @@ export interface FontPresetMeta<T extends string> {
   descZh: string;
   descEn: string;
   stack: string;
+  genericFallback?: 'serif' | 'sans-serif' | 'monospace';
 }
 
 export const ENGLISH_FONT_PRESETS: FontPresetMeta<Exclude<EnglishFontPreset, 'custom'>>[] = [
@@ -17,6 +18,7 @@ export const ENGLISH_FONT_PRESETS: FontPresetMeta<Exclude<EnglishFontPreset, 'cu
     descZh: '国际期刊标准衬线体',
     descEn: 'Publication serif standard',
     stack: "'Times New Roman', Times, 'Liberation Serif'",
+    genericFallback: 'serif',
   },
   {
     id: 'georgia',
@@ -25,6 +27,7 @@ export const ENGLISH_FONT_PRESETS: FontPresetMeta<Exclude<EnglishFontPreset, 'cu
     descZh: '屏幕长文优雅耐读',
     descEn: 'Warm screen editorial serif',
     stack: "Georgia, 'Nimbus Roman', Cambria",
+    genericFallback: 'serif',
   },
   {
     id: 'palatino',
@@ -33,6 +36,34 @@ export const ENGLISH_FONT_PRESETS: FontPresetMeta<Exclude<EnglishFontPreset, 'cu
     descZh: '学位论文/专著质感',
     descEn: 'Monograph classic serif',
     stack: "'Palatino Linotype', 'Book Antiqua', Palatino",
+    genericFallback: 'serif',
+  },
+  {
+    id: 'garamond',
+    nameZh: 'Garamond 古典',
+    nameEn: 'Garamond Classic',
+    descZh: '经典图书出版人文衬线',
+    descEn: 'Classic book publishing serif',
+    stack: "'EB Garamond', Garamond, 'Hoefler Text', Georgia",
+    genericFallback: 'serif',
+  },
+  {
+    id: 'baskerville',
+    nameZh: 'Baskerville 高对比',
+    nameEn: 'Baskerville Editorial',
+    descZh: '学术专刊犀利标题衬线',
+    descEn: 'Crisp high-contrast serif',
+    stack: "'Baskerville Old Face', Baskerville, 'Libre Baskerville', Georgia",
+    genericFallback: 'serif',
+  },
+  {
+    id: 'cambria',
+    nameZh: 'Cambria 数学论文',
+    nameEn: 'Cambria Academic',
+    descZh: 'Office 公式与英文汇报清晰',
+    descEn: 'Clear technical & math prose',
+    stack: "Cambria, Caladea, Georgia",
+    genericFallback: 'serif',
   },
   {
     id: 'geist',
@@ -41,14 +72,34 @@ export const ENGLISH_FONT_PRESETS: FontPresetMeta<Exclude<EnglishFontPreset, 'cu
     descZh: '现代科研界面无衬线',
     descEn: 'Built-in modern UI sans',
     stack: "var(--font-geist-sans), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI'",
+    genericFallback: 'sans-serif',
+  },
+  {
+    id: 'inter',
+    nameZh: 'Inter 现代界面',
+    nameEn: 'Inter Modern UI',
+    descZh: '数字与小字号高辨识度',
+    descEn: 'High-legibility SaaS workspace',
+    stack: "'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI'",
+    genericFallback: 'sans-serif',
+  },
+  {
+    id: 'helvetica',
+    nameZh: 'Helvetica / Arial',
+    nameEn: 'Helvetica / Arial',
+    descZh: '国际简明现代黑体无衬线',
+    descEn: 'Swiss clean neo-grotesque',
+    stack: "'Helvetica Neue', Helvetica, Arial, 'Liberation Sans'",
+    genericFallback: 'sans-serif',
   },
   {
     id: 'system-sans',
-    nameZh: 'Inter / 系统无衬线',
-    nameEn: 'Inter / System Sans',
-    descZh: 'Linear 风格利落现代',
-    descEn: 'Clean crisp workspace sans',
-    stack: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
+    nameZh: 'Segoe / 系统无衬线',
+    nameEn: 'Segoe / System Sans',
+    descZh: '顺滑贴合本机桌面观感',
+    descEn: 'Crisp OS native UI sans',
+    stack: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
+    genericFallback: 'sans-serif',
   },
   {
     id: 'jetbrains',
@@ -56,7 +107,17 @@ export const ENGLISH_FONT_PRESETS: FontPresetMeta<Exclude<EnglishFontPreset, 'cu
     nameEn: 'Geist / JetBrains Mono',
     descZh: '算法工程数值精准对齐',
     descEn: 'Technical tabular monospace',
-    stack: "var(--font-geist-mono), 'JetBrains Mono', 'Fira Code', Consolas",
+    stack: "var(--font-geist-mono), 'JetBrains Mono', Consolas, 'Courier New'",
+    genericFallback: 'monospace',
+  },
+  {
+    id: 'fira-code',
+    nameZh: 'Fira Code 代码等宽',
+    nameEn: 'Fira Code Mono',
+    descZh: '实验日志与代码连字风格',
+    descEn: 'Developer ligature monospace',
+    stack: "'Fira Code', 'JetBrains Mono', var(--font-geist-mono), Consolas",
+    genericFallback: 'monospace',
   },
 ];
 
@@ -75,6 +136,15 @@ export const CHINESE_FONT_PRESETS: ChineseFontPresetMeta[] = [
     genericFallback: 'sans-serif',
   },
   {
+    id: 'youyuan',
+    nameZh: '幼圆（圆润亲和）',
+    nameEn: 'YouYuan (Rounded)',
+    descZh: '温润柔和圆头体，轻松护眼',
+    descEn: 'Soft rounded friendly Chinese font',
+    stack: "'YouYuan', '幼圆', 'Yuanti SC', 'STYuanti-SC-Regular', 'Hiragino Maru Gothic ProN', 'PingFang SC', 'Microsoft YaHei'",
+    genericFallback: 'sans-serif',
+  },
+  {
     id: 'songti',
     nameZh: '宋体 / 思源宋体',
     nameEn: 'Songti / Noto Serif SC',
@@ -84,12 +154,30 @@ export const CHINESE_FONT_PRESETS: ChineseFontPresetMeta[] = [
     genericFallback: 'serif',
   },
   {
+    id: 'zhongsong',
+    nameZh: '华文中宋',
+    nameEn: 'STZhongsong Serif',
+    descZh: '稳重厚实适合报告标题与正文',
+    descEn: 'Authoritative medium Song serif',
+    stack: "'STZhongsong', '华文中宋', 'Noto Serif SC', 'Source Han Serif SC', 'SimSun'",
+    genericFallback: 'serif',
+  },
+  {
     id: 'kaiti',
     nameZh: '楷体 / 华文楷体',
     nameEn: 'Kaiti / STKaiti',
     descZh: '文稿笔记与人文典雅风格',
     descEn: 'Classical humanist script',
-    stack: "'Kaiti SC', 'KaiTi', 'STKaiti', 'LXGW WenKai', 'BiauKai'",
+    stack: "'Kaiti SC', 'KaiTi', '楷体', 'STKaiti', 'BiauKai'",
+    genericFallback: 'serif',
+  },
+  {
+    id: 'lxgw-wenkai',
+    nameZh: '霞鹜文楷',
+    nameEn: 'LXGW WenKai',
+    descZh: '清秀现代手写感笔记楷书',
+    descEn: 'Modern open-source WenKai script',
+    stack: "'LXGW WenKai', 'LXGW WenKai Screen', 'Kaiti SC', 'KaiTi', 'STKaiti'",
     genericFallback: 'serif',
   },
   {
@@ -98,7 +186,7 @@ export const CHINESE_FONT_PRESETS: ChineseFontPresetMeta[] = [
     nameEn: 'FangSong / Official',
     descZh: '国自然标书与公文体例',
     descEn: 'Grant proposal & formal doc',
-    stack: "'FangSong', 'STFangsong', 'FangSong_GB2312'",
+    stack: "'FangSong', '仿宋', 'STFangsong', 'FangSong_GB2312'",
     genericFallback: 'serif',
   },
   {
@@ -108,6 +196,33 @@ export const CHINESE_FONT_PRESETS: ChineseFontPresetMeta[] = [
     descZh: '扁平现代高辨识度屏显',
     descEn: 'Modern geometric CJK sans',
     stack: "'PingFang SC', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Heiti SC', 'SimHei'",
+    genericFallback: 'sans-serif',
+  },
+  {
+    id: 'lishu',
+    nameZh: '隶书（古风碑帖）',
+    nameEn: 'LiSu (Clerical Script)',
+    descZh: '传统端庄汉隶装饰与展示风',
+    descEn: 'Classical clerical brushwork',
+    stack: "'LiSu', '隶书', 'STLiti', 'Songti SC', 'SimSun'",
+    genericFallback: 'serif',
+  },
+  {
+    id: 'xingkai',
+    nameZh: '华文行楷',
+    nameEn: 'STXingkai (Calligraphy)',
+    descZh: '潇洒飘逸书法行楷质感',
+    descEn: 'Expressive running script style',
+    stack: "'STXingkai', '华文行楷', 'Xingkai SC', 'KaiTi', 'STKaiti'",
+    genericFallback: 'serif',
+  },
+  {
+    id: 'dengxian',
+    nameZh: '等线（轻量几何）',
+    nameEn: 'DengXian Light Sans',
+    descZh: 'Office 现代匀称轻量黑体',
+    descEn: 'Clean uniform stroke CJK sans',
+    stack: "'DengXian', '等线', 'PingFang SC', 'Microsoft YaHei Light', 'Microsoft YaHei'",
     genericFallback: 'sans-serif',
   },
   {
@@ -176,10 +291,7 @@ export function buildBilingualFontFamily(
     : matchedZh?.stack || defaultZh.stack;
 
   const useSerifFallback =
-    matchedZh?.genericFallback === 'serif' ||
-    englishPreset === 'times' ||
-    englishPreset === 'georgia' ||
-    englishPreset === 'palatino';
+    matchedZh?.genericFallback === 'serif' || matchedEn?.genericFallback === 'serif';
 
   const generic = useSerifFallback ? 'serif' : 'sans-serif';
   return `${enStack}, ${zhStack}, ${generic}`;

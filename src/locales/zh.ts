@@ -2,13 +2,14 @@ import { LocaleTranslations } from './en';
 
 export const zh: LocaleTranslations = {
   brand: 'LabFlow',
-  academicOS: '学术操作系统',
   labTitle: '课题组工作台',
 
   // View modes
-  kanban: '学术看板',
-  gantt: '学术甘特图',
-  meeting: '组会投屏',
+  kanban: '看板',
+  gantt: '甘特',
+  architecture: '架构与云图',
+  todos: '周待办与验收',
+  meeting: '组会',
   pipelineSettings: '阶段设置',
   membersManager: '成员中心',
 
@@ -16,6 +17,7 @@ export const zh: LocaleTranslations = {
   onlyBlockers: '仅看卡点',
   reverseDDL: '投稿倒排期',
   newTask: '新建任务',
+  featureGuide: '功能一览',
   resetDemo: '重置示例',
   toggleTheme: '切换模式',
   switchLang: 'EN',
@@ -84,7 +86,7 @@ export const zh: LocaleTranslations = {
   colActiveSub: '正在进行的模型训练、实证估计与初稿',
   colBlockers: '3. 核心卡点与导师决断',
   colBlockersSub: '亟需组会讨论或导师拍板的技术死锁',
-  noBlockers: '当前全组无活跃卡点，研发进展平稳顺利！',
+  noBlockers: '当前无卡点，研发进展平稳顺利！',
 
   // Gantt Chart View
   ganttTitle: '学术项目进度甘特图',
@@ -179,7 +181,8 @@ export const zh: LocaleTranslations = {
   cleanSlateSuccess: '已清空所有学术任务与历史人员，您可以从空白状态开始搭建本组工作流！',
 
   // Permission & RBAC
-  roleAdminPI: '导师 / 实验室管理员',
+  roleAdminPI: '导师 / 最高管理员',
+  roleSysAdmin: '系统管理员（学生协管）',
   roleProjectLead: '课题负责人 / 骨干',
   roleStudentRA: '组内成员 / 研究生',
   roleAuditorGuest: '只读访客 / 旁听',
@@ -198,7 +201,7 @@ export const zh: LocaleTranslations = {
   requireAdminNotice: '此项设置仅导师/管理员有权修改',
   readOnlyNotice: '您当前处于只读/非负责人状态，无法修改此卡片内容',
   cannotDeleteNotice: '您无权删除他人负责的学术任务',
-  acceptedStageNotice: '将论文移至「录用归档」必须由导师 (PI) 或课题负责人批准',
+  acceptedStageNotice: '将论文移至「录用归档」必须由导师 (PI)、系统管理员或课题负责人批准',
   forceRelease: '强制中断释放',
   forceReleaseConfirm: '确定以管理员身份强制释放此算力节点吗？',
   visibility: '可见性范围',
@@ -240,4 +243,43 @@ export const zh: LocaleTranslations = {
   confirmImport: '确认导入并启动工作台',
   parsingFailed: '解析失败，未检测到合法规范的内容',
   reparse: '重新解析文本',
+
+  // Member Profile & Avatar
+  editProfile: '编辑资料',
+  myProfile: '我的资料与头像',
+  uploadAvatar: '上传照片头像',
+  resetAvatar: '恢复文字头像',
+  saveMemberChanges: '保存成员修改',
+
+  // Project Categories, Word Cloud & Architecture Tree
+  projectCategoriesTitle: '项目大类归档 · 科研词云与架构树状图',
+  projectCategoriesDesc:
+    '将课题按研究方向归类统计负责人数，自动生成全组科研词云图与可交互项目架构树。',
+  manageProjectCategories: '新建 / 编辑项目',
+  projectCategoryLabel: '所属大类',
+  uncategorized: '未归类课题',
+  responsibleCount: '人负责',
+  wordCloudTitle: '自动科研词云图',
+  architectureTreeTitle: '项目架构树状图',
+  exportSvg: '导出 SVG',
+  exportMarkdown: '导出大纲',
+
+  // Weekly To-Do & Acceptance
+  weeklyTodosTitle: '成员本周 To-Do List 与项验收',
+  weeklyTodosDesc:
+    '按成员（学生）查看每周待办清单，与课题项目、执行清单双向同步并完成项验收。',
+  peerAcceptanceOpen: '非锁模式已开启 · 全组成员可互相验收',
+  peerAcceptanceStrict: '严格验收模式（仅导师 / 负责人）',
+  acceptanceCriteriaLabel: '项验收标准',
+  submitForAcceptance: '完成并提交验收',
+  confirmAcceptance: '确认通过验收',
+  requestRevision: '退回修改',
+
+  // Task Logic Tree
+  logicTreeTab: '树状逻辑图',
+  basicAndChecklistTab: '基础与执行清单',
+  generateLogicTree: '一键生成逻辑树',
+  addChildNode: '加子节点',
+  addSiblingNode: '加同级节点',
+  syncNodeToChecklist: '同步进执行清单',
 };

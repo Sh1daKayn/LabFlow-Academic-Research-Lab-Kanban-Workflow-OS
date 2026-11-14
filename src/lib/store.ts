@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { Prisma } from '@prisma/client';
 import {
+  createInitialWeeklyTodos,
   DEFAULT_STAGES,
   DEFAULT_VENUES,
   INITIAL_PROJECTS,
@@ -24,6 +25,7 @@ import {
   StageConfig,
   StorageMode,
   TaskItem,
+  TaskLogicNode,
   VenuePreset,
   VisibilityLevel,
 } from '@/types';
@@ -36,6 +38,11 @@ import {
 } from '@/lib/auth';
 import { getPrismaClient, isPostgresConfigured } from '@/lib/prisma';
 import { generateInitialsAvatar } from '@/utils/avatar';
+import { sanitizeWeeklyTodos } from '@/utils/weeklyTodos';
+import {
+  DEFAULT_CHECKLIST_TEMPLATES,
+  sanitizeChecklistTemplates,
+} from '@/utils/templates';
 
 export interface PersistedWorkspaceRecord {
   data: LabWorkspaceData;
@@ -79,6 +86,9 @@ export function getDefaultWorkspaceData(): LabWorkspaceData {
     members: LAB_MEMBERS,
     venues: DEFAULT_VENUES,
     resources: INITIAL_RESOURCES,
+    weeklyTodos: createInitialWeeklyTodos(),
+    allowPeerAcceptance: false,
+    checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
   });
 }
 
@@ -101,6 +111,9 @@ export function sanitizeWorkspaceData(input: Partial<LabWorkspaceData>): LabWork
     members: Array.isArray(input.members) ? input.members : defaults.members,
     venues: Array.isArray(input.venues) ? input.venues : defaults.venues,
     resources: Array.isArray(input.resources) ? input.resources : [],
+    weeklyTodos: sanitizeWeeklyTodos(input.weeklyTodos),
+    allowPeerAcceptance: Boolean(input.allowPeerAcceptance),
+    checklistTemplates: sanitizeChecklistTemplates(input.checklistTemplates),
   };
 }
 
@@ -218,11 +231,21 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         adminPasswordHash,
         sessionSecret,
         revision,
+        allowPeerAcceptance: Boolean(data.allowPeerAcceptance),
+        weeklyTodos: (data.weeklyTodos || []) as unknown as Prisma.InputJsonValue,
+        checklistTemplates: sanitizeChecklistTemplates(
+          data.checklistTemplates
+        ) as unknown as Prisma.InputJsonValue,
       },
       update: {
         adminPasswordHash,
         sessionSecret,
         revision,
+        allowPeerAcceptance: Boolean(data.allowPeerAcceptance),
+        weeklyTodos: (data.weeklyTodos || []) as unknown as Prisma.InputJsonValue,
+        checklistTemplates: sanitizeChecklistTemplates(
+          data.checklistTemplates
+        ) as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -300,7 +323,11 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             titleEn: m.titleEn,
             avatar: m.avatar,
             role: m.role,
-            accessRole: (m.accessRole || 'STUDENT_RA') as AccessRole,
+            accessRole: (['ADMIN_PI', 'SYS_ADMIN', 'PROJECT_LEAD', 'STUDENT_RA', 'AUDITOR_GUEST'].includes(
+              String(m.accessRole)
+            )
+              ? m.accessRole
+              : 'STUDENT_RA') as AccessRole,
             pin: m.pin || null,
           };
         }),
@@ -325,6 +352,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             id: p.id,
             title: p.title,
             abstract: p.abstract || null,
+            category: p.category || null,
+            categoryColor: p.categoryColor || null,
+            memberIds: (p.memberIds || []) as unknown as Prisma.InputJsonValue,
             targetVenue: p.targetVenue,
             tag: p.tag,
             submissionDeadline: parseDateOrNull(p.submissionDeadline),
@@ -366,6 +396,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
           zoteroUrl: t.assets?.zotero || null,
           tags: (t.tags || []) as unknown as Prisma.InputJsonValue,
           checklist: (t.checklist || []) as unknown as Prisma.InputJsonValue,
+          logicTree: t.logicTree
+            ? (t.logicTree as unknown as Prisma.InputJsonValue)
+            : Prisma.DbNull,
           isBlocked: Boolean(t.isBlocked),
           blockerCategory: t.blocker?.category ? (t.blocker.category as BlockerCategory) : null,
           blockerReason: t.blocker?.details || null,
@@ -462,6 +495,9 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     id: p.id,
     title: p.title,
     abstract: p.abstract || undefined,
+    category: p.category || undefined,
+    categoryColor: p.categoryColor || undefined,
+    memberIds: Array.isArray(p.memberIds) ? (p.memberIds as string[]) : undefined,
     targetVenue: p.targetVenue,
     tag: p.tag,
     submissionDeadline: p.submissionDeadline
@@ -514,6 +550,10 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     order: t.order,
     tags: Array.isArray(t.tags) ? (t.tags as string[]) : undefined,
     checklist: Array.isArray(t.checklist) ? (t.checklist as unknown as ChecklistItem[]) : undefined,
+    logicTree:
+      t.logicTree && typeof t.logicTree === 'object'
+        ? (t.logicTree as unknown as TaskLogicNode)
+        : undefined,
     completedAt: t.completedAt ? t.completedAt.toISOString() : undefined,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
@@ -534,7 +574,17 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
   }));
 
   return {
-    data: { stages, tasks, projects, members, venues, resources },
+    data: {
+      stages,
+      tasks,
+      projects,
+      members,
+      venues,
+      resources,
+      weeklyTodos: sanitizeWeeklyTodos(config.weeklyTodos),
+      allowPeerAcceptance: Boolean(config.allowPeerAcceptance),
+      checklistTemplates: sanitizeChecklistTemplates(config.checklistTemplates),
+    },
     adminPasswordHash: config.adminPasswordHash,
     sessionSecret: config.sessionSecret,
     revision: config.revision,

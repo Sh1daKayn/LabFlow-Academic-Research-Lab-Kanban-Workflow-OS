@@ -35,6 +35,7 @@ export const NewTaskModal: React.FC = () => {
   const [inlineProjTitle, setInlineProjTitle] = useState('');
   const [inlineProjTag, setInlineProjTag] = useState('');
   const [inlineProjVenue, setInlineProjVenue] = useState('NeurIPS');
+  const [inlineProjCategory, setInlineProjCategory] = useState('');
 
   useEffect(() => {
     if (!isNewTaskOpen) return;
@@ -66,6 +67,7 @@ export const NewTaskModal: React.FC = () => {
     if ((creatingInlineProj || !resolvedProject) && inlineProjTitle.trim()) {
       resolvedProject = addProject({
         title: inlineProjTitle.trim(),
+        category: inlineProjCategory.trim() || undefined,
         targetVenue: inlineProjVenue.trim() || 'Conference',
         tag:
           inlineProjTag.trim() ||
@@ -74,6 +76,7 @@ export const NewTaskModal: React.FC = () => {
         status: stage,
         leadAuthorId: fallbackLead.id,
         piId: fallbackPI.id,
+        memberIds: Array.from(new Set([fallbackLead.id, fallbackPI.id])),
         visibility,
         assets: {},
       });
@@ -112,6 +115,7 @@ export const NewTaskModal: React.FC = () => {
     setDescription('');
     setInlineProjTitle('');
     setInlineProjTag('');
+    setInlineProjCategory('');
     setIsNewTaskOpen(false);
   };
 
@@ -197,7 +201,7 @@ export const NewTaskModal: React.FC = () => {
                     }
                     className={inputClass}
                   />
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
                     <input
                       type="text"
                       value={inlineProjTag}
@@ -210,6 +214,13 @@ export const NewTaskModal: React.FC = () => {
                       value={inlineProjVenue}
                       onChange={(e) => setInlineProjVenue(e.target.value)}
                       placeholder={language === 'zh' ? '目标期刊/会议' : 'Target Venue'}
+                      className={inputClass}
+                    />
+                    <input
+                      type="text"
+                      value={inlineProjCategory}
+                      onChange={(e) => setInlineProjCategory(e.target.value)}
+                      placeholder={language === 'zh' ? '所属大类(可选)' : 'Category'}
                       className={inputClass}
                     />
                   </div>

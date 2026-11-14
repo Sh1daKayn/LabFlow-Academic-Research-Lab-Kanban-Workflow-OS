@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
+import { ViewMode } from '@/types';
+import { MemberAvatar } from '@/components/MemberAvatar';
 import {
   Flame,
   Zap,
@@ -24,6 +26,10 @@ import {
   HardDrive,
   RefreshCw,
   WifiOff,
+  Network,
+  ListChecks,
+  UserCog,
+  Compass,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -54,73 +60,90 @@ export const Header: React.FC = () => {
     lockAdmin,
     setIsPasswordModalOpen,
     setIsRegisterModalOpen,
+    setIsMyProfileModalOpen,
     setCurrentUserId,
     setIsReverseDDLOpen,
     setIsNewTaskOpen,
     setIsAIImportOpen,
     setIsSettingsOpen,
     setActiveSettingsTab,
+    setIsFeatureGuideOpen,
   } = useLabFlow();
 
   const totalBlockers = tasks.filter((t) => t.isBlocked).length;
 
+  const viewTabs: Array<{
+    id: ViewMode;
+    label: string;
+    icon: React.ReactNode;
+    activeClass: string;
+  }> = [
+    {
+      id: 'kanban',
+      label: t.kanban,
+      icon: <LayoutDashboard className="w-3.5 h-3.5" />,
+      activeClass: 'bg-indigo-600 text-white shadow-sm',
+    },
+    {
+      id: 'gantt',
+      label: t.gantt,
+      icon: <BarChart2 className="w-3.5 h-3.5" />,
+      activeClass: 'bg-indigo-600 text-white shadow-sm',
+    },
+    {
+      id: 'architecture',
+      label: t.architecture,
+      icon: <Network className="w-3.5 h-3.5" />,
+      activeClass: 'bg-violet-600 text-white shadow-sm',
+    },
+    {
+      id: 'todos',
+      label: t.todos,
+      icon: <ListChecks className="w-3.5 h-3.5" />,
+      activeClass: 'bg-emerald-600 text-white shadow-sm',
+    },
+    {
+      id: 'meeting',
+      label: t.meeting,
+      icon: <Presentation className="w-3.5 h-3.5" />,
+      activeClass: 'bg-cyan-600 text-white shadow-sm',
+    },
+  ];
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur-md transition-colors shadow-sm">
-      <div className="max-w-[1720px] mx-auto px-4 lg:px-6">
-        <div className="flex items-center justify-between h-14 gap-3">
-          {/* Left: Minimal Branding & View Switcher */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2">
+      <div className="max-w-[1780px] mx-auto px-3 lg:px-5">
+        <div className="flex items-center justify-between min-h-14 py-1.5 gap-2">
+          {/* Left: Minimal Branding & 5-Tab View Switcher */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-sm text-white">
                 <FlaskConical className="w-4 h-4" />
               </div>
               <span className="font-bold text-base tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-1">
                 Lab<span className="text-cyan-500 dark:text-cyan-400 font-extrabold">Flow</span>
               </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300">
-                {t.academicOS}
-              </span>
             </div>
 
-            <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
+            <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 shrink-0" />
 
-            {/* View Mode Switcher (Kanban | Gantt | Meeting) */}
-            <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
-              <button
-                onClick={() => setViewMode('kanban')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all ${
-                  viewMode === 'kanban'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>{t.kanban}</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode('gantt')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all ${
-                  viewMode === 'gantt'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <BarChart2 className="w-3.5 h-3.5" />
-                <span>{t.gantt}</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode('meeting')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all ${
-                  viewMode === 'meeting'
-                    ? 'bg-cyan-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <Presentation className="w-3.5 h-3.5" />
-                <span>{t.meeting}</span>
-              </button>
+            {/* View Mode Switcher (Kanban | Gantt | Architecture | Todos | Meeting) */}
+            <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs overflow-x-auto max-w-full">
+              {viewTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setViewMode(tab.id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-all ${
+                    viewMode === tab.id
+                      ? tab.activeClass
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -209,6 +232,15 @@ export const Header: React.FC = () => {
 
             {/* User Identity & Role Capsule */}
             <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setIsMyProfileModalOpen(true)}
+                className="rounded-full hover:ring-2 hover:ring-cyan-500/60 transition-all shrink-0"
+                title={t.myProfile}
+              >
+                <MemberAvatar member={currentMember} size="xs" />
+              </button>
+
               <select
                 value={currentMember.id}
                 onChange={(e) => {
@@ -218,12 +250,14 @@ export const Header: React.FC = () => {
                     setCurrentUserId(e.target.value);
                   }
                 }}
-                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer pl-1 pr-1.5"
+                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer pl-0.5 pr-1"
               >
                 {members.map((m) => {
                   const roleLabel =
                     m.accessRole === 'ADMIN_PI' || m.role === 'PI'
                       ? '👑'
+                      : m.accessRole === 'SYS_ADMIN'
+                      ? '🛡️'
                       : m.accessRole === 'PROJECT_LEAD' || m.role === 'POSTDOC' || m.role === 'SENIOR_PHD'
                       ? '🔬'
                       : m.accessRole === 'AUDITOR_GUEST' || m.role === 'VISITING_SCHOLAR'
@@ -240,10 +274,21 @@ export const Header: React.FC = () => {
                 </option>
               </select>
 
+              <button
+                type="button"
+                onClick={() => setIsMyProfileModalOpen(true)}
+                className="p-1 rounded-md text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+                title={t.myProfile}
+              >
+                <UserCog className="w-3.5 h-3.5" />
+              </button>
+
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${
                   currentAccessRole === 'ADMIN_PI'
                     ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                    : currentAccessRole === 'SYS_ADMIN'
+                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35'
                     : currentAccessRole === 'PROJECT_LEAD'
                     ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30'
                     : currentAccessRole === 'STUDENT_RA'
@@ -253,6 +298,8 @@ export const Header: React.FC = () => {
               >
                 {currentAccessRole === 'ADMIN_PI'
                   ? (language === 'zh' ? '导师' : 'PI')
+                  : currentAccessRole === 'SYS_ADMIN'
+                  ? (language === 'zh' ? '系统管理' : 'SysAdmin')
                   : currentAccessRole === 'PROJECT_LEAD'
                   ? (language === 'zh' ? '骨干' : 'Lead')
                   : currentAccessRole === 'STUDENT_RA'
@@ -299,7 +346,7 @@ export const Header: React.FC = () => {
                   void retryServerSync();
                   return;
                 }
-                if (effectiveIsAdmin) {
+                if (effectiveIsAdmin || currentAccessRole === 'SYS_ADMIN') {
                   setActiveSettingsTab('backup');
                   setIsSettingsOpen(true);
                 } else {
@@ -358,6 +405,17 @@ export const Header: React.FC = () => {
                   ? '本机服务已保存'
                   : 'Host Saved'}
               </span>
+            </button>
+
+            {/* Feature Overview / Quick Start Guide Button */}
+            <button
+              type="button"
+              onClick={() => setIsFeatureGuideOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/35 text-cyan-700 dark:text-cyan-300 text-xs font-semibold transition-colors shadow-sm"
+              title={language === 'zh' ? '功能一览与上手指南' : 'Feature Overview & Quick Start'}
+            >
+              <Compass className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+              <span className="hidden lg:inline">{t.featureGuide}</span>
             </button>
 
             {/* Unified Settings Center Button (系统整体设置) */}

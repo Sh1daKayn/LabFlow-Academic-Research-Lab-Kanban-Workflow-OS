@@ -13,15 +13,22 @@ import {
   FileText,
   Database,
   BookOpen,
-  Sparkles,
   Lock,
+  GitBranch,
+  ListPlus,
+  ListChecks,
 } from 'lucide-react';
 import { GitHubIcon } from '@/components/icons/BrandIcons';
+import { TaskLogicTreeEditor } from '@/components/TaskLogicTreeEditor';
+import { TaskChecklistTemplateBar } from '@/components/TaskChecklistTemplateBar';
 
 export const TaskDetailDrawer: React.FC = () => {
   const {
     selectedTask,
     setSelectedTask,
+    setLogicTreeTaskId,
+    pushChecklistItemToWeeklyTodo,
+    currentUserId,
     viewMode,
     updateTask,
     deleteTask,
@@ -53,6 +60,7 @@ export const TaskDetailDrawer: React.FC = () => {
   const [zotero, setZotero] = useState('');
   const [checklist, setChecklist] = useState<{ id: string; text: string; done: boolean }[]>([]);
   const [newSubtaskText, setNewSubtaskText] = useState('');
+  const [drawerTab, setDrawerTab] = useState<'basic' | 'logicTree'>('basic');
 
   useEffect(() => {
     if (selectedTask) {
@@ -142,33 +150,6 @@ export const TaskDetailDrawer: React.FC = () => {
     setChecklist(checklist.filter((c) => c.id !== subId));
   };
 
-  const handleInsertRubric = () => {
-    if (!editable) return;
-    const isZh = language === 'zh';
-    const rubricItems = isZh
-      ? [
-          '【双盲匿名】彻底清除论文与附录中的作者姓名、致谢、机构标识与非匿名仓库链接',
-          '【可复现性】提供随机数种子配置、超参数网格列表与一键复现依赖环境清单 (conda/docker)',
-          '【实验统计】核心基线实验完成至少 5 次不同随机种子运行并报告均值与置信区间 (std/CI)',
-          '【理论与伦理】补充引理完整数学推导附录、潜在社会负面影响与合规伦理声明',
-        ]
-      : [
-          '[Double-Blind] Remove all author names, acknowledgments, affiliations, and de-anonymized URLs',
-          '[Reproducibility] Specify random seeds, hyperparameter search grids, and conda/docker environment',
-          '[Significance] Run baseline & proposed models with >=5 random seeds and report std / confidence intervals',
-          '[Ethics & Proofs] Complete supplementary mathematical proofs, limitations, and ethical impact statements',
-        ];
-
-    const newItems = rubricItems.map((text, idx) => ({
-      id: `rubric-${Date.now()}-${idx}`,
-      text,
-      done: false,
-    }));
-
-    setChecklist((prev) => [...prev, ...newItems]);
-    addToast(t.insertRubricChecklist, t.rubricInserted, 'success');
-  };
-
   const inputClass =
     'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-cyan-500/60 disabled:opacity-70';
 
@@ -211,7 +192,45 @@ export const TaskDetailDrawer: React.FC = () => {
           </div>
         </div>
 
-        {/* Drawer Body Form */}
+        {/* Drawer Mode Switcher */}
+        <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDrawerTab('basic')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              drawerTab === 'basic'
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <ListChecks className="w-3.5 h-3.5" />
+            <span>{t.basicAndChecklistTab}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDrawerTab('logicTree')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              drawerTab === 'logicTree'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+            <span>{t.logicTreeTab}</span>
+          </button>
+        </div>
+
+        {/* Drawer Body */}
+        {drawerTab === 'logicTree' ? (
+          <div className="flex-1 overflow-y-auto p-5">
+            <TaskLogicTreeEditor
+              task={selectedTask}
+              editable={editable}
+              compact={true}
+              onExpandFullscreen={() => setLogicTreeTaskId(selectedTask.id)}
+            />
+          </div>
+        ) : (
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4">
           {selectedTask.isBlocked && selectedTask.blocker && (
             <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-500/40 space-y-2.5">
@@ -416,22 +435,18 @@ export const TaskDetailDrawer: React.FC = () => {
             />
           </div>
 
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-            <div className="flex items-center justify-between mb-2">
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2.5">
+            <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
                 {t.checklist}
               </label>
-              {editable && (
-                <button
-                  type="button"
-                  onClick={handleInsertRubric}
-                  className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 flex items-center gap-1 transition-colors"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>{t.insertRubricChecklist}</span>
-                </button>
-              )}
             </div>
+
+            <TaskChecklistTemplateBar
+              task={selectedTask}
+              currentChecklist={checklist}
+              editable={editable}
+            />
 
             <div className="space-y-1.5 mb-2">
               {checklist.map((c) => (
@@ -462,15 +477,35 @@ export const TaskDetailDrawer: React.FC = () => {
                       {c.text}
                     </span>
                   </div>
-                  {editable && (
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleDeleteSubtask(c.id)}
-                      className="text-slate-400 hover:text-rose-500 text-xs p-1"
+                      onClick={() => {
+                        if (!selectedTask.checklist?.some((item) => item.id === c.id)) {
+                          updateTask(selectedTask.id, { checklist });
+                        }
+                        pushChecklistItemToWeeklyTodo({
+                          task: { ...selectedTask, checklist },
+                          checklistItem: c,
+                          memberId: selectedTask.leadAuthor?.id || currentUserId,
+                        });
+                      }}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-500/12 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 flex items-center gap-0.5"
+                      title={language === 'zh' ? '推入本周 To-Do 清单' : 'Push to Weekly To-Do'}
                     >
-                      ✕
+                      <ListPlus className="w-3 h-3" />
+                      <span>{language === 'zh' ? '周待办' : 'To-Do'}</span>
                     </button>
-                  )}
+                    {editable && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSubtask(c.id)}
+                        className="text-slate-400 hover:text-rose-500 text-xs p-1"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -575,6 +610,7 @@ export const TaskDetailDrawer: React.FC = () => {
             )}
           </div>
         </form>
+        )}
       </div>
     </div>
   );
