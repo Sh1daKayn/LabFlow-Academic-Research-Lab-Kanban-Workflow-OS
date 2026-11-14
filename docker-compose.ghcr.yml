@@ -1,0 +1,62 @@
+services:
+  labflow:
+    image: ghcr.io/sh1dakayn/labflow-academic-research-lab-kanban-workflow-os:latest
+    container_name: labflow-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://labflow:labflow_secret@postgres:5432/labflow_db?schema=public
+      - LABFLOW_SESSION_SECRET=${LABFLOW_SESSION_SECRET:-change-this-in-production-labflow-secret}
+      - LABFLOW_DEFAULT_ADMIN_PASSWORD=${LABFLOW_DEFAULT_ADMIN_PASSWORD:-admin888}
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      - labflow_data:/app/.data
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - labflow-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: labflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: labflow
+      POSTGRES_PASSWORD: labflow_secret
+      POSTGRES_DB: labflow_db
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U labflow -d labflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - labflow-net
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: labflow-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup --label-enable --interval 3600
+    networks:
+      - labflow-net
+
+volumes:
+  labflow_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  labflow-net:
+    driver: bridge

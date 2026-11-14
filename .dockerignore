@@ -5,11 +5,15 @@ node_modules
 .data
 .env
 .env*.local
+.deploy.local
+*.bundle
 postgres_data
 coverage
 *.tsbuildinfo
 Dockerfile
-docker-compose.yml
+docker-compose*.yml
+deploy-*.ps1
+update.sh
 Start-LabFlow.*
 npm-debug.log*
 yarn-debug.log*

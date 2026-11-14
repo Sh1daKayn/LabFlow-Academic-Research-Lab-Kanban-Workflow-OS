@@ -207,7 +207,30 @@ npm run dev
      - 若暂不装 PostgreSQL，直接执行 `npm run build && npm run start:lan` 也会自动持久保存在服务器磁盘 `.data/labflow-state.json` 中。
      - 启动后，顶部状态胶囊会显示 **「服务器DB已同步」**（PostgreSQL）或 **「本机服务已保存」**（`.data/labflow-state.json`）。
 
-#### 5. 生产环境构建与打包
+#### 5. 后续一键升级与自动化运维 (One-Click Upgrade)
+
+项目内置了 3 种免重装、保留全部用户数据（`.data/`、`.env` 与 Postgres 卷）的平滑升级方案：
+
+- **方案 1：Linux 服务器一键更新脚本（免 `sudo`）**
+  首次部署后，每次有新版本发布时，只需在服务器项目目录执行：
+  ```bash
+  chmod +x update.sh
+  ./update.sh           # 默认拉取最新代码、自动停旧服务、构建并用后台守护模式重启
+  # 可选参数：./update.sh --mirror（使用国内 npm 镜像）、--port 3001、--bundle ~/包路径
+  ```
+- **方案 2：Docker + GHCR 自动镜像 + Watchtower 自动升级**
+  仓库配置了 GitHub Actions 流水线（`.github/workflows/docker.yml`），推送到 `main` 后会自动构建并发布 Docker 镜像到 `ghcr.io`。其他服务器可直接用预构建模板启动，并由 Watchtower 每小时自动检查更新：
+  ```bash
+  docker compose -f docker-compose.ghcr.yml up -d
+  ```
+- **方案 3：本地 Windows 一键推包到国内云服务器（绕开服务器连 GitHub 超时）**
+  本地执行 `deploy-ubuntu.ps1`（或在本地仓库新建受忽略的 `.deploy.local` 文件写入 `用户名@服务器IP` 后直接执行 `.\deploy-ubuntu.ps1`）：
+  ```powershell
+  .\deploy-ubuntu.ps1 -Target "user@your-server-ip"
+  ```
+  脚本会自动在本地打包轻量 `git bundle` 并通过 `scp` 传至服务器调用 `update.sh` 完成构建重启。
+
+#### 6. 生产环境构建与打包
 ```bash
 npm run build
 npm run start

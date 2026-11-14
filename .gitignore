@@ -17,8 +17,10 @@
 # local env files
 .env
 .env*.local
+.deploy.local
 .data/
 coverage/
+*.bundle
 
 # misc & OS
 .DS_Store
