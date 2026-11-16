@@ -25,6 +25,7 @@ import {
   sanitizePreferredViews,
   resolveMemberDefaultView,
 } from '@/utils/viewPreferences';
+import { getMemberDisplayName } from '@/utils/avatar';
 import { DirectRequest, ProjectItem, TaskItem } from '@/types';
 
 describe('Personal PIN hashing & verification (HTTP LAN safe)', () => {
@@ -176,5 +177,26 @@ describe('Customizable student initial view preferences', () => {
         defaultView: 'kanban',
       })
     ).toBe('kanban');
+  });
+});
+
+describe('Member display name formatting (username-only labels)', () => {
+  it('returns plain zh/en username without avatar URI or title clutter', () => {
+    const member = {
+      nameZh: '学生 2',
+      nameEn: 'Student 2',
+      avatar: 'data:image/svg+xml;utf8,%3Csvg%3E%3C%2Fsvg%3E',
+      titleZh: '博士研究生 (分布式算法)',
+      titleEn: 'PhD Researcher',
+    };
+    expect(getMemberDisplayName(member, 'zh', 'member-student2')).toBe('学生 2');
+    expect(getMemberDisplayName(member, 'en', 'member-student2')).toBe('Student 2');
+  });
+
+  it('falls back gracefully between languages and to fallback id when missing', () => {
+    expect(getMemberDisplayName({ nameZh: '  ', nameEn: 'Alex Lin' }, 'zh', 'm-1')).toBe('Alex Lin');
+    expect(getMemberDisplayName({ nameZh: '林晓', nameEn: '' }, 'en', 'm-2')).toBe('林晓');
+    expect(getMemberDisplayName(undefined, 'zh', 'm-3')).toBe('m-3');
+    expect(getMemberDisplayName({ nameZh: '', nameEn: '' }, 'zh', 'm-4')).toBe('m-4');
   });
 });

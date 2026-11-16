@@ -102,3 +102,18 @@ export async function compressAvatarImageFile(
   }
   return canvas.toDataURL('image/jpeg', quality);
 }
+
+/**
+ * Returns a clean, plain-text username for a lab member without avatar URIs
+ * or title/directory suffixes—safe for native `<option>` elements and labels.
+ */
+export function getMemberDisplayName(
+  member?: { nameZh?: string; nameEn?: string } | null,
+  language: 'zh' | 'en' = 'zh',
+  fallback = ''
+): string {
+  if (!member) return fallback;
+  const zh = (member.nameZh || '').trim();
+  const en = (member.nameEn || '').trim();
+  return (language === 'zh' ? zh || en : en || zh) || fallback;
+}

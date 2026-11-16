@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Send, Lock, Globe, ChevronDown, ChevronRight, UserCheck } from 'lucide-react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { DirectRequestKind, RequestVisibility, WorkCategory } from '@/types';
+import { getMemberDisplayName } from '@/utils/avatar';
 import { DIRECT_REQUEST_KINDS } from '@/utils/directRequests';
 import {
   WORK_CATEGORIES,
@@ -154,7 +155,7 @@ export const DirectRequestModal: React.FC = () => {
               >
                 {recipientCandidates.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.avatar} {isZh ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
+                    {getMemberDisplayName(m, language, m.id)}
                   </option>
                 ))}
               </select>

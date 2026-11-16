@@ -16,7 +16,9 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useLabFlow } from '@/context/LabFlowContext';
+import { MemberAvatar } from '@/components/MemberAvatar';
 import { DirectRequest, DirectRequestStatus } from '@/types';
+import { getMemberDisplayName } from '@/utils/avatar';
 import { DIRECT_REQUEST_KINDS } from '@/utils/directRequests';
 import {
   WORK_CATEGORIES,
@@ -159,16 +161,22 @@ export const RequestsView: React.FC = () => {
         {/* Top Meta Row */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 font-medium text-slate-800 dark:text-slate-100">
-              <span>{sender?.avatar || '👤'}</span>
-              <span>{sender ? (isZh ? sender.nameZh : sender.nameEn) : req.senderId}</span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-100">
+              <MemberAvatar
+                member={sender}
+                alt={getMemberDisplayName(sender, language, req.senderId)}
+                size="xs"
+              />
+              <span>{getMemberDisplayName(sender, language, req.senderId)}</span>
             </span>
             <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-            <span className="inline-flex items-center gap-1 font-medium text-slate-800 dark:text-slate-100">
-              <span>{recipient?.avatar || '👤'}</span>
-              <span>
-                {recipient ? (isZh ? recipient.nameZh : recipient.nameEn) : req.recipientId}
-              </span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-100">
+              <MemberAvatar
+                member={recipient}
+                alt={getMemberDisplayName(recipient, language, req.recipientId)}
+                size="xs"
+              />
+              <span>{getMemberDisplayName(recipient, language, req.recipientId)}</span>
             </span>
 
             {kindMeta && (
@@ -282,9 +290,13 @@ export const RequestsView: React.FC = () => {
               return (
                 <div key={reply.id} className="text-xs">
                   <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                    <span>{author?.avatar || '💬'}</span>
+                    <MemberAvatar
+                      member={author}
+                      alt={getMemberDisplayName(author, language, reply.authorId)}
+                      size="xs"
+                    />
                     <span className="font-medium text-slate-700 dark:text-slate-200">
-                      {author ? (isZh ? author.nameZh : author.nameEn) : reply.authorId}
+                      {getMemberDisplayName(author, language, reply.authorId)}
                     </span>
                     <span className="text-[10px] opacity-70">
                       {reply.createdAt.slice(0, 10)}

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { LabMember, ViewMode } from '@/types';
+import { getMemberDisplayName } from '@/utils/avatar';
 import { hasMemberPin } from '@/utils/pin';
 import {
   ALL_VIEW_MODES,
@@ -462,7 +463,7 @@ export const AccountGate: React.FC = () => {
               >
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.avatar} {isZh ? `${m.nameZh} · ${m.titleZh}` : `${m.nameEn} · ${m.titleEn}`}
+                    {getMemberDisplayName(m, language, m.id)}
                   </option>
                 ))}
               </select>
