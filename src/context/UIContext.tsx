@@ -105,6 +105,13 @@ export interface UIContextType {
   isViewCustomizerOpen: boolean;
   setIsViewCustomizerOpen: (open: boolean) => void;
 
+  // Interactive Onboarding Walkthrough
+  isTourOpen: boolean;
+  tourStepIndex: number;
+  setTourStepIndex: (idx: number) => void;
+  startTour: () => void;
+  closeTour: () => void;
+
   // Notifications
   toasts: ToastItem[];
   addToast: (title: string, description?: string, type?: ToastItem['type']) => void;
@@ -112,6 +119,8 @@ export interface UIContextType {
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
+
+export const TOUR_STORAGE_KEY = 'labflow_onboarding_tour_seen_v1';
 
 /**
  * Manages transient UI filters, active view mode, modal/drawer flags,
@@ -148,6 +157,24 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [isRequestModalOpen, setIsRequestModalOpen] = useState<boolean>(false);
   const [requestModalSeed, setRequestModalSeed] = useState<RequestModalSeed | null>(null);
   const [isViewCustomizerOpen, setIsViewCustomizerOpen] = useState<boolean>(false);
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
+  const [tourStepIndex, setTourStepIndex] = useState<number>(0);
+
+  const startTour = useCallback(() => {
+    setIsFeatureGuideOpen(false);
+    setIsSettingsOpen(false);
+    setSelectedTask(null);
+    setViewMode('kanban');
+    setTourStepIndex(0);
+    setIsTourOpen(true);
+  }, []);
+
+  const closeTour = useCallback(() => {
+    setIsTourOpen(false);
+    try {
+      localStorage.setItem(TOUR_STORAGE_KEY, '1');
+    } catch {}
+  }, []);
 
   const openTemplateModal = useCallback((seed: TemplateDraftSeed | null = null) => {
     setTemplateDraftSeed(seed);
@@ -239,6 +266,11 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         openRequestModal,
         isViewCustomizerOpen,
         setIsViewCustomizerOpen,
+        isTourOpen,
+        tourStepIndex,
+        setTourStepIndex,
+        startTour,
+        closeTour,
         toasts,
         addToast,
         removeToast,

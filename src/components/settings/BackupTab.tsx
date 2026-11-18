@@ -2,10 +2,12 @@
 
 import React, { useRef, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
+import { buildCabLabImportPackJson } from '@/data/cabLabPreset';
 import {
   AlertTriangle,
   Database,
   Download,
+  FolderGit2,
   KeyRound,
   RefreshCw,
   RotateCcw,
@@ -73,6 +75,30 @@ export const BackupTab: React.FC = () => {
     } finally {
       setIsUpdatingPass(false);
     }
+  };
+
+  const handleLoadCabLabPreset = () => {
+    const confirmed = confirm(
+      language === 'zh'
+        ? '确定导入 CAB Lab (Spring -> Fall 2026) 真实团队与跨期接力预设数据包吗？当前工作区示例数据将被替换。'
+        : 'Load the CAB Lab (Spring -> Fall 2026) team, clusters, and cross-term handoff preset? This replaces current workspace items.'
+    );
+    if (!confirmed) return;
+    const ok = importDataBackup(buildCabLabImportPackJson());
+    if (ok) {
+      setIsSettingsOpen(false);
+    }
+  };
+
+  const handleDownloadCabLabPreset = () => {
+    const jsonStr = buildCabLabImportPackJson();
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'CABLab_2026_Import_Pack.json';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -248,6 +274,45 @@ export const BackupTab: React.FC = () => {
           accept=".json"
           className="hidden"
         />
+      </div>
+
+      {/* CAB Lab 2026 Cross-Term Coordination Import Pack */}
+      <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-sm shrink-0">
+            <FolderGit2 className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+              {language === 'zh'
+                ? 'CAB Lab (Spring → Fall 2026) 统筹数据包'
+                : 'CAB Lab (Spring -> Fall 2026) Import Pack'}
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+              {language === 'zh'
+                ? '内置 Trey、Masie、Iris、Martin、3 大 Cluster 与全部跨学期接力项目（含 Emma→Daniel、Kyra→Cassidy&Kyra）。'
+                : 'Includes Trey, Masie, Iris, Martin, 3 Research Clusters, shared datasets, and cross-term project handoffs.'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleDownloadCabLabPreset}
+            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-indigo-500 text-xs font-semibold flex items-center gap-1"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>{language === 'zh' ? '下载 JSON' : 'Download JSON'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleLoadCabLabPreset}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm"
+          >
+            {language === 'zh' ? '一键载入工作区' : 'Load Into Workspace'}
+          </button>
+        </div>
       </div>
 
       {/* Admin Password Setting (PI Exclusive) */}

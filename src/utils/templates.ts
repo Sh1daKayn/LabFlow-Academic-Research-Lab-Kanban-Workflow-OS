@@ -2,6 +2,7 @@ import {
   ChecklistAcceptanceTemplate,
   ChecklistItem,
   ChecklistTemplateEntry,
+  Language,
   Priority,
   TaskItem,
   WeeklyTodoItem,
@@ -92,6 +93,143 @@ export const DEFAULT_CHECKLIST_TEMPLATES: ChecklistAcceptanceTemplate[] = [
     updatedAt: '2026-10-01T00:00:00.000Z',
   },
 ];
+
+export const DEFAULT_CHECKLIST_TEMPLATES_EN: ChecklistAcceptanceTemplate[] = [
+  {
+    id: 'tpl-top-venue-rubric',
+    name: 'Top-Tier Submission & Double-Blind Audit',
+    category: 'Submission Check',
+    description:
+      'Final camera-ready and double-blind reproducibility checklist for NeurIPS / ICML / ICLR / CVPR / ACL',
+    items: [
+      {
+        text: '[Anonymity] Strip author names, affiliations, funding notes, and deanonymizing repo URLs',
+        acceptanceCriteria:
+          'Full-text PDF search confirms zero author/institution or personal repo leakage',
+        priority: 'URGENT',
+      },
+      {
+        text: '[Reproducibility] Provide random seeds, hyperparameter grids, and environment lockfile (conda/docker)',
+        acceptanceCriteria:
+          'Fresh environment runs README smoke test cleanly within 15 minutes',
+        priority: 'HIGH',
+      },
+      {
+        text: '[Statistics] Run core benchmarks & ablations over >= 5 seeds and report mean +/- std/CI',
+        acceptanceCriteria:
+          'Tables match prose values exactly and figures include error bars',
+        priority: 'HIGH',
+      },
+      {
+        text: '[Theory & Ethics] Verify complete proof appendix, limitations discussion, and ethics checklist',
+        acceptanceCriteria:
+          'Zero broken cross-references or Overleaf citation warnings across appendix proofs',
+        priority: 'MEDIUM',
+      },
+    ],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'tpl-weekly-experiment-cycle',
+    name: 'Weekly Ablation & Baseline Benchmark',
+    category: 'Weekly Experiments',
+    description:
+      'Weekly empirical sprint covering baseline reproduction, component ablations, and failure-case review',
+    items: [
+      {
+        text: 'Reproduce primary baselines and match published reference accuracy on target datasets',
+        acceptanceCriteria:
+          'Attach run logs and comparison table (primary metric within <= 1% of reference)',
+        priority: 'HIGH',
+      },
+      {
+        text: 'Run systematic module ablation study across key hyperparameters',
+        acceptanceCriteria:
+          'Export complete accuracy / throughput / GPU memory table across variants',
+        priority: 'HIGH',
+      },
+      {
+        text: 'Curate representative failure cases and diagnose root causes',
+        acceptanceCriteria:
+          'Document >= 5 failure examples with next-step hypotheses',
+        priority: 'MEDIUM',
+      },
+    ],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+  {
+    id: 'tpl-draft-figures-polish',
+    name: 'Manuscript Draft & Vector Figures Rubric',
+    category: 'Writing & Polish',
+    description:
+      'Drafting checklist covering vector diagrams, related-work synthesis, and BibTeX consistency',
+    items: [
+      {
+        text: 'Create overview architecture diagram (Figure 1) and workflow schematic (vector export)',
+        acceptanceCriteria:
+          'High-res vector PDF/SVG with symbols matching equations in prose 100%',
+        priority: 'HIGH',
+      },
+      {
+        text: 'Complete Related Work narrative synthesis and quantitative Results analysis',
+        acceptanceCriteria:
+          'Reviewed by PI/lead with clean logical flow and academic tone',
+        priority: 'MEDIUM',
+      },
+      {
+        text: 'Audit all BibTeX entries (author initials, venue abbreviations, year, and pages)',
+        acceptanceCriteria:
+          'Zero Overleaf BibTeX warnings and all key baselines cited cleanly',
+        priority: 'LOW',
+      },
+    ],
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+];
+
+/**
+ * Returns built-in starter templates localized for the target UI language.
+ */
+export function getDefaultChecklistTemplates(
+  language: Language = 'zh'
+): ChecklistAcceptanceTemplate[] {
+  return structuredClone(
+    language === 'en' ? DEFAULT_CHECKLIST_TEMPLATES_EN : DEFAULT_CHECKLIST_TEMPLATES
+  );
+}
+
+/**
+ * Translates untouched built-in starter templates to the active UI language
+ * while leaving user-edited or custom templates completely untouched.
+ */
+export function localizeChecklistTemplates(
+  templates: ChecklistAcceptanceTemplate[],
+  language: Language
+): ChecklistAcceptanceTemplate[] {
+  const targetPool =
+    language === 'en' ? DEFAULT_CHECKLIST_TEMPLATES_EN : DEFAULT_CHECKLIST_TEMPLATES;
+  const oppositePool =
+    language === 'en' ? DEFAULT_CHECKLIST_TEMPLATES : DEFAULT_CHECKLIST_TEMPLATES_EN;
+
+  const targetById = new Map(targetPool.map((tpl) => [tpl.id, tpl]));
+  const oppositeById = new Map(oppositePool.map((tpl) => [tpl.id, tpl]));
+
+  return templates.map((tpl) => {
+    const target = targetById.get(tpl.id);
+    const opposite = oppositeById.get(tpl.id);
+    if (!target || !opposite) return tpl;
+
+    const isUntouchedOpposite =
+      tpl.name === opposite.name &&
+      tpl.items.length === opposite.items.length &&
+      tpl.items.every((item, idx) => item.text === opposite.items[idx]?.text);
+
+    return isUntouchedOpposite ? structuredClone(target) : tpl;
+  });
+}
 
 function sanitizeTemplateEntries(input: unknown): ChecklistTemplateEntry[] {
   if (!Array.isArray(input)) return [];

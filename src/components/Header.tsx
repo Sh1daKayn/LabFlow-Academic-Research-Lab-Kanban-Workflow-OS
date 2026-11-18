@@ -39,6 +39,8 @@ import {
   LogOut,
   LayoutGrid,
   Send,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -68,7 +70,6 @@ export const Header: React.FC = () => {
     members,
     currentMember,
     currentAccessRole,
-    effectiveIsAdmin,
     storageMode,
     syncStatus,
     lastSyncError,
@@ -84,9 +85,13 @@ export const Header: React.FC = () => {
     setIsNewTaskOpen,
     setIsAIImportOpen,
     setIsSettingsOpen,
-    setActiveSettingsTab,
     setIsFeatureGuideOpen,
     openTemplateModal,
+    desktopNotificationsEnabled,
+    toggleDesktopNotifications,
+    simpleMode,
+    setSimpleMode,
+    startTour,
   } = useLabFlow();
 
   const isZh = language === 'zh';
@@ -94,6 +99,7 @@ export const Header: React.FC = () => {
   const [meetingSubBarExpanded, setMeetingSubBarExpanded] = useState(false);
   const [showMoreViewsMenu, setShowMoreViewsMenu] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showNewMenu, setShowNewMenu] = useState(false);
 
   // Keep Group Meeting screen uncluttered by default while leaving a 1-click expand toggle
   const showSubBar = viewMode === 'meeting' ? meetingSubBarExpanded : !subBarCollapsed;
@@ -212,6 +218,7 @@ export const Header: React.FC = () => {
             {/* View Mode Switcher (Customizable Pinned Views + More Dropdown) */}
             <div className="relative flex items-center gap-1.5 max-w-full">
               <nav
+                data-tour="primary-tabs"
                 aria-label={isZh ? '主视图切换' : 'Primary Views'}
                 className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs xl:text-[13px] overflow-x-auto scrollbar-none max-w-full"
               >
@@ -306,6 +313,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
             {/* Compact Workspace Scope Switch: My Isolation vs Group Public */}
             <div
+              data-tour="scope-toggle"
               className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px]"
               title={
                 isZh
@@ -342,20 +350,21 @@ export const Header: React.FC = () => {
               </button>
             </div>
 
-            {/* Restore Sub-toolbar Pill when collapsed or in Group Meeting view */}
+            {/* Expand / Collapse Filters Sub-bar */}
             {!showSubBar && (
               <button
                 type="button"
+                data-tour="filter-toggle"
                 onClick={toggleSubBar}
                 className={`relative flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
                   hasActiveFilters || totalBlockers > 0
                     ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-700 dark:text-cyan-300'
                     : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-cyan-500/40'
                 }`}
-                title={isZh ? '展开筛选与智能工具栏' : 'Expand filters & tools bar'}
+                title={isZh ? '展开搜索与筛选栏' : 'Search & filters'}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">{isZh ? '筛选与工具' : 'Tools'}</span>
+                <span className="hidden lg:inline">{isZh ? '筛选' : 'Filter'}</span>
                 {(hasActiveFilters || totalBlockers > 0) && (
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
@@ -369,36 +378,187 @@ export const Header: React.FC = () => {
             {/* Quick 1-on-1 Request CTA */}
             <button
               type="button"
+              data-tour="quick-request"
               onClick={() => openRequestModal()}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-xs font-semibold transition-colors shrink-0"
               title={isZh ? '向指定一人发起申请或交流' : 'Send 1-on-1 request'}
             >
               <Send className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{isZh ? '1对1申请' : 'Request'}</span>
+              <span className="hidden md:inline">{isZh ? '1对1' : 'Request'}</span>
             </button>
 
-            {/* Quick New Task CTA */}
-            <button
-              type="button"
-              onClick={() => setIsNewTaskOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-xs shrink-0"
-              title={t.newTask}
+            {/* Unified Split CTA: + New Task + Dropdown for Projects / DDL Planner / AI Import / Templates */}
+            <div
+              data-tour="new-split-cta"
+              className="relative inline-flex items-center rounded-lg bg-indigo-600 text-white shadow-xs shrink-0"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline xl:hidden">{isZh ? '新建' : 'New'}</span>
-              <span className="hidden xl:inline">{t.newTask}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewMenu(false);
+                  setIsNewTaskOpen(true);
+                }}
+                className="flex items-center gap-1 pl-2.5 pr-2 py-1.5 rounded-l-lg hover:bg-indigo-500 text-xs font-semibold transition-colors"
+                title={t.newTask}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isZh ? '新建任务' : 'New Task'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewMenu((v) => !v);
+                  setShowAccountMenu(false);
+                  setShowMoreViewsMenu(false);
+                }}
+                className="px-1.5 py-1.5 rounded-r-lg border-l border-indigo-500/70 hover:bg-indigo-500 transition-colors"
+                title={isZh ? '更多新建与导入工具' : 'More create & planning tools'}
+                aria-label={isZh ? '更多新建与导入工具' : 'More create & planning tools'}
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
 
-            {/* Authenticated User Identity Capsule (PIN-protected switching via Logout) */}
-            <div className="relative flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+              {showNewMenu && (
+                <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl py-1.5 z-50 text-slate-800 dark:text-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      setIsNewTaskOpen(true);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{t.newTask}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      openRequestModal();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <Send className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>{isZh ? '发起 1对1 申请/沟通' : '1-on-1 Request'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      setViewMode('architecture');
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <Network className="w-3.5 h-3.5 text-violet-500" />
+                    <span>{isZh ? '项目管理与学期继承' : 'Projects & Lineage'}</span>
+                  </button>
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      setIsReverseDDLOpen(true);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{t.reverseDDL}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      setIsAIImportOpen(true);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>{t.aiImportTitle}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      openTemplateModal();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <BookmarkPlus className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{isZh ? '清单与验收模板库' : 'Checklist Templates'}</span>
+                  </button>
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      startTour();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>{isZh ? '分步箭头引导' : 'Interactive Tour'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewMenu(false);
+                      setIsFeatureGuideOpen(true);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-cyan-600 dark:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>{isZh ? '快速上手指南' : 'Quick Start Guide'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Alert chip ONLY when offline/syncing so normal steady state stays ultra-clean */}
+            {(syncStatus === 'offline' || syncStatus === 'syncing') && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (syncStatus === 'offline') void retryServerSync();
+                }}
+                title={syncTitle}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg border text-[11px] font-semibold ${
+                  syncStatus === 'offline'
+                    ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400'
+                    : 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                }`}
+              >
+                {syncStatus === 'offline' ? (
+                  <WifiOff className="w-3.5 h-3.5" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                )}
+                <span className="hidden xl:inline">
+                  {syncStatus === 'offline'
+                    ? isZh
+                      ? '离线·重试'
+                      : 'Offline'
+                    : isZh
+                    ? '保存中'
+                    : 'Saving'}
+                </span>
+              </button>
+            )}
+
+            {/* Unified User & Quick-Preferences Capsule */}
+            <div
+              data-tour="account-capsule"
+              className="relative flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs"
+            >
               <button
                 type="button"
                 onClick={() => {
                   setShowAccountMenu((v) => !v);
                   setShowMoreViewsMenu(false);
+                  setShowNewMenu(false);
                 }}
                 className="flex items-center gap-1.5 pl-0.5 pr-1.5 py-0.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
-                title={isZh ? '账户设置与切换登录' : 'Account settings & Sign out'}
+                title={isZh ? '账户、视图与外观设置' : 'Account & preferences'}
               >
                 <MemberAvatar member={currentMember} size="xs" />
                 <span className="max-w-[84px] truncate font-semibold text-slate-800 dark:text-slate-200">
@@ -408,10 +568,92 @@ export const Header: React.FC = () => {
               </button>
 
               {showAccountMenu && (
-                <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl py-1.5 z-50">
-                  <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
-                    {isZh ? currentMember.titleZh : currentMember.titleEn}
+                <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl py-1.5 z-50">
+                  <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between gap-2">
+                    <span className="truncate">
+                      {isZh ? currentMember.titleZh : currentMember.titleEn}
+                    </span>
                   </div>
+
+                  {/* Quick toggles folded neatly out of the primary top bar */}
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">
+                        {isZh ? '界面模式' : 'Layout'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSimpleMode(!simpleMode)}
+                        className={`px-2 py-0.5 rounded-md font-semibold border ${
+                          simpleMode
+                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-300'
+                            : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        {simpleMode
+                          ? isZh
+                            ? '简洁视图 ✓'
+                            : 'Simple ✓'
+                          : isZh
+                          ? '完整统筹'
+                          : 'Full'}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">
+                        {isZh ? '桌面弹窗提醒' : 'Desktop Alerts'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void toggleDesktopNotifications()}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold border ${
+                          desktopNotificationsEnabled
+                            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300'
+                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                        }`}
+                      >
+                        {desktopNotificationsEnabled ? (
+                          <Bell className="w-3 h-3" />
+                        ) : (
+                          <BellOff className="w-3 h-3" />
+                        )}
+                        <span>
+                          {desktopNotificationsEnabled
+                            ? isZh
+                              ? '已开'
+                              : 'ON'
+                            : isZh
+                            ? '已关'
+                            : 'OFF'}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-cyan-600 dark:text-cyan-400"
+                      >
+                        <Globe className="w-3 h-3" />
+                        <span>{t.switchLang}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-200"
+                      >
+                        {theme === 'dark' ? (
+                          <Sun className="w-3 h-3 text-amber-400" />
+                        ) : (
+                          <Moon className="w-3 h-3 text-indigo-500" />
+                        )}
+                        <span>{theme === 'dark' ? (isZh ? '浅色' : 'Light') : (isZh ? '深色' : 'Dark')}</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -434,6 +676,33 @@ export const Header: React.FC = () => {
                     <LayoutGrid className="w-3.5 h-3.5 text-cyan-500" />
                     {isZh ? '自定义视图与 PIN' : 'Views & Personal PIN'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAccountMenu(false);
+                      void retryServerSync();
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2">
+                      {storageMode === 'postgres' ? (
+                        <Database className="w-3.5 h-3.5 text-emerald-500" />
+                      ) : (
+                        <HardDrive className="w-3.5 h-3.5 text-cyan-500" />
+                      )}
+                      <span>
+                        {storageMode === 'postgres'
+                          ? isZh
+                            ? 'DB 已同步'
+                            : 'DB Synced'
+                          : isZh
+                          ? '本机服务端已保存'
+                          : 'Host Saved'}
+                      </span>
+                    </span>
+                    <RefreshCw className="w-3 h-3 text-slate-400" />
+                  </button>
+
                   <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
                   <button
                     type="button"
@@ -495,103 +764,15 @@ export const Header: React.FC = () => {
               )}
             </div>
 
-            {/* Compact Live Server Sync & Storage Mode Pill */}
-            <button
-              type="button"
-              onClick={() => {
-                if (syncStatus === 'offline') {
-                  void retryServerSync();
-                  return;
-                }
-                if (effectiveIsAdmin || currentAccessRole === 'SYS_ADMIN') {
-                  setActiveSettingsTab('backup');
-                  setIsSettingsOpen(true);
-                } else {
-                  void retryServerSync();
-                }
-              }}
-              title={syncTitle}
-              aria-label={syncTitle}
-              className={`${
-                syncStatus === 'offline' ? 'flex' : 'hidden sm:flex'
-              } items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition-all ${
-                syncStatus === 'offline'
-                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/25'
-                  : syncStatus === 'syncing'
-                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
-                  : storageMode === 'postgres'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20'
-                  : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20'
-              }`}
-            >
-              {syncStatus === 'offline' ? (
-                <WifiOff className="w-3.5 h-3.5 shrink-0" />
-              ) : syncStatus === 'syncing' ? (
-                <RefreshCw className="w-3.5 h-3.5 shrink-0 animate-spin" />
-              ) : storageMode === 'postgres' ? (
-                <Database className="w-3.5 h-3.5 shrink-0" />
-              ) : (
-                <HardDrive className="w-3.5 h-3.5 shrink-0" />
-              )}
-              <span
-                className={
-                  syncStatus === 'offline' || syncStatus === 'syncing'
-                    ? 'inline'
-                    : 'hidden 2xl:inline'
-                }
-              >
-                {syncStatus === 'offline'
-                  ? isZh
-                    ? '仅本机·重试'
-                    : 'Local · Retry'
-                  : syncStatus === 'syncing'
-                  ? isZh
-                    ? '保存中...'
-                    : 'Saving...'
-                  : storageMode === 'postgres'
-                  ? isZh
-                    ? 'DB已同步'
-                    : 'DB Synced'
-                  : isZh
-                  ? '服务端已保存'
-                  : 'Host Saved'}
-              </span>
-            </button>
-
             {/* Unified Settings Center Button */}
             <button
               type="button"
+              data-tour="settings-btn"
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-semibold transition-colors shadow-sm"
+              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors shadow-sm"
               title={t.settingsCenter}
             >
-              <Settings className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="hidden 2xl:inline">{t.settingsCenter}</span>
-            </button>
-
-            {/* Language Switcher */}
-            <button
-              type="button"
-              onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors"
-              title={isZh ? 'Switch to English' : '切换为中文'}
-            >
-              <Globe className="w-3 h-3" />
-              <span>{t.switchLang}</span>
-            </button>
-
-            {/* Dark / Light Toggle */}
-            <button
-              type="button"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
-              title={t.toggleTheme}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-indigo-500" />
-              )}
+              <Settings className="w-4 h-4 text-indigo-500" />
             </button>
           </div>
         </div>
@@ -599,7 +780,10 @@ export const Header: React.FC = () => {
 
       {/* Tier 2: Workspace Filters & Smart Productivity Tools Sub-bar */}
       {showSubBar && (
-        <div className="border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/65">
+        <div
+          data-tour="header-subbar"
+          className="border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/65"
+        >
           <div className="max-w-[1780px] mx-auto px-3 lg:px-5 py-1.5 flex flex-wrap items-center justify-between gap-2">
             {/* Left: Search, Member Filter & Blocker Filter */}
             <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[240px]">
@@ -692,52 +876,52 @@ export const Header: React.FC = () => {
               )}
             </div>
 
-            {/* Right: Smart Planning & Template Shortcuts + Collapse Toggle */}
+            {/* Right: Smart Planning & Template Shortcuts (only shown inline in Full View; always in "+ New" menu) + Collapse */}
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-              {/* Feature Overview Guide */}
-              <button
-                type="button"
-                onClick={() => setIsFeatureGuideOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-500/50 text-xs font-medium transition-colors"
-                title={isZh ? '功能一览与上手指南' : 'Feature Overview & Quick Start'}
-              >
-                <Compass className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                <span>{t.featureGuide}</span>
-              </button>
+              {!simpleMode && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsFeatureGuideOpen(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-500/50 text-xs font-medium transition-colors"
+                    title={isZh ? '功能一览与上手指南' : 'Feature Overview & Quick Start'}
+                  >
+                    <Compass className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                    <span>{t.featureGuide}</span>
+                  </button>
 
-              {/* Custom Checklist & Acceptance Template Library */}
-              <button
-                type="button"
-                onClick={() => openTemplateModal()}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/5 text-xs font-semibold transition-all"
-                title={isZh ? '管理与注入自定义执行清单及验收标准模板' : 'Manage custom checklist & acceptance templates'}
-              >
-                <BookmarkPlus className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                <span>{isZh ? '模板库' : 'Templates'}</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => openTemplateModal()}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/5 text-xs font-semibold transition-all"
+                    title={isZh ? '管理与注入自定义执行清单及验收标准模板' : 'Manage custom checklist & acceptance templates'}
+                  >
+                    <BookmarkPlus className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                    <span>{isZh ? '模板库' : 'Templates'}</span>
+                  </button>
 
-              {/* Reverse DDL Launch Button */}
-              <button
-                type="button"
-                onClick={() => setIsReverseDDLOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 text-xs font-semibold transition-all"
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-400/20" />
-                <span>{t.reverseDDL}</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsReverseDDLOpen(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 text-xs font-semibold transition-all"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-400/20" />
+                    <span>{t.reverseDDL}</span>
+                  </button>
 
-              {/* AI Document Importer Launch Button */}
-              <button
-                type="button"
-                onClick={() => setIsAIImportOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:from-cyan-500/25 hover:to-indigo-500/25 text-xs font-bold transition-all shadow-sm"
-                title={t.aiImportTitle}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 fill-cyan-400/20" />
-                <span>{t.aiImport}</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAIImportOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:from-cyan-500/25 hover:to-indigo-500/25 text-xs font-bold transition-all shadow-sm"
+                    title={t.aiImportTitle}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 fill-cyan-400/20" />
+                    <span>{t.aiImport}</span>
+                  </button>
 
-              <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 hidden sm:block" />
+                  <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 hidden sm:block" />
+                </>
+              )}
 
               {/* Collapse Sub-bar Button */}
               <button

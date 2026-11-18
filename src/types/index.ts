@@ -44,7 +44,14 @@ export type ChineseFontPreset =
   | 'system-zh'
   | 'custom';
 export type ViewMode = 'kanban' | 'gantt' | 'architecture' | 'todos' | 'requests' | 'meeting';
-export type SettingsTab = 'appearance' | 'members' | 'resources' | 'stages' | 'venues' | 'backup';
+export type SettingsTab =
+  | 'appearance'
+  | 'members'
+  | 'resources'
+  | 'stages'
+  | 'venues'
+  | 'notifications'
+  | 'backup';
 
 export type WorkspaceScope = 'MINE' | 'PUBLIC_LAB';
 
@@ -198,10 +205,37 @@ export interface TaskItem {
   updatedAt: string;
 }
 
+export type ProjectHandoffStatus = 'HANDED_OFF' | 'ACTIVE' | 'CO_LEAD';
+
+export interface ProjectHandoffEntry {
+  id: string;
+  term: string;
+  memberId?: string;
+  memberName: string;
+  roleLabel?: string;
+  phaseSummary?: string;
+  status: ProjectHandoffStatus;
+}
+
+export type ProjectInheritanceType = 'CONTINUATION' | 'SPINOFF' | 'METHOD_OR_DATA';
+
+export interface ProjectInheritanceLink {
+  id: string;
+  parentProjectId: string;
+  relationType: ProjectInheritanceType;
+  fromTerm?: string;
+  toTerm?: string;
+  note?: string;
+}
+
 export interface ProjectItem {
   id: string;
   title: string;
   abstract?: string;
+  researchQuestion?: string;
+  sharedDataset?: string;
+  handoffHistory?: ProjectHandoffEntry[];
+  inheritedFrom?: ProjectInheritanceLink[];
   workCategory?: WorkCategory;
   partnerOrg?: string;
   milestoneNode?: string;
@@ -331,6 +365,36 @@ export interface ReverseDDLForm {
   customMilestones?: MilestoneTemplate[];
 }
 
+export interface NotificationSettings {
+  /** Master on/off toggle for all external channels (Teams/Slack/Email) and scheduled digests */
+  enabled: boolean;
+  teams: {
+    enabled: boolean;
+    notifyOnBlocker: boolean;
+    notifyOnPiReview: boolean;
+    notifyOnPublicRequest: boolean;
+    notifyOnDigest: boolean;
+  };
+  slack: {
+    enabled: boolean;
+    notifyOnBlocker: boolean;
+    notifyOnPiReview: boolean;
+    notifyOnPublicRequest: boolean;
+    notifyOnDigest: boolean;
+  };
+  digest: {
+    enabled: boolean;
+    emailEnabled: boolean;
+    deadlineWindowHours: number;
+    includePiReview: boolean;
+    includeBlockers: boolean;
+    includeOpenRequests: boolean;
+    recipientRoles: Array<'PI' | 'SYS_ADMIN' | 'PROJECT_LEAD'>;
+  };
+}
+
+export type NotificationEventKind = 'blocker' | 'pi_review' | 'public_request' | 'test';
+
 export type StorageMode = 'postgres' | 'local-file' | 'browser-local';
 
 export interface LabWorkspaceData {
@@ -344,4 +408,5 @@ export interface LabWorkspaceData {
   directRequests?: DirectRequest[];
   allowPeerAcceptance?: boolean;
   checklistTemplates?: ChecklistAcceptanceTemplate[];
+  notificationSettings?: NotificationSettings;
 }

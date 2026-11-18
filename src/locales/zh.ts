@@ -149,6 +149,7 @@ export const zh: LocaleTranslations = {
   tabResources: '公共算力与设施',
   tabStages: '学术研发阶段',
   tabVenues: '期刊会议库',
+  tabNotifications: '通知与集成',
   tabBackup: '数据与备份',
   themeMode: '显示模式',
   themeDark: '深色模式',

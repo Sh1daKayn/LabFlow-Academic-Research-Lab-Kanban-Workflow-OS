@@ -344,7 +344,10 @@ export const WeeklyTodosView: React.FC = () => {
   return (
     <div className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-5 space-y-5">
       {/* Top Bar: Header + Week Navigation + Unlocked Peer Acceptance Switch */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
+      <div
+        data-tour="weekly-todos-bar"
+        className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm"
+      >
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ListChecks className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
@@ -515,6 +518,7 @@ export const WeeklyTodosView: React.FC = () => {
         <div className="lg:col-span-8 space-y-4">
           {/* Quick Add To-Do Form */}
           <form
+            data-tour="weekly-todos-form"
             onSubmit={handleAddTodo}
             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3"
           >

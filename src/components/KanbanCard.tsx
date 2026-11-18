@@ -52,6 +52,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
     language,
     t,
     canEditTask,
+    simpleMode,
   } = useLabFlow();
 
   const linkedProject = projects.find((p) => p.id === task.projectId);
@@ -87,6 +88,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
+          data-tour="tour-sample-card"
           className={`group relative rounded-xl transition-all duration-200 select-none bg-white dark:bg-slate-900 border ${
             snapshot.isDragging
               ? 'shadow-2xl shadow-indigo-500/25 ring-2 ring-indigo-500 scale-[1.02] z-50'
@@ -113,7 +115,9 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               <div className="flex items-center gap-1.5 min-w-0">
                 {hasEditPermission ? (
                   <div
-                    className="cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 p-0.5 -ml-1 rounded transition-colors"
+                    className={`cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 p-0.5 -ml-1 rounded transition-opacity ${
+                      simpleMode ? 'opacity-30 group-hover:opacity-100' : ''
+                    }`}
                     title={
                       language === 'zh'
                         ? '拖拽此卡片单元格即可调整阶段或排序'
@@ -131,12 +135,14 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                   </div>
                 )}
 
-                <span
-                  className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border shrink-0 ${categoryMeta.badgeClass}`}
-                  title={getWorkCategoryLabel(workCategory, language, false)}
-                >
-                  {getWorkCategoryLabel(workCategory, language, true)}
-                </span>
+                {!simpleMode && (
+                  <span
+                    className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border shrink-0 ${categoryMeta.badgeClass}`}
+                    title={getWorkCategoryLabel(workCategory, language, false)}
+                  >
+                    {getWorkCategoryLabel(workCategory, language, true)}
+                  </span>
+                )}
 
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 truncate max-w-[115px]"
@@ -232,7 +238,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors leading-snug line-clamp-2">
                 {task.title}
               </h3>
-              {(workCategory !== 'PAPER' || milestoneNode || partnerOrg) &&
+              {!simpleMode &&
+                (workCategory !== 'PAPER' || milestoneNode || partnerOrg) &&
                 (partnerOrg || milestoneNode) && (
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                     {[partnerOrg, milestoneNode].filter(Boolean).join(' · ')}
@@ -260,124 +267,138 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               </div>
             )}
 
-            {/* Direct Asset Quick-Links */}
-            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-              {task.assets.overleaf && (
-                <a
-                  href={task.assets.overleaf}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                  title="Overleaf"
-                >
-                  <FileText className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                  <span>Overleaf</span>
-                  <ExternalLink className="w-2 h-2 opacity-50" />
-                </a>
-              )}
+            {/* Direct Asset Quick-Links (shown directly in Full mode; always inside expanded card/drawer) */}
+            {!simpleMode &&
+              (task.assets.overleaf ||
+                task.assets.github ||
+                task.assets.dataset ||
+                task.assets.zotero) && (
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {task.assets.overleaf && (
+                  <a
+                    href={task.assets.overleaf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
+                    title="Overleaf"
+                  >
+                    <FileText className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
+                    <span>Overleaf</span>
+                    <ExternalLink className="w-2 h-2 opacity-50" />
+                  </a>
+                )}
 
-              {task.assets.github && (
-                <a
-                  href={task.assets.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                  title="GitHub"
-                >
-                  <GitHubIcon className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                  <span>GitHub</span>
-                  <ExternalLink className="w-2 h-2 opacity-50" />
-                </a>
-              )}
+                {task.assets.github && (
+                  <a
+                    href={task.assets.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
+                    title="GitHub"
+                  >
+                    <GitHubIcon className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
+                    <span>GitHub</span>
+                    <ExternalLink className="w-2 h-2 opacity-50" />
+                  </a>
+                )}
 
-              {task.assets.dataset && (
-                <a
-                  href={task.assets.dataset}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                  title="Dataset"
-                >
-                  <Database className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                  <span>Dataset</span>
-                  <ExternalLink className="w-2 h-2 opacity-50" />
-                </a>
-              )}
+                {task.assets.dataset && (
+                  <a
+                    href={task.assets.dataset}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
+                    title="Dataset"
+                  >
+                    <Database className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
+                    <span>Dataset</span>
+                    <ExternalLink className="w-2 h-2 opacity-50" />
+                  </a>
+                )}
 
-              {task.assets.zotero && (
-                <a
-                  href={task.assets.zotero}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                  title="Zotero"
-                >
-                  <BookOpen className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                  <span>Zotero</span>
-                  <ExternalLink className="w-2 h-2 opacity-50" />
-                </a>
-              )}
-            </div>
+                {task.assets.zotero && (
+                  <a
+                    href={task.assets.zotero}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
+                    title="Zotero"
+                  >
+                    <BookOpen className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
+                    <span>Zotero</span>
+                    <ExternalLink className="w-2 h-2 opacity-50" />
+                  </a>
+                )}
+              </div>
+            )}
 
-            {/* Bottom Row: Authors + Logic Tree + Advance Button */}
+            {/* Bottom Row: Authors + Primary Actions */}
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-1.5 text-[10px]">
               <div className="flex items-center gap-1.5 truncate text-slate-500 dark:text-slate-400">
                 <MemberAvatar member={task.leadAuthor} size="xs" />
                 <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
                   {leadName}
                 </span>
-                <span className="text-slate-400 dark:text-slate-600">/</span>
-                <span className="text-slate-500 dark:text-slate-400 truncate">{piName}</span>
+                {!simpleMode && (
+                  <>
+                    <span className="text-slate-400 dark:text-slate-600">/</span>
+                    <span className="text-slate-500 dark:text-slate-400 truncate">{piName}</span>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const defaultRecipient =
-                      task.leadAuthor.id === currentUserId ? task.pi.id : task.leadAuthor.id;
-                    openRequestModal({
-                      recipientId: defaultRecipient,
-                      kind: 'PROJECT_SYNC',
-                      workCategory,
-                      projectId: task.projectId,
-                      taskId: task.id,
-                      title:
-                        language === 'zh'
-                          ? `关于「${task.title}」的对接沟通`
-                          : `Sync on "${task.title}"`,
-                    });
-                  }}
-                  className="p-1 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  title={language === 'zh' ? '发起 1 对 1 沟通/申请' : 'Send 1-on-1 request'}
-                >
-                  <MessageSquare className="w-3 h-3" />
-                </button>
+                {!simpleMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const defaultRecipient =
+                          task.leadAuthor.id === currentUserId ? task.pi.id : task.leadAuthor.id;
+                        openRequestModal({
+                          recipientId: defaultRecipient,
+                          kind: 'PROJECT_SYNC',
+                          workCategory,
+                          projectId: task.projectId,
+                          taskId: task.id,
+                          title:
+                            language === 'zh'
+                              ? `关于「${task.title}」的对接沟通`
+                              : `Sync on "${task.title}"`,
+                        });
+                      }}
+                      className="p-1 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      title={language === 'zh' ? '发起 1 对 1 沟通/申请' : 'Send 1-on-1 request'}
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                    </button>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLogicTreeTaskId(task.id);
-                  }}
-                  className={`px-1.5 py-1 rounded text-[10px] flex items-center gap-0.5 transition-colors ${
-                    task.logicTree
-                      ? 'bg-indigo-500/12 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20'
-                      : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                  title={language === 'zh' ? '查看/编辑任务树状逻辑图' : 'Open Task Logic Tree'}
-                >
-                  <GitBranch className="w-3 h-3" />
-                  {task.logicTree && (
-                    <span className="font-semibold">
-                      {countLogicTreeStats(task.logicTree).total}
-                    </span>
-                  )}
-                </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLogicTreeTaskId(task.id);
+                      }}
+                      className={`px-1.5 py-1 rounded text-[10px] flex items-center gap-0.5 transition-colors ${
+                        task.logicTree
+                          ? 'bg-indigo-500/12 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20'
+                          : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                      title={language === 'zh' ? '查看/编辑任务树状逻辑图' : 'Open Task Logic Tree'}
+                    >
+                      <GitBranch className="w-3 h-3" />
+                      {task.logicTree && (
+                        <span className="font-semibold">
+                          {countLogicTreeStats(task.logicTree).total}
+                        </span>
+                      )}
+                    </button>
+                  </>
+                )}
 
                 {hasEditPermission && (
                   <>

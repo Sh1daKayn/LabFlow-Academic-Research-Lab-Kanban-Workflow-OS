@@ -85,23 +85,34 @@ export const StagesTab: React.FC = () => {
           <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           {t.addNewStage}
         </span>
-        <div className="grid grid-cols-2 gap-2">
+        {language === 'zh' ? (
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              required
+              value={newStageNameZh}
+              onChange={(e) => setNewStageNameZh(e.target.value)}
+              placeholder="阶段中文名称 (如 伦理审查/IRB)"
+              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+            />
+            <input
+              type="text"
+              value={newStageNameEn}
+              onChange={(e) => setNewStageNameEn(e.target.value)}
+              placeholder="Stage Name (English)"
+              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+            />
+          </div>
+        ) : (
           <input
             type="text"
             required
-            value={newStageNameZh}
-            onChange={(e) => setNewStageNameZh(e.target.value)}
-            placeholder="阶段中文名称 (如 伦理审查/IRB)"
-            className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200"
-          />
-          <input
-            type="text"
             value={newStageNameEn}
             onChange={(e) => setNewStageNameEn(e.target.value)}
-            placeholder="Stage Name (English)"
-            className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+            placeholder="Stage name (e.g. IRB Review)"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200"
           />
-        </div>
+        )}
         <div className="flex justify-end pt-1">
           <button
             type="submit"

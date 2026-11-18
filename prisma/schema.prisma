@@ -72,10 +72,11 @@ model WorkspaceConfig {
   sessionSecret       String
   revision            Int      @default(1)
   allowPeerAcceptance Boolean  @default(false)
-  weeklyTodos         Json?
-  directRequests      Json?
-  checklistTemplates  Json?
-  createdAt           DateTime @default(now())
+  weeklyTodos          Json?
+  directRequests       Json?
+  checklistTemplates   Json?
+  notificationSettings Json?
+  createdAt            DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
 
@@ -156,6 +157,10 @@ model Project {
   id                 String          @id @default(uuid())
   title              String
   abstract           String?
+  researchQuestion   String?
+  sharedDataset      String?
+  handoffHistory     Json?
+  inheritedFrom      Json?
   workCategory       String          @default("PAPER")
   partnerOrg         String?
   milestoneNode      String?

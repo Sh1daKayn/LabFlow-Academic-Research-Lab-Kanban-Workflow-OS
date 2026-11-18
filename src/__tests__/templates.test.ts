@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_CHECKLIST_TEMPLATES,
+  DEFAULT_CHECKLIST_TEMPLATES_EN,
+  getDefaultChecklistTemplates,
+  localizeChecklistTemplates,
   sanitizeChecklistTemplates,
   parseMultilineTemplateEntries,
   buildChecklistItemsFromTemplate,
@@ -197,5 +200,23 @@ describe('Checklist & Acceptance Templates', () => {
     expect(nextWeekResult.addedTodos).toHaveLength(2);
     expect(nextWeekResult.addedTodos[0].done).toBe(true);
     expect(nextWeekResult.addedTodos[0].acceptanceStatus).toBe('SUBMITTED');
+  });
+
+  it('localizes untouched starter templates cleanly between Chinese and English while keeping custom edits', () => {
+    const enStarter = getDefaultChecklistTemplates('en');
+    expect(enStarter).toHaveLength(DEFAULT_CHECKLIST_TEMPLATES_EN.length);
+    expect(JSON.stringify(enStarter)).not.toMatch(/[\u4e00-\u9fff]/);
+
+    // Existing ZH starter templates translate dynamically in 'en' mode
+    const translatedFromZh = localizeChecklistTemplates(DEFAULT_CHECKLIST_TEMPLATES, 'en');
+    expect(translatedFromZh[0].name).toBe(DEFAULT_CHECKLIST_TEMPLATES_EN[0].name);
+    expect(JSON.stringify(translatedFromZh)).not.toMatch(/[\u4e00-\u9fff]/);
+
+    // Edited starter template must remain untouched
+    const edited = structuredClone(DEFAULT_CHECKLIST_TEMPLATES);
+    edited[0].name = '我的课题组定制核查清单';
+    const afterEdit = localizeChecklistTemplates(edited, 'en');
+    expect(afterEdit[0].name).toBe('我的课题组定制核查清单');
+    expect(afterEdit[1].name).toBe(DEFAULT_CHECKLIST_TEMPLATES_EN[1].name);
   });
 });

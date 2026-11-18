@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AcademicStage, ChecklistItem, Priority, TaskItem, VisibilityLevel } from '@/types';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { Flame, GitBranch, ListPlus, Lock, Plus, Save, Trash2, X } from 'lucide-react';
+import { ExternalLink, Flame, GitBranch, ListPlus, Lock, MessageSquare, Plus, Save, Trash2, X } from 'lucide-react';
 import { TaskChecklistTemplateBar } from '@/components/TaskChecklistTemplateBar';
 
 interface KanbanCardInlineEditorProps {
@@ -19,6 +19,7 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
     setSelectedTask,
     setActiveBlockerTask,
     setLogicTreeTaskId,
+    openRequestModal,
     pushChecklistItemToWeeklyTodo,
     currentUserId,
     moveTask,
@@ -454,38 +455,34 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
             {t.assets}
           </span>
           <div className="grid grid-cols-2 gap-1.5">
-            <input
-              type="url"
-              disabled={!hasEditPermission}
-              value={overleaf}
-              onChange={(e) => setOverleaf(e.target.value)}
-              placeholder="Overleaf URL"
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 disabled:opacity-70"
-            />
-            <input
-              type="url"
-              disabled={!hasEditPermission}
-              value={github}
-              onChange={(e) => setGithub(e.target.value)}
-              placeholder="GitHub URL"
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 disabled:opacity-70"
-            />
-            <input
-              type="url"
-              disabled={!hasEditPermission}
-              value={dataset}
-              onChange={(e) => setDataset(e.target.value)}
-              placeholder="Dataset URL"
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 disabled:opacity-70"
-            />
-            <input
-              type="url"
-              disabled={!hasEditPermission}
-              value={zotero}
-              onChange={(e) => setZotero(e.target.value)}
-              placeholder="Zotero URL"
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 disabled:opacity-70"
-            />
+            {[
+              { label: 'Overleaf', value: overleaf, setter: setOverleaf, ph: 'Overleaf URL' },
+              { label: 'GitHub', value: github, setter: setGithub, ph: 'GitHub URL' },
+              { label: 'Dataset', value: dataset, setter: setDataset, ph: 'Dataset URL' },
+              { label: 'Zotero', value: zotero, setter: setZotero, ph: 'Zotero URL' },
+            ].map((asset) => (
+              <div key={asset.label} className="flex items-center gap-1">
+                <input
+                  type="url"
+                  disabled={!hasEditPermission}
+                  value={asset.value}
+                  onChange={(e) => asset.setter(e.target.value)}
+                  placeholder={asset.ph}
+                  className="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 disabled:opacity-70"
+                />
+                {asset.value.trim() && (
+                  <a
+                    href={asset.value.trim()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Open ${asset.label}`}
+                    className="p-1 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 shrink-0"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -504,6 +501,28 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
           )}
 
           <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                const defaultRecipient =
+                  task.leadAuthor.id === currentUserId ? task.pi.id : task.leadAuthor.id;
+                openRequestModal({
+                  recipientId: defaultRecipient,
+                  kind: 'PROJECT_SYNC',
+                  projectId: task.projectId,
+                  taskId: task.id,
+                  title:
+                    language === 'zh'
+                      ? `关于「${task.title}」的对接沟通`
+                      : `Sync on "${task.title}"`,
+                });
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-medium transition-colors flex items-center gap-1"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>{language === 'zh' ? '1对1' : '1-on-1'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setLogicTreeTaskId(task.id)}

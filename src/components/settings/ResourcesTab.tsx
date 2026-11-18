@@ -191,10 +191,18 @@ export const ResourcesTab: React.FC = () => {
             onChange={(e) => setNewResType(e.target.value as ResourceType)}
             className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200"
           >
-            <option value="GPU">GPU 深度学习加速节点</option>
-            <option value="SERVER">计算/实证服务器 (Server)</option>
-            <option value="CLUSTER">高性能计算集群 (HPC Cluster)</option>
-            <option value="EQUIPMENT">专业实验仪器设备 (Equipment)</option>
+            <option value="GPU">
+              {language === 'zh' ? 'GPU 深度学习加速节点' : 'GPU Compute Node'}
+            </option>
+            <option value="SERVER">
+              {language === 'zh' ? '计算/实证服务器 (Server)' : 'Compute / Analytics Server'}
+            </option>
+            <option value="CLUSTER">
+              {language === 'zh' ? '高性能计算集群 (HPC Cluster)' : 'HPC Cluster'}
+            </option>
+            <option value="EQUIPMENT">
+              {language === 'zh' ? '专业实验仪器设备 (Equipment)' : 'Lab Equipment / Instrument'}
+            </option>
           </select>
         </div>
 
@@ -202,7 +210,11 @@ export const ResourcesTab: React.FC = () => {
           type="text"
           value={newResSpecs}
           onChange={(e) => setNewResSpecs(e.target.value)}
-          placeholder="硬件与系统规格描述 (如 8x RTX 4090 24GB, CUDA 12.2)"
+          placeholder={
+            language === 'zh'
+              ? '硬件与系统规格描述 (如 8x RTX 4090 24GB, CUDA 12.2)'
+              : 'Hardware & software specs (e.g. 8x H100 80GB, CUDA 12.4)'
+          }
           className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
         />
 

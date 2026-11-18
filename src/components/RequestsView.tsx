@@ -404,7 +404,10 @@ export const RequestsView: React.FC = () => {
   return (
     <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
       {/* Header Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div
+        data-tour="requests-bar"
+        className="flex flex-wrap items-center justify-between gap-3"
+      >
         <div>
           <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
             {isZh ? '1 对 1 申请与沟通' : '1-on-1 Requests & Messages'}

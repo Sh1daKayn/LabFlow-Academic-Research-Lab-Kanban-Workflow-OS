@@ -4,6 +4,7 @@ import React from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { SettingsTab } from '@/types';
 import {
+  Bell,
   Bookmark,
   Database,
   Layers,
@@ -19,6 +20,7 @@ import { MembersTab } from '@/components/settings/MembersTab';
 import { ResourcesTab } from '@/components/settings/ResourcesTab';
 import { StagesTab } from '@/components/settings/StagesTab';
 import { VenuesTab } from '@/components/settings/VenuesTab';
+import { NotificationsTab } from '@/components/settings/NotificationsTab';
 import { BackupTab } from '@/components/settings/BackupTab';
 
 export const SettingsModal: React.FC = () => {
@@ -43,6 +45,7 @@ export const SettingsModal: React.FC = () => {
     { id: 'resources', label: t.tabResources, icon: <Server className="w-4 h-4" /> },
     { id: 'stages', label: t.tabStages, icon: <Layers className="w-4 h-4" /> },
     { id: 'venues', label: t.tabVenues, icon: <Bookmark className="w-4 h-4" /> },
+    { id: 'notifications', label: t.tabNotifications, icon: <Bell className="w-4 h-4" /> },
     { id: 'backup', label: t.tabBackup, icon: <Database className="w-4 h-4" /> },
   ];
 
@@ -78,7 +81,8 @@ export const SettingsModal: React.FC = () => {
           <div className="w-full sm:w-56 shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-800 p-2.5 sm:p-4 space-y-1 bg-slate-50/60 dark:bg-slate-950/50 overflow-x-auto sm:overflow-y-auto flex sm:flex-col gap-1 sm:gap-0">
             {tabs.map((tab) => {
               const isActive = activeSettingsTab === tab.id;
-              const isRestricted = tab.id !== 'appearance' && !canManageLab();
+              const isRestricted =
+                tab.id !== 'appearance' && tab.id !== 'notifications' && !canManageLab();
               return (
                 <button
                   key={tab.id}
@@ -113,7 +117,10 @@ export const SettingsModal: React.FC = () => {
           </div>
 
           <div className="flex-1 p-5 sm:p-7 overflow-y-auto space-y-6">
-            {isSysAdmin && !effectiveIsAdmin && activeSettingsTab !== 'appearance' && (
+            {isSysAdmin &&
+              !effectiveIsAdmin &&
+              activeSettingsTab !== 'appearance' &&
+              activeSettingsTab !== 'notifications' && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-200 flex items-center justify-between gap-2">
                 <span>
                   {language === 'zh'
@@ -127,6 +134,7 @@ export const SettingsModal: React.FC = () => {
             {activeSettingsTab === 'resources' && <ResourcesTab />}
             {activeSettingsTab === 'stages' && <StagesTab />}
             {activeSettingsTab === 'venues' && <VenuesTab />}
+            {activeSettingsTab === 'notifications' && <NotificationsTab />}
             {activeSettingsTab === 'backup' && <BackupTab />}
           </div>
         </div>

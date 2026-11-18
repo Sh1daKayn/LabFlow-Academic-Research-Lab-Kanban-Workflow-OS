@@ -418,6 +418,7 @@ export const FeatureGuideModal: React.FC = () => {
   const {
     isFeatureGuideOpen,
     setIsFeatureGuideOpen,
+    startTour,
     setViewMode,
     setFilterOnlyBlockers,
     setIsReverseDDLOpen,
@@ -578,14 +579,27 @@ export const FeatureGuideModal: React.FC = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsFeatureGuideOpen(false)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
-            aria-label={isZh ? '关闭功能一览' : 'Close feature guide'}
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setIsFeatureGuideOpen(false);
+                startTour();
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>{isZh ? '启动分步箭头引导' : 'Launch Guided Tour'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsFeatureGuideOpen(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+              aria-label={isZh ? '关闭功能一览' : 'Close feature guide'}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content */}

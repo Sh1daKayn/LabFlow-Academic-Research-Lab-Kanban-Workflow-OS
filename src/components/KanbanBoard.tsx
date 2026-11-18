@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AcademicStage, TaskItem, WorkCategory } from '@/types';
 import { KanbanCard } from '@/components/KanbanCard';
+import { MyFocusBanner } from '@/components/MyFocusBanner';
 import { StageDragMatrix } from '@/components/StageDragMatrix';
 import { WORK_CATEGORIES, WORK_CATEGORY_META, resolveTaskWorkCategory } from '@/utils/workCategory';
 import { Plus, FilterX, Clock, Sparkles, FolderKanban, Columns3, Table2, LayoutGrid } from 'lucide-react';
@@ -32,6 +33,7 @@ export const KanbanBoard: React.FC = () => {
     addToast,
     setIsNewTaskOpen,
     setIsAIImportOpen,
+    simpleMode,
   } = useLabFlow();
 
   const [mounted, setMounted] = useState(false);
@@ -133,53 +135,60 @@ export const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-x-auto p-4 lg:p-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent flex flex-col">
-      {/* Three-Category Filter Bar (论文 | 纵向科研项目 | 横向企业项目) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 shrink-0">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setWorkCategoryFilter('ALL')}
-            className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
-              workCategoryFilter === 'ALL'
-                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
-                : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
-          >
-            {language === 'zh' ? '全部分类' : 'All Categories'} ({tasks.length})
-          </button>
-          {WORK_CATEGORIES.map((cat) => {
-            const meta = WORK_CATEGORY_META[cat];
-            const count = tasks.filter(
-              (item) => resolveTaskWorkCategory(item, projects) === cat
-            ).length;
-            const active = workCategoryFilter === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setWorkCategoryFilter(cat)}
-                className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
-                  active
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400/50'
-                }`}
-              >
-                {language === 'zh' ? meta.labelZh : meta.labelEn} ({count})
-              </button>
-            );
-          })}
+      <MyFocusBanner />
+
+      {/* Three-Category Filter Bar (Expanded in Full View; compact dropdown in Simple View) */}
+      {!simpleMode && (
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setWorkCategoryFilter('ALL')}
+              className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
+                workCategoryFilter === 'ALL'
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                  : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+              }`}
+            >
+              {language === 'zh' ? '全部分类' : 'All Tracks'} ({tasks.length})
+            </button>
+            {WORK_CATEGORIES.map((cat) => {
+              const meta = WORK_CATEGORY_META[cat];
+              const count = tasks.filter(
+                (item) => resolveTaskWorkCategory(item, projects) === cat
+              ).length;
+              const active = workCategoryFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setWorkCategoryFilter(cat)}
+                  className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
+                    active
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400/50'
+                  }`}
+                >
+                  {language === 'zh' ? meta.labelZh : meta.labelEn} ({count})
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Top Stage Filter Tabs & Sort Toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 shrink-0">
+      <div
+        data-tour="board-controls"
+        className="flex flex-wrap items-center justify-between gap-3 mb-4 shrink-0"
+      >
         <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none max-w-full">
           <button
             onClick={() => setSelectedStageFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 ${
               selectedStageFilter === 'all'
                 ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+                : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800'
             }`}
           >
             {t.allStages} ({tasks.length})
@@ -199,7 +208,7 @@ export const KanbanBoard: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+                    : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800'
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
@@ -210,22 +219,39 @@ export const KanbanBoard: React.FC = () => {
           })}
         </div>
 
-        {/* Project filter & Sort by urgency toggle */}
+        {/* Project filter, compact track filter in Simple Mode & Sort by urgency toggle */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {simpleMode && (
+            <select
+              value={workCategoryFilter}
+              onChange={(e) => setWorkCategoryFilter(e.target.value as 'ALL' | WorkCategory)}
+              aria-label={t.workCategoryLabel}
+              className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">
+                {language === 'zh' ? '所有分类' : 'All Tracks'}
+              </option>
+              {WORK_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {language === 'zh' ? WORK_CATEGORY_META[cat].labelZh : WORK_CATEGORY_META[cat].labelEn}
+                </option>
+              ))}
+            </select>
+          )}
           {projects.length > 0 && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
-              <FolderKanban className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+              <FolderKanban className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
               <select
                 value={selectedProjectFilter}
                 onChange={(e) => setSelectedProjectFilter(e.target.value)}
                 aria-label={t.allProjects}
-                className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer max-w-[170px] truncate"
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[170px] truncate"
               >
-                <option value="all" className="bg-slate-900 text-slate-200">
+                <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                   {t.allProjects}
                 </option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-slate-200">
+                  <option key={p.id} value={p.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                     [{p.tag}] {p.title}
                   </option>
                 ))}
@@ -357,6 +383,51 @@ export const KanbanBoard: React.FC = () => {
         </div>
       )}
 
+      {/* Surface Categories projects that currently have 0 tasks */}
+      {(() => {
+        if (boardLayout === 'matrix') return null;
+        const tasklessProjects = projects.filter(
+          (proj) => !tasks.some((task) => task.projectId === proj.id)
+        );
+        if (tasklessProjects.length === 0) return null;
+        return (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-200 shrink-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <FolderKanban className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>
+                {language === 'zh'
+                  ? `有 ${tasklessProjects.length} 个 Categories 项目尚无任务卡片（暂未出现在 Tasks 列中）：`
+                  : `${tasklessProjects.length} project${tasklessProjects.length > 1 ? 's' : ''} from Categories ${tasklessProjects.length > 1 ? 'have' : 'has'} no task cards yet:`}
+              </span>
+              <span className="font-semibold">
+                {tasklessProjects
+                  .slice(0, 3)
+                  .map((p) => p.tag || p.title)
+                  .join(', ')}
+                {tasklessProjects.length > 3 ? ` +${tasklessProjects.length - 3}` : ''}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setBoardLayout('matrix')}
+                className="px-2.5 py-1 rounded-lg border border-amber-500/40 bg-white/70 dark:bg-slate-900/60 hover:bg-amber-500/20 font-semibold transition-colors"
+              >
+                {language === 'zh' ? '切到阶段格 (含项目)' : 'Open Stage Cells'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsNewTaskOpen(true)}
+                className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition-colors"
+              >
+                {language === 'zh' ? '+ 新建任务' : '+ Add Task'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      <div data-tour="kanban-columns" className="flex-1 flex flex-col min-h-0">
       {boardLayout === 'matrix' ? (
         <StageDragMatrix filteredTasks={allFilteredTasks} />
       ) : boardLayout === 'grouped' ? (
@@ -509,6 +580,7 @@ export const KanbanBoard: React.FC = () => {
           </div>
         </DragDropContext>
       )}
+      </div>
     </div>
   );
 };

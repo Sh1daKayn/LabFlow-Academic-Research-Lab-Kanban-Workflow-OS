@@ -27,14 +27,22 @@ describe('AI Document Parser', () => {
       expect(m.avatar).toMatch(/^data:image\/svg\+xml/);
     });
 
-    const enResult = parseAIDocumentText(AI_SAMPLE_OUTPUT_EN);
+    const enResult = parseAIDocumentText(AI_SAMPLE_OUTPUT_EN, [], [], [], 'en');
     expect(enResult.success).toBe(true);
     expect(enResult.data?.members[0].accessRole).toBe('ADMIN_PI');
+    expect(enResult.data?.members[0].nameEn).toBe('Prof. Eleanor Vance');
+    expect(enResult.data?.projects[0].leadAuthorName).toBe('Alex Rivera');
+    expect(enResult.data?.tasks[0].leadAuthorName).toBe('Alex Rivera');
   });
 
-  it('returns clear error on malformed JSON payloads', () => {
-    const bad = parseAIDocumentText('```json\n{ invalid json }\n```');
-    expect(bad.success).toBe(false);
-    expect(bad.error).toBeTruthy();
+  it('returns clear localized errors on malformed JSON payloads', () => {
+    const badZh = parseAIDocumentText('```json\n{ invalid json }\n```', [], [], [], 'zh');
+    expect(badZh.success).toBe(false);
+    expect(badZh.error).toContain('JSON');
+
+    const badEn = parseAIDocumentText('```json\n{ invalid json }\n```', [], [], [], 'en');
+    expect(badEn.success).toBe(false);
+    expect(badEn.error).toContain('Invalid JSON');
+    expect(badEn.error).not.toMatch(/[\u4e00-\u9fff]/);
   });
 });

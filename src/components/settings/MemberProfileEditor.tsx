@@ -78,36 +78,44 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
   };
 
   const handleResetAvatar = () => {
-    const seed = initialMember?.id || nameZh.trim() || nameEn.trim() || `member-${Date.now()}`;
-    const display = nameZh.trim() || nameEn.trim() || 'LF';
+    const seed = initialMember?.id || nameEn.trim() || nameZh.trim() || `member-${Date.now()}`;
+    const display = (isZh ? nameZh.trim() || nameEn.trim() : nameEn.trim() || nameZh.trim()) || 'LF';
     setAvatar(generateInitialsAvatar(display, seed));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanZh = nameZh.trim() || nameEn.trim();
     const cleanEn = nameEn.trim() || nameZh.trim();
+    const cleanZh = isZh
+      ? nameZh.trim() || nameEn.trim()
+      : !nameZh.trim() || nameZh.trim() === initialMember?.nameEn
+      ? cleanEn
+      : nameZh.trim();
     if (!cleanZh && !cleanEn) return;
 
+    const displayForAvatar = isZh ? cleanZh || cleanEn : cleanEn || cleanZh;
     const finalAvatar =
       avatar ||
-      generateInitialsAvatar(cleanZh || cleanEn, initialMember?.id || cleanEn || cleanZh);
+      generateInitialsAvatar(displayForAvatar, initialMember?.id || cleanEn || cleanZh);
+
+    const resolvedTitleEn = titleEn.trim() || titleZh.trim() || 'Researcher';
+    const resolvedTitleZh = titleZh.trim() || resolvedTitleEn;
 
     onSave({
       nameZh: cleanZh,
       nameEn: cleanEn,
       role,
       accessRole: canEditAccessRole ? accessRole : initialMember?.accessRole,
-      titleZh: titleZh.trim() || (isZh ? '课题组成员' : 'Researcher'),
-      titleEn: titleEn.trim() || titleZh.trim() || 'Researcher',
-      email: email.trim() || initialMember?.email || `member@labflow.edu`,
+      titleZh: resolvedTitleZh,
+      titleEn: resolvedTitleEn,
+      email: email.trim() || initialMember?.email || 'member@labflow.edu',
       avatar: finalAvatar,
     });
   };
 
   const previewMember: Partial<LabMember> = {
     id: initialMember?.id || 'preview',
-    nameZh: nameZh || '姓名',
+    nameZh: isZh ? nameZh || '姓名' : nameEn || nameZh || 'Name',
     nameEn: nameEn || nameZh || 'Name',
     avatar: avatar || undefined,
   };
@@ -171,34 +179,50 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
       </div>
 
       {/* Name & Identity */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <div>
-          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-            {isZh ? '姓名 (中文) *' : 'Name (Chinese)'}
-          </label>
-          <input
-            type="text"
-            required={!nameEn.trim()}
-            value={nameZh}
-            onChange={(e) => setNameZh(e.target.value)}
-            placeholder={isZh ? '例如：张明 / 博士生' : 'Chinese name'}
-            className={fieldClass}
-          />
+      {isZh ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              姓名 (中文) *
+            </label>
+            <input
+              type="text"
+              required={!nameEn.trim()}
+              value={nameZh}
+              onChange={(e) => setNameZh(e.target.value)}
+              placeholder="例如：张明 / 博士生"
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              姓名 (英文)
+            </label>
+            <input
+              type="text"
+              required={!nameZh.trim()}
+              value={nameEn}
+              onChange={(e) => setNameEn(e.target.value)}
+              placeholder="e.g. Ming Zhang"
+              className={fieldClass}
+            />
+          </div>
         </div>
+      ) : (
         <div>
           <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-            {isZh ? '姓名 (英文)' : 'Name (English) *'}
+            Full Name *
           </label>
           <input
             type="text"
-            required={!nameZh.trim()}
+            required
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
-            placeholder="e.g. Ming Zhang"
+            placeholder="e.g. Alex Rivera"
             className={fieldClass}
           />
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
@@ -256,38 +280,49 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <div>
-          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-            {isZh ? '研究方向 / 中文头衔' : 'Title / Research Focus (ZH)'}
-          </label>
-          <input
-            type="text"
-            value={titleZh}
-            onChange={(e) => setTitleZh(e.target.value)}
-            placeholder={isZh ? '例如：博士生（具身智能 / 多智能体）' : 'Research specialization'}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-            {canEditAccessRole
-              ? isZh
-                ? '工作邮箱'
-                : 'Email'
-              : isZh
-              ? '英文头衔'
-              : 'Title (English)'}
-          </label>
-          {canEditAccessRole ? (
+      {isZh ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              研究方向 / 中文头衔
+            </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@university.edu"
+              type="text"
+              value={titleZh}
+              onChange={(e) => setTitleZh(e.target.value)}
+              placeholder="例如：博士生（具身智能 / 多智能体）"
               className={fieldClass}
             />
-          ) : (
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              {canEditAccessRole ? '工作邮箱' : '英文头衔'}
+            </label>
+            {canEditAccessRole ? (
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@university.edu"
+                className={fieldClass}
+              />
+            ) : (
+              <input
+                type="text"
+                value={titleEn}
+                onChange={(e) => setTitleEn(e.target.value)}
+                placeholder="e.g. PhD Candidate (Embodied AI)"
+                className={fieldClass}
+              />
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className={canEditAccessRole ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5' : ''}>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              Title / Research Focus
+            </label>
             <input
               type="text"
               value={titleEn}
@@ -295,9 +330,23 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
               placeholder="e.g. PhD Candidate (Embodied AI)"
               className={fieldClass}
             />
+          </div>
+          {canEditAccessRole && (
+            <div>
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@university.edu"
+                className={fieldClass}
+              />
+            </div>
           )}
         </div>
-      </div>
+      )}
 
       <div className="flex items-center justify-end gap-2 pt-1">
         {onCancel && (

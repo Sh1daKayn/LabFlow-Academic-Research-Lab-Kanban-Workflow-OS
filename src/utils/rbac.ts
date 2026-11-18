@@ -178,3 +178,25 @@ export function canAdvanceToStage(
   }
   return true;
 }
+
+/**
+ * Determines whether a task belongs to `currentUserId` in `MINE` workspace scope,
+ * aligning `Tasks` visibility with `Categories` project membership rules.
+ */
+export function isTaskInPersonalScope(
+  task: TaskItem,
+  currentUserId: string,
+  projects: ProjectItem[]
+): boolean {
+  if (task.leadAuthor?.id === currentUserId || task.pi?.id === currentUserId) {
+    return true;
+  }
+  if (!task.projectId) return false;
+  const parentProj = projects.find((p) => p.id === task.projectId);
+  if (!parentProj) return false;
+  return (
+    parentProj.leadAuthorId === currentUserId ||
+    parentProj.piId === currentUserId ||
+    (Array.isArray(parentProj.memberIds) && parentProj.memberIds.includes(currentUserId))
+  );
+}

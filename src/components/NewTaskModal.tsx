@@ -182,39 +182,13 @@ export const NewTaskModal: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 3-Category Work Selector */}
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              {language === 'zh' ? '任务所属分类 *' : 'Work Category *'}
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {WORK_CATEGORIES.map((cat) => {
-                const meta = WORK_CATEGORY_META[cat];
-                const active = workCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setWorkCategory(cat)}
-                    className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-colors text-center ${
-                      active
-                        ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    {language === 'zh' ? meta.labelZh : meta.labelEn}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
+          {/* Task Title (Primary Field First) */}
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
               {workCategory === 'HORIZONTAL_PROJECT'
                 ? language === 'zh'
                   ? '横向企业交付节点 / 任务名称 *'
-                  : 'Enterprise Milestone / Task *'
+                  : 'Industry Milestone / Task *'
                 : workCategory === 'VERTICAL_PROJECT'
                   ? language === 'zh'
                     ? '纵向项目研发任务 *'
@@ -227,11 +201,9 @@ export const NewTaskModal: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={
-                workCategory === 'HORIZONTAL_PROJECT'
-                  ? language === 'zh'
-                    ? '如：完成产线接口联调并提交企业阶段测试报告'
-                    : 'e.g. Complete enterprise API integration & test report'
-                  : 'e.g. Conduct sensitivity analysis on variance penalty parameter lambda'
+                language === 'zh'
+                  ? '输入具体研究任务、数据分析或文稿章节标题'
+                  : 'Enter task, empirical run, or manuscript milestone'
               }
               className={inputClass}
             />
@@ -456,6 +428,32 @@ export const NewTaskModal: React.FC = () => {
 
             {showAdvanced && (
               <div className="p-3.5 space-y-3 bg-white dark:bg-slate-900">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    {language === 'zh' ? '任务所属分类（默认跟随所选项目）' : 'Work Track (inherits project)'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {WORK_CATEGORIES.map((cat) => {
+                      const meta = WORK_CATEGORY_META[cat];
+                      const active = workCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setWorkCategory(cat)}
+                          className={`px-2 py-1.5 rounded-lg border text-[11px] font-medium transition-colors text-center ${
+                            active
+                              ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200'
+                              : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {language === 'zh' ? meta.labelZh : meta.labelEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">

@@ -41,9 +41,9 @@ export const VIEW_META: Record<
   },
   architecture: {
     labelZh: '项目分类总览',
-    labelEn: 'Categories',
-    descZh: '按论文、纵向项目、横向企业项目归类汇总',
-    descEn: 'Categorized overview of papers & projects',
+    labelEn: 'Projects',
+    descZh: '按论文、纵向项目、横向企业项目归类汇总与学期继承图谱',
+    descEn: 'Projects by cluster, cross-term handoffs & semester lineage',
   },
   meeting: {
     labelZh: '组会汇报',

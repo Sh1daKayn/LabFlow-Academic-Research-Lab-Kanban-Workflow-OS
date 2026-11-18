@@ -26,6 +26,7 @@ import { AIImportModal } from '@/components/AIImportModal';
 import { TaskDetailDrawer } from '@/components/TaskDetailDrawer';
 import { TaskLogicTreeModal } from '@/components/TaskLogicTreeModal';
 import { FeatureGuideModal } from '@/components/FeatureGuideModal';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { ChecklistTemplateModal } from '@/components/ChecklistTemplateModal';
 import { ToastContainer } from '@/components/Toast';
 
@@ -35,7 +36,6 @@ export const MainApp: React.FC = () => {
     enableComputeStrip,
     isHydrated,
     isAuthenticatedSession,
-    t,
   } = useLabFlow();
 
   if (!isHydrated) {
@@ -47,9 +47,6 @@ export const MainApp: React.FC = () => {
         <div className="text-center">
           <div className="font-bold text-lg tracking-tight">
             Lab<span className="text-cyan-500">Flow</span>
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {t.labTitle}
           </div>
         </div>
       </div>
@@ -105,6 +102,7 @@ export const MainApp: React.FC = () => {
       <AIImportModal />
       <TaskLogicTreeModal />
       <FeatureGuideModal />
+      <OnboardingTour />
       <ChecklistTemplateModal />
       {viewMode !== 'kanban' && viewMode !== 'requests' && <TaskDetailDrawer />}
 

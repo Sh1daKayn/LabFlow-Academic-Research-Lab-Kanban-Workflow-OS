@@ -20,6 +20,7 @@ const THEME_STORAGE_KEYS = {
   CHINESE_FONT: 'labflow_zh_font_v3',
   CHINESE_CUSTOM_FONT: 'labflow_zh_custom_font_v3',
   ENABLE_COMPUTE: 'labflow_enable_compute_v3',
+  SIMPLE_MODE: 'labflow_simple_mode_v1',
 };
 
 export interface ThemeContextType {
@@ -42,6 +43,8 @@ export interface ThemeContextType {
   resetFonts: () => void;
   enableComputeStrip: boolean;
   setEnableComputeStrip: (val: boolean) => void;
+  simpleMode: boolean;
+  setSimpleMode: (val: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -60,6 +63,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [chineseFont, setChineseFont] = useState<ChineseFontPreset>('yahei-pingfang');
   const [chineseCustomFont, setChineseCustomFont] = useState<string>('');
   const [enableComputeStrip, setEnableComputeStrip] = useState<boolean>(false);
+  const [simpleMode, setSimpleMode] = useState<boolean>(true);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const resetFonts = useCallback(() => {
@@ -84,6 +88,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ) as ChineseFontPreset | null;
       const savedZhCustom = localStorage.getItem(THEME_STORAGE_KEYS.CHINESE_CUSTOM_FONT);
       const savedCompute = localStorage.getItem(THEME_STORAGE_KEYS.ENABLE_COMPUTE);
+      const savedSimple = localStorage.getItem(THEME_STORAGE_KEYS.SIMPLE_MODE);
 
       if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
       if (savedAccent) setAccentColor(savedAccent);
@@ -94,6 +99,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (savedZhFont) setChineseFont(savedZhFont);
       if (savedZhCustom !== null) setChineseCustomFont(savedZhCustom);
       if (savedCompute !== null) setEnableComputeStrip(savedCompute === 'true');
+      if (savedSimple !== null) setSimpleMode(savedSimple !== 'false');
     } catch (e) {
       console.warn('Could not read theme settings from localStorage', e);
     } finally {
@@ -116,6 +122,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         THEME_STORAGE_KEYS.ENABLE_COMPUTE,
         enableComputeStrip ? 'true' : 'false'
       );
+      localStorage.setItem(THEME_STORAGE_KEYS.SIMPLE_MODE, simpleMode ? 'true' : 'false');
     } catch (e) {
       console.warn('Could not persist theme settings to localStorage', e);
     }
@@ -129,6 +136,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     chineseFont,
     chineseCustomFont,
     enableComputeStrip,
+    simpleMode,
     isInitialized,
   ]);
 
@@ -190,6 +198,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         resetFonts,
         enableComputeStrip,
         setEnableComputeStrip,
+        simpleMode,
+        setSimpleMode,
       }}
     >
       {children}

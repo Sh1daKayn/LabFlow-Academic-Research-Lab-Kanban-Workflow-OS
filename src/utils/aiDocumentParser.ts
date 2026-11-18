@@ -1,5 +1,6 @@
 import {
   LabMember,
+  Language,
   ProjectItem,
   LabResource,
   StageConfig,
@@ -128,8 +129,8 @@ export const AI_IMPORT_PROMPT_ZH = `你是一位顶尖的高校与科研实验�
 请根据我接下来粘贴的实验室文档开始提取：`;
 
 export const AI_IMPORT_PROMPT_EN = `You are a Principal Academic Lab Operations Architect.
-Please analyze the provided academic laboratory documents (weekly reports, grant proposals, student rosters, paper plans, or meeting notes).
-Extract the lab members, research projects, academic tasks, and compute resources into the standard LabFlow OS JSON schema.
+Please analyze the provided academic laboratory documents (weekly reports, grant proposals, student rosters, paper plans, industry R&D specs, or meeting notes).
+Extract the lab members, projects/papers, milestones/tasks, and compute resources into the standard LabFlow JSON schema.
 
 Output Rules:
 1. Output ONLY a valid JSON markdown code block (starting with \`\`\`json and ending with \`\`\`), with zero conversational filler.
@@ -139,30 +140,30 @@ Output Rules:
 {
   "members": [
     {
-      "nameZh": "Chinese Name",
-      "nameEn": "English Name",
+      "nameEn": "Full Name (e.g. Alex Rivera)",
       "role": "PI | POSTDOC | SENIOR_PHD | PHD_CANDIDATE | RA | VISITING_SCHOLAR",
       "accessRole": "ADMIN_PI | SYS_ADMIN | PROJECT_LEAD | STUDENT_RA | AUDITOR_GUEST",
-      "titleZh": "Role or research focus",
+      "titleEn": "Role or research focus (e.g. PhD Candidate in Robotics)",
       "email": "Email address"
     }
   ],
   "projects": [
     {
       "title": "Full Paper / Project Title",
-      "targetVenue": "Target Conference or Journal (e.g. CVPR 2027, Nature Comm)",
-      "tag": "Short Tag (e.g. CVPR'27)",
+      "workCategory": "PAPER | VERTICAL_PROJECT | HORIZONTAL_PROJECT",
+      "targetVenue": "Target Conference, Journal, Sponsor, or Client (e.g. CVPR 2027, NSF, Acme Robotics)",
+      "tag": "Short Tag (e.g. CVPR'27, NSF, Client)",
       "abstract": "Brief objective",
-      "leadAuthorName": "Lead author name"
+      "leadAuthorName": "Lead author / project owner full name"
     }
   ],
   "tasks": [
     {
-      "title": "Specific milestone or paper task",
+      "title": "Specific milestone or task",
       "description": "Details & deliverables",
       "stage": "IDEATION | DATA_EXP | DRAFTING | PI_REVIEW | REVISION | ACCEPTED",
       "projectName": "Project Title",
-      "leadAuthorName": "Lead author name",
+      "leadAuthorName": "Assignee full name",
       "priority": "LOW | MEDIUM | HIGH | URGENT",
       "visibility": "PUBLIC | TEAM_ONLY | PI_ONLY",
       "deadline": "YYYY-MM-DD",
@@ -171,8 +172,7 @@ Output Rules:
   ],
   "resources": [
     {
-      "nameZh": "Resource Name",
-      "nameEn": "Resource Name En",
+      "nameEn": "Resource Name (e.g. DGX H100 Node 01)",
       "type": "GPU | SERVER | CLUSTER | EQUIPMENT",
       "specs": "Hardware specs"
     }
@@ -296,28 +296,25 @@ export const AI_SAMPLE_OUTPUT_ZH = `{
 export const AI_SAMPLE_OUTPUT_EN = `{
   "members": [
     {
-      "nameZh": "张文远",
-      "nameEn": "Prof. Wenyuan Zhang",
+      "nameEn": "Prof. Eleanor Vance",
       "role": "PI",
       "accessRole": "ADMIN_PI",
-      "titleZh": "实验室负责人 / 教授",
-      "email": "wyzhang@univ.edu.cn"
+      "titleEn": "Principal Investigator / Professor",
+      "email": "evance@stanford-lab.edu"
     },
     {
-      "nameZh": "李晨阳",
-      "nameEn": "Chenyang Li",
+      "nameEn": "Alex Rivera",
       "role": "SENIOR_PHD",
       "accessRole": "PROJECT_LEAD",
-      "titleZh": "具身智能与大模型博士生",
-      "email": "li.cy@univ.edu.cn"
+      "titleEn": "Senior PhD (Embodied AI & Robotics)",
+      "email": "arivera@stanford-lab.edu"
     },
     {
-      "nameZh": "赵雪晴",
-      "nameEn": "Xueqing Zhao",
+      "nameEn": "Maya Patel",
       "role": "PHD_CANDIDATE",
       "accessRole": "STUDENT_RA",
-      "titleZh": "神经符号推理方向博士生",
-      "email": "zhao.xq@univ.edu.cn"
+      "titleEn": "PhD Candidate (Causal Inference)",
+      "email": "mpatel@stanford-lab.edu"
     }
   ],
   "projects": [
@@ -326,7 +323,7 @@ export const AI_SAMPLE_OUTPUT_EN = `{
       "targetVenue": "CVPR 2027",
       "tag": "CVPR '27",
       "abstract": "Cross-domain generalization for high-precision robotic manipulation.",
-      "leadAuthorName": "李晨阳"
+      "leadAuthorName": "Alex Rivera"
     }
   ],
   "tasks": [
@@ -335,7 +332,7 @@ export const AI_SAMPLE_OUTPUT_EN = `{
       "description": "Benchmark 5 baseline methods and measure task success rate.",
       "stage": "DATA_EXP",
       "projectName": "Embodied Multimodal Foundation Models for Robotic Assembly",
-      "leadAuthorName": "李晨阳",
+      "leadAuthorName": "Alex Rivera",
       "priority": "HIGH",
       "visibility": "PUBLIC",
       "deadline": "2026-12-20",
@@ -346,7 +343,7 @@ export const AI_SAMPLE_OUTPUT_EN = `{
       "description": "Draft high-resolution architecture diagram and formal introduction on Overleaf.",
       "stage": "DRAFTING",
       "projectName": "Embodied Multimodal Foundation Models for Robotic Assembly",
-      "leadAuthorName": "李晨阳",
+      "leadAuthorName": "Maya Patel",
       "priority": "MEDIUM",
       "visibility": "PUBLIC",
       "deadline": "2027-01-15",
@@ -355,7 +352,6 @@ export const AI_SAMPLE_OUTPUT_EN = `{
   ],
   "resources": [
     {
-      "nameZh": "算力集群 #01 (8卡 H100)",
       "nameEn": "DGX H100 Cluster 01",
       "type": "GPU",
       "specs": "8x NVIDIA H100 80GB SXM5"
@@ -483,6 +479,7 @@ interface RawMemberInput {
   accessRole?: string;
   titleZh?: string;
   titleEn?: string;
+  title?: string;
   email?: string;
   avatar?: string;
 }
@@ -539,12 +536,19 @@ export function parseAIDocumentText(
   rawText: string,
   existingMembers: LabMember[] = [],
   existingProjects: ProjectItem[] = [],
-  stages: StageConfig[] = []
+  stages: StageConfig[] = [],
+  language: Language = 'zh'
 ): { success: boolean; data?: ParsedAIData; error?: string } {
+  const isZh = language === 'zh';
   try {
     const jsonStr = extractJsonFromText(rawText);
     if (!jsonStr) {
-      return { success: false, error: '未能检测到有效的 JSON 数据块，请检查 AI 输出格式。' };
+      return {
+        success: false,
+        error: isZh
+          ? '未能检测到有效的 JSON 数据块，请检查 AI 输出格式。'
+          : 'No valid JSON block detected. Please check the AI output format.',
+      };
     }
 
     const parsed = JSON.parse(jsonStr) as RawPayload;
@@ -558,9 +562,10 @@ export function parseAIDocumentText(
 
     const rawMembers = Array.isArray(parsed.members) ? parsed.members : [];
     rawMembers.forEach((rm) => {
-      const nameZh = rm.nameZh || rm.name || rm.nameEn || '新成员';
-      const nameEn = rm.nameEn || rm.nameZh || rm.name || 'Member';
-      const { role, accessRole } = normalizeMemberRole(rm.role, rm.titleZh);
+      const nameZh = rm.nameZh || rm.name || rm.nameEn || (isZh ? '新成员' : 'New Member');
+      const nameEn = rm.nameEn || rm.name || rm.nameZh || 'Member';
+      const titleHint = rm.titleEn || rm.title || rm.titleZh;
+      const { role, accessRole } = normalizeMemberRole(rm.role, titleHint);
 
       const member: ParsedMember = {
         id: rm.id || makeMemberId(nameEn),
@@ -568,9 +573,9 @@ export function parseAIDocumentText(
         nameEn,
         role: rm.role && ['PI', 'POSTDOC', 'SENIOR_PHD', 'PHD_CANDIDATE', 'RA', 'VISITING_SCHOLAR'].includes(rm.role) ? (rm.role as LabMember['role']) : role,
         accessRole: rm.accessRole && ['ADMIN_PI', 'SYS_ADMIN', 'PROJECT_LEAD', 'STUDENT_RA', 'AUDITOR_GUEST'].includes(rm.accessRole) ? (rm.accessRole as AccessRole) : accessRole,
-        titleZh: rm.titleZh || `${nameZh} 的研究方向`,
-        titleEn: rm.titleEn || nameEn,
-        email: rm.email || `${nameEn.toLowerCase().replace(/\s+/g, '.')}@lab.edu.cn`,
+        titleZh: rm.titleZh || rm.title || rm.titleEn || nameZh,
+        titleEn: rm.titleEn || rm.title || rm.titleZh || nameEn,
+        email: rm.email || `${nameEn.toLowerCase().replace(/\s+/g, '.')}@labflow.edu`,
         avatar: rm.avatar || generateInitialsAvatar(nameEn, nameZh),
       };
       membersMap.set(nameZh, member);
@@ -582,7 +587,7 @@ export function parseAIDocumentText(
     const rawProjects = Array.isArray(parsed.projects) ? parsed.projects : [];
 
     rawProjects.forEach((rp, idx) => {
-      const title = rp.title || `学术课题 #${idx + 1}`;
+      const title = rp.title || (isZh ? `学术课题 #${idx + 1}` : `Research Project #${idx + 1}`);
       const leadName = rp.leadAuthorName || rp.lead || '';
       let leadMember = membersMap.get(leadName);
 
@@ -612,7 +617,11 @@ export function parseAIDocumentText(
         targetVenue: rp.targetVenue || rp.venue || 'Top Conference',
         tag: rp.tag || rp.targetVenue || 'LAB-AI',
         abstract: rp.abstract || rp.description || '',
-        leadAuthorName: leadMember ? leadMember.nameZh : (leadName || '未指定'),
+        leadAuthorName: leadMember
+          ? isZh
+            ? leadMember.nameZh
+            : leadMember.nameEn
+          : leadName || (isZh ? '未指定' : 'Unassigned'),
         leadAuthorId: leadMember ? leadMember.id : '',
         status: normalizeStage(rp.status, stages),
       };
@@ -628,7 +637,7 @@ export function parseAIDocumentText(
     const defaultDDL = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0];
 
     rawTasks.forEach((rt, idx) => {
-      const title = rt.title || `研究任务 #${idx + 1}`;
+      const title = rt.title || (isZh ? `研究任务 #${idx + 1}` : `Research Task #${idx + 1}`);
       const projName = rt.projectName || rt.project || '';
       let project = projectsMap.get(projName);
 
@@ -698,9 +707,13 @@ export function parseAIDocumentText(
         title,
         description: rt.description || '',
         stage: normalizeStage(rt.stage, stages),
-        projectName: project ? project.title : (projName || '通用学术任务'),
+        projectName: project ? project.title : projName || (isZh ? '通用学术任务' : 'General Research'),
         projectId: project ? project.id : 'proj-general',
-        leadAuthorName: author ? author.nameZh : (authorName || '待认领'),
+        leadAuthorName: author
+          ? isZh
+            ? author.nameZh
+            : author.nameEn
+          : authorName || (isZh ? '待认领' : 'Unassigned'),
         leadAuthorId: author ? author.id : (existingMembers[0]?.id || 'member-pi'),
         priority,
         visibility,
@@ -715,10 +728,10 @@ export function parseAIDocumentText(
     rawResources.forEach((rr, idx) => {
       parsedResources.push({
         id: rr.id || `res-ai-${idx + 1}`,
-        nameZh: rr.nameZh || rr.name || `计算资源 #${idx + 1}`,
-        nameEn: rr.nameEn || rr.nameZh || `Resource #${idx + 1}`,
+        nameZh: rr.nameZh || rr.name || rr.nameEn || (isZh ? `计算资源 #${idx + 1}` : `Resource #${idx + 1}`),
+        nameEn: rr.nameEn || rr.name || rr.nameZh || `Resource #${idx + 1}`,
         type: rr.type && ['GPU', 'SERVER', 'CLUSTER', 'EQUIPMENT'].includes(rr.type) ? (rr.type as LabResource['type']) : 'GPU',
-        specs: rr.specs || '标准配置',
+        specs: rr.specs || (isZh ? '标准配置' : 'Standard Specs'),
         status: 'IDLE',
       });
     });
@@ -740,7 +753,9 @@ export function parseAIDocumentText(
     const errorMsg = err instanceof Error ? err.message : String(err);
     return {
       success: false,
-      error: `JSON 解析异常: ${errorMsg}。请确保输出包含严格的闭合括号与双引号。`,
+      error: isZh
+        ? `JSON 解析异常: ${errorMsg}。请确保输出包含严格的闭合括号与双引号。`
+        : `Invalid JSON: ${errorMsg}. Ensure braces and quotes are properly closed.`,
     };
   }
 }

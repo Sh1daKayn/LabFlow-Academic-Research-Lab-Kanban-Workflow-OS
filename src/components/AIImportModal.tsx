@@ -71,7 +71,7 @@ export const AIImportModal: React.FC = () => {
     setInputRawText(sampleOutput);
     setParseError(null);
     // Auto-parse sample
-    const res = parseAIDocumentText(sampleOutput, members, projects, stages);
+    const res = parseAIDocumentText(sampleOutput, members, projects, stages, language);
     if (res.success && res.data) {
       setParsedResult(res.data);
       addToast(language === 'zh' ? '已填入典型科研团队示例并完成解析' : 'Loaded and parsed sample data', '', 'info');
@@ -84,7 +84,7 @@ export const AIImportModal: React.FC = () => {
       return;
     }
 
-    const res = parseAIDocumentText(inputRawText, members, projects, stages);
+    const res = parseAIDocumentText(inputRawText, members, projects, stages, language);
     if (res.success && res.data) {
       setParsedResult(res.data);
       setParseError(null);
@@ -108,7 +108,7 @@ export const AIImportModal: React.FC = () => {
       const content = event.target?.result as string;
       if (content) {
         setInputRawText(content);
-        const res = parseAIDocumentText(content, members, projects, stages);
+        const res = parseAIDocumentText(content, members, projects, stages, language);
         if (res.success && res.data) {
           setParsedResult(res.data);
           setParseError(null);
@@ -385,7 +385,7 @@ export const AIImportModal: React.FC = () => {
                         : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
-                    全部识别项
+                    {language === 'zh' ? '全部识别项' : 'All Extracted'}
                   </button>
                   <button
                     onClick={() => setActivePreviewTab('tasks')}
@@ -395,7 +395,7 @@ export const AIImportModal: React.FC = () => {
                         : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
-                    推进任务 ({parsedResult.tasks.length})
+                    {language === 'zh' ? '推进任务' : 'Tasks'} ({parsedResult.tasks.length})
                   </button>
                   <button
                     onClick={() => setActivePreviewTab('projects')}
@@ -405,7 +405,7 @@ export const AIImportModal: React.FC = () => {
                         : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
-                    科研课题 ({parsedResult.projects.length})
+                    {language === 'zh' ? '科研课题' : 'Projects'} ({parsedResult.projects.length})
                   </button>
                   <button
                     onClick={() => setActivePreviewTab('members')}
@@ -415,7 +415,7 @@ export const AIImportModal: React.FC = () => {
                         : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
-                    人员名单 ({parsedResult.members.length})
+                    {language === 'zh' ? '人员名单' : 'Members'} ({parsedResult.members.length})
                   </button>
                 </div>
 
@@ -472,14 +472,18 @@ export const AIImportModal: React.FC = () => {
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {mem.nameZh}
+                            {language === 'zh' ? mem.nameZh : mem.nameEn}
                           </span>
-                          <span className="text-slate-400 font-mono">({mem.nameEn})</span>
+                          {language === 'zh' && mem.nameEn && mem.nameEn !== mem.nameZh && (
+                            <span className="text-slate-400 font-mono">({mem.nameEn})</span>
+                          )}
                           <span className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-700 dark:text-purple-300 text-[10px]">
                             {mem.role}
                           </span>
                         </div>
-                        <span className="text-[10px] text-slate-500">{mem.titleZh}</span>
+                        <span className="text-[10px] text-slate-500">
+                          {language === 'zh' ? mem.titleZh : mem.titleEn}
+                        </span>
                       </div>
                     ))}
                 </div>

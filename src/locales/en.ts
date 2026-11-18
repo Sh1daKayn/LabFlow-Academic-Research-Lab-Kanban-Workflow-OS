@@ -5,7 +5,7 @@ export const en = {
   // View modes
   kanban: 'Tasks',
   gantt: 'Timeline',
-  architecture: 'Categories',
+  architecture: 'Projects',
   todos: 'Weekly Todos',
   requests: 'Requests',
   meeting: 'Meeting',
@@ -13,10 +13,10 @@ export const en = {
   membersManager: 'Members',
 
   // Top action buttons
-  onlyBlockers: 'Only Blockers',
-  reverseDDL: 'Reverse DDL',
+  onlyBlockers: 'Blockers',
+  reverseDDL: 'DDL Planner',
   newTask: 'New Task',
-  featureGuide: 'Features',
+  featureGuide: 'Guide',
   resetDemo: 'Reset Demo',
   toggleTheme: 'Toggle Theme',
   switchLang: '中文',
@@ -140,13 +140,14 @@ export const en = {
   confirmDelete: 'Are you sure you want to delete this task?',
 
   // Settings Center
-  settingsCenter: 'System Settings',
-  settingsCenterDesc: 'Unified configuration center for personnel, compute, stages, and theme styling.',
+  settingsCenter: 'Settings',
+  settingsCenterDesc: 'Configure members, research stages, notifications, and workspace appearance.',
   tabAppearance: 'Appearance & Themes',
   tabMembers: 'Lab Members',
   tabResources: 'Compute & Facilities',
   tabStages: 'Academic Stages',
   tabVenues: 'Target Venues',
+  tabNotifications: 'Notifications & Alerts',
   tabBackup: 'Data & Backup',
   themeMode: 'Display Mode',
   themeDark: 'Dark Mode',
@@ -251,9 +252,9 @@ export const en = {
   saveMemberChanges: 'Save Member',
 
   // Project Categories, Word Cloud & Architecture Tree
-  projectCategoriesTitle: 'Project Categories, Cloud & Architecture Tree',
+  projectCategoriesTitle: 'Lab Projects, Themes & Semester Lineage',
   projectCategoriesDesc:
-    'Group research papers into thematic directions, inspect team headcount per category, and explore keyword clouds and hierarchical architecture trees.',
+    'Organize projects by cluster, trace cross-term handoffs, or switch to the Semester Lineage graph.',
   manageProjectCategories: 'New / Edit Project',
   projectCategoryLabel: 'Research Category',
   uncategorized: 'General Research',
@@ -288,8 +289,8 @@ export const en = {
   workCategoryLabel: 'Work Type',
   catAll: 'All',
   catPaper: 'Paper',
-  catVertical: 'Vertical Project',
-  catHorizontal: 'Enterprise Project',
+  catVertical: 'Grant / Funded',
+  catHorizontal: 'Industry / Outreach',
   partnerOrgLabel: 'Partner / Sponsor',
   milestoneNodeLabel: 'Milestone Requirement',
   sendRequestBtn: 'New 1-on-1 Request',

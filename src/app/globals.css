@@ -113,9 +113,9 @@ html.dark header {
   border-color: var(--lab-border-subtle) !important;
 }
 
-/* Modals & Dialog Backdrop (tinted translucent blur) */
-html.dark [class*="fixed"][class*="inset-0"][class*="bg-slate-950"],
-html.dark .fixed.inset-0[class*="bg-slate-950"] {
+/* Modals & Dialog Backdrop (tinted translucent blur; exclude interactive tour overlay) */
+html.dark [class*="fixed"][class*="inset-0"][class*="bg-slate-950"]:not([data-tour-root]):not([data-tour-layer]),
+html.dark .fixed.inset-0[class*="bg-slate-950"]:not([data-tour-root]):not([data-tour-layer]) {
   background-color: var(--lab-bg-backdrop) !important;
   backdrop-filter: blur(8px) !important;
 }
@@ -187,17 +187,17 @@ html.light header {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
-/* 1. Modals & Dialog Backdrop */
-html.light [class*="fixed"][class*="inset-0"],
-html.light .fixed.inset-0 {
+/* 1. Modals & Dialog Backdrop (exclude onboarding tour so screen behind stays unobstructed) */
+html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]),
+html.light .fixed.inset-0:not([data-tour-root]):not([data-tour-layer]) {
   background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(6px) !important;
 }
 
 /* 2. Modal Windows & Dialog Cards (Crisp pure white body) */
-html.light [class*="fixed"][class*="inset-0"] > div,
-html.light [class*="fixed"][class*="inset-0"] [class*="rounded-2xl"],
-html.light [class*="fixed"][class*="inset-0"] [class*="rounded-xl"] {
+html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) > div:not([data-tour-layer]),
+html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) [class*="rounded-2xl"]:not([data-tour-layer]),
+html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) [class*="rounded-xl"]:not([data-tour-layer]) {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: var(--lab-border-subtle-light) !important;

@@ -42,12 +42,21 @@ import { getPrismaClient, isPostgresConfigured } from '@/lib/prisma';
 import { generateInitialsAvatar } from '@/utils/avatar';
 import { sanitizeWeeklyTodos } from '@/utils/weeklyTodos';
 import { sanitizeDirectRequests } from '@/utils/directRequests';
+import {
+  sanitizeProjectHandoffs,
+  sanitizeProjectInheritanceLinks,
+  sanitizeProjects,
+} from '@/utils/projectAnalytics';
 import { normalizeWorkCategory } from '@/utils/workCategory';
 import { isValidViewMode, sanitizePreferredViews } from '@/utils/viewPreferences';
 import {
   DEFAULT_CHECKLIST_TEMPLATES,
   sanitizeChecklistTemplates,
 } from '@/utils/templates';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  sanitizeNotificationSettings,
+} from '@/utils/notificationPayloads';
 
 export interface PersistedWorkspaceRecord {
   data: LabWorkspaceData;
@@ -95,6 +104,7 @@ export function getDefaultWorkspaceData(): LabWorkspaceData {
     directRequests: createInitialDirectRequests(),
     allowPeerAcceptance: false,
     checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
+    notificationSettings: structuredClone(DEFAULT_NOTIFICATION_SETTINGS),
   });
 }
 
@@ -113,7 +123,7 @@ export function sanitizeWorkspaceData(input: Partial<LabWorkspaceData>): LabWork
   return {
     stages: Array.isArray(input.stages) && input.stages.length > 0 ? input.stages : defaults.stages,
     tasks: Array.isArray(input.tasks) ? input.tasks : [],
-    projects: Array.isArray(input.projects) ? input.projects : [],
+    projects: Array.isArray(input.projects) ? sanitizeProjects(input.projects) : [],
     members: Array.isArray(input.members) ? input.members : defaults.members,
     venues: Array.isArray(input.venues) ? input.venues : defaults.venues,
     resources: Array.isArray(input.resources) ? input.resources : [],
@@ -121,6 +131,7 @@ export function sanitizeWorkspaceData(input: Partial<LabWorkspaceData>): LabWork
     directRequests: sanitizeDirectRequests(input.directRequests),
     allowPeerAcceptance: Boolean(input.allowPeerAcceptance),
     checklistTemplates: sanitizeChecklistTemplates(input.checklistTemplates),
+    notificationSettings: sanitizeNotificationSettings(input.notificationSettings),
   };
 }
 
@@ -246,6 +257,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         checklistTemplates: sanitizeChecklistTemplates(
           data.checklistTemplates
         ) as unknown as Prisma.InputJsonValue,
+        notificationSettings: sanitizeNotificationSettings(
+          data.notificationSettings
+        ) as unknown as Prisma.InputJsonValue,
       },
       update: {
         adminPasswordHash,
@@ -258,6 +272,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         ) as unknown as Prisma.InputJsonValue,
         checklistTemplates: sanitizeChecklistTemplates(
           data.checklistTemplates
+        ) as unknown as Prisma.InputJsonValue,
+        notificationSettings: sanitizeNotificationSettings(
+          data.notificationSettings
         ) as unknown as Prisma.InputJsonValue,
       },
     });
@@ -369,6 +386,14 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             id: p.id,
             title: p.title,
             abstract: p.abstract || null,
+            researchQuestion: p.researchQuestion || null,
+            sharedDataset: p.sharedDataset || null,
+            handoffHistory: p.handoffHistory
+              ? (sanitizeProjectHandoffs(p.handoffHistory) as unknown as Prisma.InputJsonValue)
+              : Prisma.DbNull,
+            inheritedFrom: p.inheritedFrom
+              ? (sanitizeProjectInheritanceLinks(p.inheritedFrom, p.id) as unknown as Prisma.InputJsonValue)
+              : Prisma.DbNull,
             workCategory: normalizeWorkCategory(p.workCategory),
             partnerOrg: p.partnerOrg || null,
             milestoneNode: p.milestoneNode || null,
@@ -525,32 +550,40 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     milestones: (Array.isArray(v.milestones) ? v.milestones : []) as unknown as MilestoneTemplate[],
   }));
 
-  const projects: ProjectItem[] = dbProjects.map((p) => ({
-    id: p.id,
-    title: p.title,
-    abstract: p.abstract || undefined,
-    workCategory: normalizeWorkCategory(p.workCategory),
-    partnerOrg: p.partnerOrg || undefined,
-    milestoneNode: p.milestoneNode || undefined,
-    category: p.category || undefined,
-    categoryColor: p.categoryColor || undefined,
-    memberIds: Array.isArray(p.memberIds) ? (p.memberIds as string[]) : undefined,
-    targetVenue: p.targetVenue,
-    tag: p.tag,
-    submissionDeadline: p.submissionDeadline
-      ? p.submissionDeadline.toISOString().split('T')[0]
-      : undefined,
-    status: p.status,
-    leadAuthorId: p.leadAuthorId,
-    piId: p.piId,
-    visibility: p.visibility as VisibilityLevel,
-    assets: {
-      overleaf: p.overleafUrl || undefined,
-      github: p.githubUrl || undefined,
-      dataset: p.datasetUrl || undefined,
-      zotero: p.zoteroUrl || undefined,
-    },
-  }));
+  const projects: ProjectItem[] = dbProjects.map((p) => {
+    const cleanHandoffs = sanitizeProjectHandoffs(p.handoffHistory);
+    const cleanInherited = sanitizeProjectInheritanceLinks(p.inheritedFrom, p.id);
+    return {
+      id: p.id,
+      title: p.title,
+      abstract: p.abstract || undefined,
+      researchQuestion: p.researchQuestion || undefined,
+      sharedDataset: p.sharedDataset || undefined,
+      handoffHistory: cleanHandoffs.length > 0 ? cleanHandoffs : undefined,
+      inheritedFrom: cleanInherited.length > 0 ? cleanInherited : undefined,
+      workCategory: normalizeWorkCategory(p.workCategory),
+      partnerOrg: p.partnerOrg || undefined,
+      milestoneNode: p.milestoneNode || undefined,
+      category: p.category || undefined,
+      categoryColor: p.categoryColor || undefined,
+      memberIds: Array.isArray(p.memberIds) ? (p.memberIds as string[]) : undefined,
+      targetVenue: p.targetVenue,
+      tag: p.tag,
+      submissionDeadline: p.submissionDeadline
+        ? p.submissionDeadline.toISOString().split('T')[0]
+        : undefined,
+      status: p.status,
+      leadAuthorId: p.leadAuthorId,
+      piId: p.piId,
+      visibility: p.visibility as VisibilityLevel,
+      assets: {
+        overleaf: p.overleafUrl || undefined,
+        github: p.githubUrl || undefined,
+        dataset: p.datasetUrl || undefined,
+        zotero: p.zoteroUrl || undefined,
+      },
+    };
+  });
 
   const tasks: TaskItem[] = dbTasks.map((t) => ({
     id: t.id,
@@ -626,6 +659,7 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
       directRequests: sanitizeDirectRequests(config.directRequests),
       allowPeerAcceptance: Boolean(config.allowPeerAcceptance),
       checklistTemplates: sanitizeChecklistTemplates(config.checklistTemplates),
+      notificationSettings: sanitizeNotificationSettings(config.notificationSettings),
     },
     adminPasswordHash: config.adminPasswordHash,
     sessionSecret: config.sessionSecret,

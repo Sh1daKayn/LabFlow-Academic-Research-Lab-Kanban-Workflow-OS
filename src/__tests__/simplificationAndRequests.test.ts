@@ -26,6 +26,18 @@ import {
   resolveMemberDefaultView,
 } from '@/utils/viewPreferences';
 import { getMemberDisplayName } from '@/utils/avatar';
+import {
+  getRoleDefaultTitles,
+  localizeWorkspaceCollections,
+  resolvePreferredLanguage,
+} from '@/utils/i18n';
+import {
+  createInitialDirectRequests,
+  createInitialWeeklyTodos,
+  INITIAL_PROJECTS,
+  INITIAL_TASKS,
+} from '@/data/mockData';
+import { DEFAULT_CHECKLIST_TEMPLATES } from '@/utils/templates';
 import { DirectRequest, ProjectItem, TaskItem } from '@/types';
 
 describe('Personal PIN hashing & verification (HTTP LAN safe)', () => {
@@ -198,5 +210,80 @@ describe('Member display name formatting (username-only labels)', () => {
     expect(getMemberDisplayName({ nameZh: '林晓', nameEn: '' }, 'en', 'm-2')).toBe('林晓');
     expect(getMemberDisplayName(undefined, 'zh', 'm-3')).toBe('m-3');
     expect(getMemberDisplayName({ nameZh: '', nameEn: '' }, 'zh', 'm-4')).toBe('m-4');
+  });
+});
+
+describe('US lab English localization & automatic browser locale detection', () => {
+  it('detects browser locale automatically unless saved preference or URL param overrides it', () => {
+    expect(
+      resolvePreferredLanguage({
+        savedLang: null,
+        search: '',
+        browserLanguages: ['en-US', 'en'],
+      })
+    ).toBe('en');
+
+    expect(
+      resolvePreferredLanguage({
+        savedLang: null,
+        search: '',
+        browserLanguages: ['zh-CN', 'en-US'],
+      })
+    ).toBe('zh');
+
+    expect(
+      resolvePreferredLanguage({
+        savedLang: 'zh',
+        search: '',
+        browserLanguages: ['en-US'],
+      })
+    ).toBe('zh');
+
+    expect(
+      resolvePreferredLanguage({
+        savedLang: 'zh',
+        search: '?lang=en',
+        browserLanguages: ['zh-CN'],
+      })
+    ).toBe('en');
+  });
+
+  it('provides clean default academic titles without Chinese leakage', () => {
+    const phd = getRoleDefaultTitles('PHD_CANDIDATE');
+    expect(phd.titleEn).toBe('PhD Candidate');
+    expect(phd.titleEn).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(getRoleDefaultTitles('RA').titleEn).toBe('Research Assistant / MS');
+  });
+
+  it('localizes all built-in demo workspace records cleanly to English with zero Han characters', () => {
+    const localized = localizeWorkspaceCollections(
+      {
+        projects: INITIAL_PROJECTS,
+        tasks: INITIAL_TASKS,
+        weeklyTodos: createInitialWeeklyTodos('2026-W46'),
+        directRequests: createInitialDirectRequests(),
+        checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
+      },
+      'en'
+    );
+
+    expect(JSON.stringify(localized.projects)).not.toMatch(/[\u4e00-\u9fff]/);
+    const taskDisplayPayloads = localized.tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      partnerOrg: task.partnerOrg,
+      milestoneNode: task.milestoneNode,
+      projectTag: task.projectTag,
+      targetVenue: task.targetVenue,
+      tags: task.tags,
+      checklist: task.checklist,
+      leadNameEn: task.leadAuthor.nameEn,
+      piNameEn: task.pi.nameEn,
+    }));
+    expect(JSON.stringify(taskDisplayPayloads)).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(JSON.stringify(localized.weeklyTodos)).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(JSON.stringify(localized.directRequests)).not.toMatch(/[\u4e00-\u9fff]/);
+    expect(JSON.stringify(localized.checklistTemplates)).not.toMatch(/[\u4e00-\u9fff]/);
   });
 });

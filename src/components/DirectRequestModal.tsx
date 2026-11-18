@@ -24,6 +24,7 @@ export const DirectRequestModal: React.FC = () => {
     currentUserId,
     language,
     sendDirectRequest,
+    notificationSettings,
   } = useLabFlow();
 
   const isZh = language === 'zh';
@@ -47,6 +48,7 @@ export const DirectRequestModal: React.FC = () => {
   const [recipientId, setRecipientId] = useState(defaultRecipientId);
   const [kind, setKind] = useState<DirectRequestKind>('PROJECT_SYNC');
   const [visibility, setVisibility] = useState<RequestVisibility>('PRIVATE');
+  const [notifyChannel, setNotifyChannel] = useState<boolean>(true);
   const [workCategory, setWorkCategory] = useState<WorkCategory | ''>('');
   const [projectId, setProjectId] = useState('');
   const [taskId, setTaskId] = useState('');
@@ -60,6 +62,7 @@ export const DirectRequestModal: React.FC = () => {
     setRecipientId(defaultRecipientId);
     setKind(requestModalSeed?.kind || 'PROJECT_SYNC');
     setVisibility('PRIVATE');
+    setNotifyChannel(true);
     setProjectId(requestModalSeed?.projectId || '');
     setTaskId(requestModalSeed?.taskId || '');
     setTitle(requestModalSeed?.title || '');
@@ -86,6 +89,11 @@ export const DirectRequestModal: React.FC = () => {
     ? tasks.filter((t) => t.projectId === projectId)
     : tasks;
 
+  const externalChannelsActive =
+    notificationSettings.enabled &&
+    ((notificationSettings.teams.enabled && notificationSettings.teams.notifyOnPublicRequest) ||
+      (notificationSettings.slack.enabled && notificationSettings.slack.notifyOnPublicRequest));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipientId || !title.trim()) return;
@@ -106,6 +114,7 @@ export const DirectRequestModal: React.FC = () => {
       projectId: projectId || undefined,
       taskId: taskId || undefined,
       dueDate: dueDate || undefined,
+      notifyChannel: visibility === 'PUBLIC' && notifyChannel,
     });
     setIsRequestModalOpen(false);
   };
@@ -357,6 +366,35 @@ export const DirectRequestModal: React.FC = () => {
               </div>
             )}
           </div>
+
+          {externalChannelsActive && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 px-3 py-2 text-[11px]">
+              {visibility === 'PUBLIC' ? (
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={notifyChannel}
+                    onChange={(e) => setNotifyChannel(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>
+                    {isZh
+                      ? '同时推送卡片通知到已启用的 Teams / Slack 群频道'
+                      : 'Also post card alert to enabled Teams / Slack channel'}
+                  </span>
+                </label>
+              ) : (
+                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <Lock className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
+                  <span>
+                    {isZh
+                      ? '当前为「隐私」沟通，不会外发到 Teams/Slack 公共频道（仅站内与桌面弹窗提醒对方）'
+                      : 'Private 1-on-1 message will NOT broadcast to public Teams/Slack channels.'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <button

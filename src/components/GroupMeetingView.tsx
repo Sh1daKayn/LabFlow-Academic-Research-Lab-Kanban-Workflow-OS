@@ -419,7 +419,7 @@ export const GroupMeetingView: React.FC = () => {
                       {t.projectTag}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-400/40 dark:border-red-500/40">
-                      {catLabel || '卡点'}
+                      {catLabel || (language === 'zh' ? '卡点' : 'Blocker')}
                     </span>
                   </div>
 

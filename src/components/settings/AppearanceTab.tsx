@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import {
   AccentColor,
@@ -15,7 +15,7 @@ import {
   ENGLISH_FONT_PRESETS,
   FontPresetMeta,
 } from '@/utils/theme';
-import { Check, Moon, Palette, Pipette, RotateCcw, Sun, Type } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Moon, Palette, Pipette, RotateCcw, Sun, Type } from 'lucide-react';
 
 const ACCENT_OPTIONS: { id: AccentColor; nameZh: string; nameEn: string; color: string }[] = [
   { id: 'purdue', nameZh: '黑金', nameEn: 'Black Gold', color: '#C28E0E' },
@@ -191,9 +191,13 @@ export const AppearanceTab: React.FC = () => {
     chineseCustomFont,
     setChineseCustomFont,
     resetFonts,
+    simpleMode,
+    setSimpleMode,
     language,
     t,
   } = useLabFlow();
+
+  const [showCjkFontsInEn, setShowCjkFontsInEn] = useState(false);
 
   const liveFontFamily = buildBilingualFontFamily(
     englishFont,
@@ -205,6 +209,51 @@ export const AppearanceTab: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       <div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">
+          {language === 'zh' ? '界面简洁度与信息密度' : 'Workspace Density'}
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+          <button
+            type="button"
+            onClick={() => setSimpleMode(true)}
+            className={`p-3.5 rounded-xl border text-left transition-all ${
+              simpleMode
+                ? 'bg-indigo-50/50 dark:bg-indigo-950/25 border-indigo-600 ring-2 ring-indigo-500/30'
+                : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+            }`}
+          >
+            <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              {language === 'zh' ? '简洁日常模式（推荐）' : 'Simple View (Recommended)'}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {language === 'zh'
+                ? '隐藏卡片冗余外链徽章与次级筛选栏，聚焦标题、DDL 与日常推进'
+                : 'Clean 3-row cards and streamlined toolbars for daily lab work'}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSimpleMode(false)}
+            className={`p-3.5 rounded-xl border text-left transition-all ${
+              !simpleMode
+                ? 'bg-indigo-50/50 dark:bg-indigo-950/25 border-indigo-600 ring-2 ring-indigo-500/30'
+                : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+            }`}
+          >
+            <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              {language === 'zh' ? '完整统筹模式' : 'Full Coordinator View'}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {language === 'zh'
+                ? '直接展开卡片外链（Overleaf/GitHub）、逻辑树标签与全部高级过滤条'
+                : 'Expose card asset links, logic-tree pills, and all filter bars inline'}
+            </p>
+          </button>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">
           {t.themeMode}
         </h3>
@@ -223,7 +272,9 @@ export const AppearanceTab: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-bold block">{t.themeLight}</span>
-              <span className="text-[11px] text-slate-500">Notion 优雅白昼基调</span>
+              <span className="text-[11px] text-slate-500">
+                {language === 'zh' ? 'Notion 优雅白昼基调' : 'Crisp editorial daylight'}
+              </span>
             </div>
           </button>
 
@@ -241,7 +292,9 @@ export const AppearanceTab: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-bold block">{t.themeDark}</span>
-              <span className="text-[11px] text-slate-500">Linear 极客沉浸深色</span>
+              <span className="text-[11px] text-slate-500">
+                {language === 'zh' ? 'Linear 极客沉浸深色' : 'Focused dark workspace'}
+              </span>
             </div>
           </button>
         </div>
@@ -386,7 +439,9 @@ export const AppearanceTab: React.FC = () => {
               {t.fontSize}
             </h3>
             <span className="text-[11px] text-slate-500" style={{ fontFamily: liveFontFamily }}>
-              AaBb 123 · 中文排版实时预览
+              {language === 'zh'
+                ? 'AaBb 123 · 中文排版实时预览'
+                : 'AaBb 123 · Live Typography Preview'}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2.5 max-w-md">
@@ -452,23 +507,56 @@ export const AppearanceTab: React.FC = () => {
             sampleText="Paper 2027"
           />
 
-          <FontFamilyPicker<Exclude<ChineseFontPreset, 'custom'>>
-            title={t.chineseFontLabel}
-            language={language}
-            presets={CHINESE_FONT_PRESETS}
-            selectedPreset={chineseFont}
-            onSelectPreset={setChineseFont}
-            customValue={chineseCustomFont}
-            onChangeCustom={setChineseCustomFont}
-            customLabel={t.customFontOption}
-            customPlaceholder={t.customFontPlaceholderZh}
-            sampleText="科研看板"
-          />
+          {language === 'zh' ? (
+            <FontFamilyPicker<Exclude<ChineseFontPreset, 'custom'>>
+              title={t.chineseFontLabel}
+              language={language}
+              presets={CHINESE_FONT_PRESETS}
+              selectedPreset={chineseFont}
+              onSelectPreset={setChineseFont}
+              customValue={chineseCustomFont}
+              onChangeCustom={setChineseCustomFont}
+              customLabel={t.customFontOption}
+              customPlaceholder={t.customFontPlaceholderZh}
+              sampleText="科研看板"
+            />
+          ) : (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowCjkFontsInEn((v) => !v)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors"
+              >
+                <span>Optional CJK Font Presets (Chinese / East Asian)</span>
+                {showCjkFontsInEn ? (
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                )}
+              </button>
+              {showCjkFontsInEn && (
+                <div className="p-3 border-t border-slate-200 dark:border-slate-800">
+                  <FontFamilyPicker<Exclude<ChineseFontPreset, 'custom'>>
+                    title={t.chineseFontLabel}
+                    language={language}
+                    presets={CHINESE_FONT_PRESETS}
+                    selectedPreset={chineseFont}
+                    onSelectPreset={setChineseFont}
+                    customValue={chineseCustomFont}
+                    onChangeCustom={setChineseCustomFont}
+                    customLabel={t.customFontOption}
+                    customPlaceholder={t.customFontPlaceholderZh}
+                    sampleText="CJK Sample"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {language === 'zh' ? '中英混排实时预览' : 'Live Bilingual Preview'}
+                {language === 'zh' ? '中英混排实时预览' : 'Live Typography Preview'}
               </span>
               <span className="text-[10px] font-mono text-slate-400 truncate max-w-[65%]">
                 {liveFontFamily}
@@ -478,7 +566,9 @@ export const AppearanceTab: React.FC = () => {
               className="text-sm text-slate-800 dark:text-slate-100 leading-relaxed"
               style={{ fontFamily: liveFontFamily }}
             >
-              NeurIPS 2027 · ADMM Multi-Agent 收敛性证明与实验基线冻结（T - 14 Days，P = 0.0014）。
+              {language === 'zh'
+                ? 'NeurIPS 2027 · ADMM Multi-Agent 收敛性证明与实验基线冻结（T - 14 Days，P = 0.0014）。'
+                : 'NeurIPS 2027 · Convergence Bounds for Inexact ADMM Multi-Agent Control (T - 14 Days, p = 0.0014).'}
             </p>
           </div>
         </div>

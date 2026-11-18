@@ -106,8 +106,9 @@ export const AccountGate: React.FC = () => {
 
     const trimmedZh = nameZh.trim();
     const trimmedEn = nameEn.trim();
-    if (!trimmedZh && !trimmedEn) {
-      setRegError(isZh ? '请输入你的姓名' : 'Please enter your name');
+    const resolvedPrimary = isZh ? trimmedZh || trimmedEn : trimmedEn || trimmedZh;
+    if (!resolvedPrimary) {
+      setRegError(isZh ? '请输入你的姓名' : 'Please enter your full name');
       return;
     }
     if (pin.trim().length < 4) {
@@ -127,8 +128,8 @@ export const AccountGate: React.FC = () => {
       : sanitizedViews[0];
 
     registerNewMember({
-      nameZh: trimmedZh || trimmedEn,
-      nameEn: trimmedEn || trimmedZh,
+      nameZh: isZh ? trimmedZh || trimmedEn : resolvedPrimary,
+      nameEn: isZh ? trimmedEn || trimmedZh : resolvedPrimary,
       role,
       email: email.trim(),
       pin: pin.trim(),
@@ -267,33 +268,49 @@ export const AccountGate: React.FC = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {isZh ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                    姓名 *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={nameZh}
+                    onChange={(e) => setNameZh(e.target.value)}
+                    placeholder="例如：张明"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                    英文名 / 拼音（可选）
+                  </label>
+                  <input
+                    type="text"
+                    value={nameEn}
+                    onChange={(e) => setNameEn(e.target.value)}
+                    placeholder="e.g. Ming Zhang"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+            ) : (
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                  {isZh ? '姓名 *' : 'Name (Chinese / Display) *'}
+                  Full Name *
                 </label>
                 <input
                   type="text"
                   required
-                  value={nameZh}
-                  onChange={(e) => setNameZh(e.target.value)}
-                  placeholder={isZh ? '例如：张明' : 'e.g. Zhang Ming'}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                  {isZh ? '英文名 / 拼音（可选）' : 'English Name (Optional)'}
-                </label>
-                <input
-                  type="text"
                   value={nameEn}
                   onChange={(e) => setNameEn(e.target.value)}
-                  placeholder="e.g. Ming Zhang"
+                  placeholder="e.g. Alex Rivera"
                   className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

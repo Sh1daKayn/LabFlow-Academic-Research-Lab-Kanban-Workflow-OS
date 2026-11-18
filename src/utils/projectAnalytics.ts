@@ -1,11 +1,16 @@
 import {
   LabMember,
   Language,
+  ProjectHandoffEntry,
+  ProjectHandoffStatus,
+  ProjectInheritanceLink,
+  ProjectInheritanceType,
   ProjectItem,
   StageConfig,
   TaskItem,
 } from '@/types';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
+import { normalizeWorkCategory } from '@/utils/workCategory';
 
 export const CATEGORY_COLOR_PALETTE = [
   '#6366f1', // indigo
@@ -72,6 +77,13 @@ export function getProjectMembers(
   if (Array.isArray(project.memberIds)) {
     for (const id of project.memberIds) {
       if (memberById.has(id)) ids.add(id);
+    }
+  }
+  if (Array.isArray(project.handoffHistory)) {
+    for (const h of project.handoffHistory) {
+      if (h.status !== 'HANDED_OFF' && h.memberId && memberById.has(h.memberId)) {
+        ids.add(h.memberId);
+      }
     }
   }
   if (memberById.has(project.leadAuthorId)) ids.add(project.leadAuthorId);
@@ -292,7 +304,10 @@ export function buildWordCloudTerms(
         if (venuePart.trim()) addTerm(venuePart.trim(), 3.2, 'venue', p.id);
       }
     }
-    for (const kw of tokenizeKeywords(p.title)) {
+    if (p.sharedDataset?.trim()) {
+      addTerm(p.sharedDataset.trim(), 3.6, 'project', p.id);
+    }
+    for (const kw of tokenizeKeywords(`${p.title} ${p.researchQuestion || ''}`)) {
       addTerm(kw, 2.0, 'keyword', p.id);
     }
   }
@@ -351,6 +366,129 @@ export function buildWordCloudTerms(
         color: palette[idx % palette.length],
         matchedProjectIds: Array.from(item.projectIds),
         matchedTaskIds: Array.from(item.taskIds),
+      };
+    });
+}
+
+const VALID_HANDOFF_STATUSES = new Set<ProjectHandoffStatus>([
+  'HANDED_OFF',
+  'ACTIVE',
+  'CO_LEAD',
+]);
+
+/**
+ * Normalizes cross-term project handoff history entries from storage or backup JSON.
+ */
+export function sanitizeProjectHandoffs(raw: unknown): ProjectHandoffEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const entries: ProjectHandoffEntry[] = [];
+
+  raw.forEach((item, idx) => {
+    if (!item || typeof item !== 'object') return;
+    const obj = item as Partial<ProjectHandoffEntry>;
+    const term = typeof obj.term === 'string' ? obj.term.trim() : '';
+    const memberName = typeof obj.memberName === 'string' ? obj.memberName.trim() : '';
+    if (!term && !memberName) return;
+
+    const status: ProjectHandoffStatus =
+      obj.status && VALID_HANDOFF_STATUSES.has(obj.status) ? obj.status : 'ACTIVE';
+
+    entries.push({
+      id: typeof obj.id === 'string' && obj.id.trim() ? obj.id.trim() : `ho-${idx + 1}`,
+      term: term || 'Current Term',
+      memberId:
+        typeof obj.memberId === 'string' && obj.memberId.trim() ? obj.memberId.trim() : undefined,
+      memberName: memberName || obj.memberId || 'Contributor',
+      roleLabel:
+        typeof obj.roleLabel === 'string' && obj.roleLabel.trim()
+          ? obj.roleLabel.trim()
+          : undefined,
+      phaseSummary:
+        typeof obj.phaseSummary === 'string' && obj.phaseSummary.trim()
+          ? obj.phaseSummary.trim()
+          : undefined,
+      status,
+    });
+  });
+
+  return entries;
+}
+
+const VALID_INHERITANCE_TYPES = new Set<ProjectInheritanceType>([
+  'CONTINUATION',
+  'SPINOFF',
+  'METHOD_OR_DATA',
+]);
+
+/**
+ * Normalizes project-to-project inheritance/spinoff references while stripping invalid or self-referential links.
+ */
+export function sanitizeProjectInheritanceLinks(
+  raw: unknown,
+  selfProjectId?: string
+): ProjectInheritanceLink[] {
+  if (!Array.isArray(raw)) return [];
+  const links: ProjectInheritanceLink[] = [];
+  const seen = new Set<string>();
+
+  raw.forEach((item, idx) => {
+    if (!item || typeof item !== 'object') return;
+    const obj = item as Partial<ProjectInheritanceLink>;
+    const parentProjectId =
+      typeof obj.parentProjectId === 'string' ? obj.parentProjectId.trim() : '';
+    if (!parentProjectId) return;
+    if (selfProjectId && parentProjectId === selfProjectId) return;
+
+    const relationType: ProjectInheritanceType =
+      obj.relationType && VALID_INHERITANCE_TYPES.has(obj.relationType)
+        ? obj.relationType
+        : 'CONTINUATION';
+
+    const fromTerm =
+      typeof obj.fromTerm === 'string' && obj.fromTerm.trim() ? obj.fromTerm.trim() : undefined;
+    const toTerm =
+      typeof obj.toTerm === 'string' && obj.toTerm.trim() ? obj.toTerm.trim() : undefined;
+    const dedupKey = `${parentProjectId}::${relationType}::${fromTerm || ''}::${toTerm || ''}`;
+    if (seen.has(dedupKey)) return;
+    seen.add(dedupKey);
+
+    links.push({
+      id: typeof obj.id === 'string' && obj.id.trim() ? obj.id.trim() : `inh-${idx + 1}`,
+      parentProjectId,
+      relationType,
+      fromTerm,
+      toTerm,
+      note: typeof obj.note === 'string' && obj.note.trim() ? obj.note.trim() : undefined,
+    });
+  });
+
+  return links;
+}
+
+/**
+ * Normalizes project items while preserving optional researchQuestion, sharedDataset,
+ * cross-term handoffHistory, and inheritedFrom lineage metadata.
+ */
+export function sanitizeProjects(raw: unknown): ProjectItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is ProjectItem => Boolean(item && typeof item === 'object'))
+    .map((p) => {
+      const cleanHandoffs = sanitizeProjectHandoffs(p.handoffHistory);
+      const cleanInherited = sanitizeProjectInheritanceLinks(p.inheritedFrom, p.id);
+      return {
+        ...p,
+        workCategory: normalizeWorkCategory(p.workCategory),
+        researchQuestion:
+          typeof p.researchQuestion === 'string' && p.researchQuestion.trim()
+            ? p.researchQuestion.trim()
+            : undefined,
+        sharedDataset:
+          typeof p.sharedDataset === 'string' && p.sharedDataset.trim()
+            ? p.sharedDataset.trim()
+            : undefined,
+        handoffHistory: cleanHandoffs.length > 0 ? cleanHandoffs : undefined,
+        inheritedFrom: cleanInherited.length > 0 ? cleanInherited : undefined,
       };
     });
 }

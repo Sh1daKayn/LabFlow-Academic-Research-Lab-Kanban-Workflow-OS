@@ -23,6 +23,8 @@ import {
   LabResource,
   LabWorkspaceData,
   Language,
+  NotificationEventKind,
+  NotificationSettings,
   Priority,
   ProjectItem,
   RequestVisibility,
@@ -51,9 +53,15 @@ import { en, LocaleTranslations } from '@/locales/en';
 import { zh } from '@/locales/zh';
 import { triggerConfetti } from '@/utils/confetti';
 import { ParsedAIData } from '@/utils/aiDocumentParser';
-import { generateInitialsAvatar } from '@/utils/avatar';
+import { generateInitialsAvatar, getMemberDisplayName } from '@/utils/avatar';
 import { canViewDirectRequest, sanitizeDirectRequests } from '@/utils/directRequests';
+import {
+  getRoleDefaultTitles,
+  localizeWorkspaceCollections,
+  resolvePreferredLanguage,
+} from '@/utils/i18n';
 import { hashMemberPin, hasMemberPin, verifyMemberPin } from '@/utils/pin';
+import { sanitizeProjects } from '@/utils/projectAnalytics';
 import { resolveMemberDefaultView, sanitizePreferredViews } from '@/utils/viewPreferences';
 import {
   applyTodoToggleToTasks,
@@ -67,6 +75,7 @@ import {
   buildChecklistItemsFromTemplate,
   buildWeeklyTodosFromTemplate,
   DEFAULT_CHECKLIST_TEMPLATES,
+  getDefaultChecklistTemplates,
   sanitizeChecklistTemplates,
 } from '@/utils/templates';
 import {
@@ -79,12 +88,18 @@ import {
   canViewTask,
   deriveAccessRole,
   getSafePI,
+  isTaskInPersonalScope,
 } from '@/utils/rbac';
 import {
   buildReverseDDLPipeline,
   moveTaskToStage,
   reorderStageTasks,
 } from '@/utils/taskOperations';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  sanitizeNotificationSettings,
+} from '@/utils/notificationPayloads';
+import { detectNewPersonalAlerts, PersonalDesktopAlert } from '@/utils/desktopNotifications';
 import { buildWeeklyDigestMarkdown } from '@/utils/weeklyDigest';
 import { ThemeContextType, ThemeProvider, useLabTheme } from '@/context/ThemeContext';
 import { ToastItem, UIContextType, UIProvider, useLabUI } from '@/context/UIContext';
@@ -149,6 +164,12 @@ interface LabDataContextType {
   pendingRequestsForMeCount: number;
   allowPeerAcceptance: boolean;
   checklistTemplates: ChecklistAcceptanceTemplate[];
+  notificationSettings: NotificationSettings;
+  updateNotificationSettings: (patch: Partial<NotificationSettings>) => void;
+  desktopNotificationsEnabled: boolean;
+  desktopNotificationPermission: NotificationPermission | 'unsupported';
+  toggleDesktopNotifications: () => Promise<boolean>;
+  sendTestDesktopNotification: () => void;
   addProject: (project: Omit<ProjectItem, 'id'> & { id?: string }) => ProjectItem;
   updateProject: (projectId: string, updates: Partial<ProjectItem>) => void;
   deleteProject: (projectId: string) => void;
@@ -164,6 +185,7 @@ interface LabDataContextType {
     projectId?: string;
     taskId?: string;
     dueDate?: string;
+    notifyChannel?: boolean;
   }) => DirectRequest | null;
   replyDirectRequest: (requestId: string, content: string) => void;
   updateDirectRequestStatus: (requestId: string, status: DirectRequestStatus) => void;
@@ -243,7 +265,8 @@ interface LabDataContextType {
   reportBlocker: (
     taskId: string,
     blocker: BlockerInfo,
-    requestVisibility?: RequestVisibility
+    requestVisibility?: RequestVisibility,
+    notifyChannel?: boolean
   ) => void;
   resolveBlocker: (taskId: string) => void;
   addTask: (task: Omit<TaskItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -307,6 +330,8 @@ const CACHE_KEYS = {
   DIRECT_REQUESTS: 'labflow_direct_requests_v3',
   ALLOW_PEER_ACCEPTANCE: 'labflow_peer_acceptance_v3',
   CHECKLIST_TEMPLATES: 'labflow_checklist_templates_v3',
+  NOTIFICATION_SETTINGS: 'labflow_notification_settings_v3',
+  DESKTOP_NOTIFY: 'labflow_desktop_notify_v1',
   PENDING_OFFLINE_SYNC: 'labflow_pending_offline_sync_v3',
   LEGACY_ADMIN_PASS: 'labflow_admin_password_v3',
   LEGACY_ADMIN_UNLOCKED: 'labflow_admin_unlocked_v3',
@@ -324,6 +349,7 @@ function serializeWorkspace(workspace: LabWorkspaceData): string {
     directRequests: sanitizeDirectRequests(workspace.directRequests),
     allowPeerAcceptance: Boolean(workspace.allowPeerAcceptance),
     checklistTemplates: sanitizeChecklistTemplates(workspace.checklistTemplates),
+    notificationSettings: sanitizeNotificationSettings(workspace.notificationSettings),
   });
 }
 
@@ -363,6 +389,13 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [checklistTemplates, setChecklistTemplates] = useState<ChecklistAcceptanceTemplate[]>(() =>
     structuredClone(DEFAULT_CHECKLIST_TEMPLATES)
   );
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() =>
+    structuredClone(DEFAULT_NOTIFICATION_SETTINGS)
+  );
+  const [desktopNotificationsEnabled, setDesktopNotificationsEnabled] = useState<boolean>(false);
+  const [desktopNotificationPermission, setDesktopNotificationPermission] = useState<
+    NotificationPermission | 'unsupported'
+  >('default');
 
   const [storageMode, setStorageMode] = useState<StorageMode>('local-file');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
@@ -383,6 +416,10 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const languageRef = useRef<Language>(language);
   languageRef.current = language;
+  const currentUserIdRef = useRef<string>(currentUserId);
+  currentUserIdRef.current = currentUserId;
+  const desktopNotifyRef = useRef<boolean>(desktopNotificationsEnabled);
+  desktopNotifyRef.current = desktopNotificationsEnabled;
   const latestWorkspaceRef = useRef<LabWorkspaceData>({
     stages: DEFAULT_STAGES,
     tasks: INITIAL_TASKS,
@@ -394,6 +431,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     directRequests: [],
     allowPeerAcceptance: false,
     checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
+    notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
   });
 
   latestWorkspaceRef.current = {
@@ -407,9 +445,17 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     directRequests,
     allowPeerAcceptance,
     checklistTemplates,
+    notificationSettings,
   };
 
   const t = language === 'zh' ? zh : en;
+
+  const handleSetLanguage = useCallback((nextLang: Language) => {
+    setLanguage(nextLang);
+    try {
+      localStorage.setItem(CACHE_KEYS.LANG, nextLang);
+    } catch {}
+  }, []);
 
   const applyServerSnapshot = useCallback((snapshot: LabWorkspaceData) => {
     lastSyncedSerializedRef.current = serializeWorkspace(snapshot);
@@ -423,6 +469,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setDirectRequests(sanitizeDirectRequests(snapshot.directRequests));
     setAllowPeerAcceptance(Boolean(snapshot.allowPeerAcceptance));
     setChecklistTemplates(sanitizeChecklistTemplates(snapshot.checklistTemplates));
+    setNotificationSettings(sanitizeNotificationSettings(snapshot.notificationSettings));
   }, []);
 
   const formatSyncError = useCallback((code?: string, fallbackMsg?: string) => {
@@ -457,9 +504,20 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         localStorage.removeItem(CACHE_KEYS.LEGACY_ADMIN_PASS);
         sessionStorage.removeItem(CACHE_KEYS.LEGACY_ADMIN_UNLOCKED);
 
-        const savedLang = localStorage.getItem(CACHE_KEYS.LANG) as Language | null;
+        const savedLang = localStorage.getItem(CACHE_KEYS.LANG);
         savedUserId = localStorage.getItem(CACHE_KEYS.CURRENT_USER);
-        if (savedLang === 'zh' || savedLang === 'en') setLanguage(savedLang);
+        const browserLanguages =
+          typeof navigator !== 'undefined'
+            ? navigator.languages && navigator.languages.length > 0
+              ? navigator.languages
+              : [navigator.language]
+            : [];
+        const initialLang = resolvePreferredLanguage({
+          savedLang,
+          search: typeof window !== 'undefined' ? window.location.search : '',
+          browserLanguages,
+        });
+        setLanguage(initialLang);
         if (savedUserId) setCurrentUserId(savedUserId);
         hasPendingOfflineSync = localStorage.getItem(CACHE_KEYS.PENDING_OFFLINE_SYNC) === '1';
 
@@ -474,6 +532,8 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         const cachedRequests = localStorage.getItem(CACHE_KEYS.DIRECT_REQUESTS);
         const cachedPeerAcc = localStorage.getItem(CACHE_KEYS.ALLOW_PEER_ACCEPTANCE);
         const cachedTemplates = localStorage.getItem(CACHE_KEYS.CHECKLIST_TEMPLATES);
+        const cachedNotifSettings = localStorage.getItem(CACHE_KEYS.NOTIFICATION_SETTINGS);
+        const cachedDesktopNotify = localStorage.getItem(CACHE_KEYS.DESKTOP_NOTIFY);
 
         if (cachedStages) setStages(JSON.parse(cachedStages));
         if (cachedTasks) setTasks(JSON.parse(cachedTasks));
@@ -489,6 +549,17 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         if (cachedPeerAcc !== null) setAllowPeerAcceptance(cachedPeerAcc === 'true');
         if (cachedTemplates !== null) {
           setChecklistTemplates(sanitizeChecklistTemplates(JSON.parse(cachedTemplates)));
+        }
+        if (cachedNotifSettings !== null) {
+          setNotificationSettings(sanitizeNotificationSettings(JSON.parse(cachedNotifSettings)));
+        }
+        if (typeof window !== 'undefined' && typeof Notification !== 'undefined') {
+          setDesktopNotificationPermission(Notification.permission);
+          if (cachedDesktopNotify === '1' && Notification.permission === 'granted') {
+            setDesktopNotificationsEnabled(true);
+          }
+        } else {
+          setDesktopNotificationPermission('unsupported');
         }
         hasCachedWorkspace = Boolean(cachedTasks || cachedProjects || cachedMembers);
       } catch (e) {
@@ -573,18 +644,17 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     };
   }, [applyServerSnapshot, formatSyncError, setViewMode, setWorkspaceScope]);
 
-  // Persist language and active authenticated member selection locally
+  // Persist active authenticated member selection locally
   useEffect(() => {
     if (!isHydrated) return;
     try {
-      localStorage.setItem(CACHE_KEYS.LANG, language);
       if (isAuthenticatedSession && currentUserId) {
         localStorage.setItem(CACHE_KEYS.CURRENT_USER, currentUserId);
       } else {
         localStorage.removeItem(CACHE_KEYS.CURRENT_USER);
       }
     } catch {}
-  }, [language, currentUserId, isAuthenticatedSession, isHydrated]);
+  }, [currentUserId, isAuthenticatedSession, isHydrated]);
 
   const flushWorkspaceToServer = useCallback(
     async (options?: { manual?: boolean }): Promise<boolean> => {
@@ -743,6 +813,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       directRequests,
       allowPeerAcceptance,
       checklistTemplates,
+      notificationSettings,
     };
 
     try {
@@ -756,6 +827,10 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       localStorage.setItem(CACHE_KEYS.DIRECT_REQUESTS, JSON.stringify(directRequests));
       localStorage.setItem(CACHE_KEYS.ALLOW_PEER_ACCEPTANCE, allowPeerAcceptance ? 'true' : 'false');
       localStorage.setItem(CACHE_KEYS.CHECKLIST_TEMPLATES, JSON.stringify(checklistTemplates));
+      localStorage.setItem(
+        CACHE_KEYS.NOTIFICATION_SETTINGS,
+        JSON.stringify(notificationSettings)
+      );
     } catch {}
 
     const serialized = serializeWorkspace(currentWorkspace);
@@ -791,6 +866,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     directRequests,
     allowPeerAcceptance,
     checklistTemplates,
+    notificationSettings,
     isHydrated,
     flushWorkspaceToServer,
   ]);
@@ -832,16 +908,181 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     };
   }, [isHydrated]);
 
+  const localizedView = useMemo(
+    () =>
+      localizeWorkspaceCollections(
+        {
+          projects,
+          tasks,
+          weeklyTodos,
+          directRequests,
+          checklistTemplates,
+        },
+        language
+      ),
+    [projects, tasks, weeklyTodos, directRequests, checklistTemplates, language]
+  );
+
   // Keep selectedTask synchronized with updates to the underlying task list
   useEffect(() => {
     if (!selectedTask) return;
-    const latest = tasks.find((item) => item.id === selectedTask.id);
+    const latest = localizedView.tasks.find((item) => item.id === selectedTask.id);
     if (!latest) {
       setSelectedTask(null);
     } else if (latest !== selectedTask) {
       setSelectedTask(latest);
     }
-  }, [tasks, selectedTask, setSelectedTask]);
+  }, [localizedView.tasks, selectedTask, setSelectedTask]);
+
+  const fireBrowserNotification = useCallback(
+    (alert: PersonalDesktopAlert) => {
+      if (
+        typeof window === 'undefined' ||
+        typeof Notification === 'undefined' ||
+        Notification.permission !== 'granted'
+      ) {
+        return;
+      }
+      try {
+        const notif = new Notification(alert.title, {
+          body: alert.body,
+          tag: alert.tag,
+        });
+        notif.onclick = () => {
+          try {
+            window.focus();
+          } catch {}
+          setViewMode(alert.viewMode);
+          if (alert.taskId) {
+            const matched = latestWorkspaceRef.current.tasks.find(
+              (item) => item.id === alert.taskId
+            );
+            if (matched) setSelectedTask(matched);
+          }
+          notif.close();
+        };
+      } catch {
+        // Ignore browser notification errors in restricted contexts
+      }
+    },
+    [setSelectedTask, setViewMode]
+  );
+
+  const toggleDesktopNotifications = useCallback(async (): Promise<boolean> => {
+    const isZh = languageRef.current === 'zh';
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      setDesktopNotificationPermission('unsupported');
+      addToast(
+        isZh ? '当前浏览器不支持系统桌面通知' : 'Desktop Notifications Unsupported',
+        isZh ? '请使用现代桌面浏览器并通过 localhost / HTTPS 访问' : 'Use a modern browser over HTTPS or localhost',
+        'warning'
+      );
+      return false;
+    }
+
+    if (desktopNotifyRef.current) {
+      setDesktopNotificationsEnabled(false);
+      try {
+        localStorage.setItem(CACHE_KEYS.DESKTOP_NOTIFY, '0');
+      } catch {}
+      addToast(
+        isZh ? '已关闭本机浏览器桌面弹窗提醒' : 'Desktop Alerts Muted',
+        '',
+        'info'
+      );
+      return false;
+    }
+
+    let perm = Notification.permission;
+    if (perm === 'default') {
+      try {
+        perm = await Notification.requestPermission();
+      } catch {
+        perm = 'denied';
+      }
+    }
+    setDesktopNotificationPermission(perm);
+
+    if (perm !== 'granted') {
+      setDesktopNotificationsEnabled(false);
+      addToast(
+        isZh ? '浏览器未授予通知权限' : 'Browser Notification Permission Required',
+        isZh
+          ? '请在浏览器地址栏左侧权限设置中允许通知后重试'
+          : 'Allow notifications in browser site settings and retry',
+        'warning'
+      );
+      return false;
+    }
+
+    setDesktopNotificationsEnabled(true);
+    try {
+      localStorage.setItem(CACHE_KEYS.DESKTOP_NOTIFY, '1');
+    } catch {}
+    addToast(
+      isZh ? '已开启浏览器桌面后台弹窗提醒' : 'Desktop Alerts Enabled',
+      isZh
+        ? '保持网页标签开启，新申请、回复、卡点与指派都会在右下角提醒'
+        : 'Keep tab open to receive OS popups on 12s background sync',
+      'success'
+    );
+    return true;
+  }, [addToast]);
+
+  const sendTestDesktopNotification = useCallback(() => {
+    const isZh = languageRef.current === 'zh';
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      addToast(isZh ? '当前环境不支持桌面通知' : 'Desktop notifications unsupported', '', 'warning');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      void toggleDesktopNotifications();
+      return;
+    }
+    fireBrowserNotification({
+      id: `test-${Date.now()}`,
+      tag: 'labflow-test-desktop',
+      title: isZh ? 'LabFlow 桌面弹窗测试成功' : 'LabFlow Desktop Alert Test',
+      body: isZh
+        ? '当有同事或导师@您、指派 To-Do 或回复 1对1 申请时，这里会弹出提醒。'
+        : 'New requests, replies, escalations, and assigned To-Dos will pop up here.',
+      viewMode: 'requests',
+    });
+  }, [addToast, fireBrowserNotification, toggleDesktopNotifications]);
+
+  const updateNotificationSettings = useCallback((patch: Partial<NotificationSettings>) => {
+    setNotificationSettings((prev) =>
+      sanitizeNotificationSettings({
+        ...prev,
+        ...patch,
+        teams: patch.teams ? { ...prev.teams, ...patch.teams } : prev.teams,
+        slack: patch.slack ? { ...prev.slack, ...patch.slack } : prev.slack,
+        digest: patch.digest ? { ...prev.digest, ...patch.digest } : prev.digest,
+      })
+    );
+  }, []);
+
+  const triggerExternalNotification = useCallback(
+    (payload: {
+      type: NotificationEventKind;
+      title: string;
+      subtitle?: string;
+      body?: string;
+      actorName?: string;
+      targetName?: string;
+      projectTag?: string;
+      deadline?: string;
+      isPrivate?: boolean;
+    }) => {
+      if (!notificationSettings.enabled) return;
+      void fetch('/api/notifications/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => undefined);
+    },
+    [notificationSettings.enabled]
+  );
 
   // Lightweight multi-user background polling every 12s when tab is active
   useEffect(() => {
@@ -876,9 +1117,19 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         }
 
         if (payload.revision > serverRevisionRef.current) {
+          const prevSnap = latestWorkspaceRef.current;
           serverRevisionRef.current = payload.revision;
           if (payload.updatedAt) setLastSyncedAt(payload.updatedAt);
           applyServerSnapshot(payload.data);
+          if (desktopNotifyRef.current && currentUserIdRef.current) {
+            const alerts = detectNewPersonalAlerts(
+              prevSnap,
+              payload.data,
+              currentUserIdRef.current,
+              languageRef.current
+            );
+            alerts.forEach(fireBrowserNotification);
+          }
           setLastSyncError(null);
           setSyncStatus('synced');
         } else {
@@ -891,7 +1142,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }, 12000);
 
     return () => clearInterval(timer);
-  }, [isHydrated, applyServerSnapshot, flushWorkspaceToServer]);
+  }, [isHydrated, applyServerSnapshot, fireBrowserNotification, flushWorkspaceToServer]);
 
   // Current Member & RBAC Derivation
   const currentMember: LabMember = useMemo(() => {
@@ -916,44 +1167,66 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   );
 
   const visibleTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      if (!canViewTask(task, currentUserId, currentAccessRole, effectiveIsAdmin, projects)) {
+    return localizedView.tasks.filter((task) => {
+      if (
+        !canViewTask(
+          task,
+          currentUserId,
+          currentAccessRole,
+          effectiveIsAdmin,
+          localizedView.projects
+        )
+      ) {
         return false;
       }
       if (workspaceScope === 'MINE') {
-        return task.leadAuthor?.id === currentUserId;
+        return isTaskInPersonalScope(task, currentUserId, localizedView.projects);
       }
       return true;
     });
-  }, [tasks, projects, currentAccessRole, currentUserId, effectiveIsAdmin, workspaceScope]);
+  }, [
+    localizedView.tasks,
+    localizedView.projects,
+    currentAccessRole,
+    currentUserId,
+    effectiveIsAdmin,
+    workspaceScope,
+  ]);
 
   const visibleProjects = useMemo(() => {
-    return projects.filter((proj) => {
+    return localizedView.projects.filter((proj) => {
       if (!canViewProject(proj, currentUserId, currentAccessRole, effectiveIsAdmin)) {
         return false;
       }
       if (workspaceScope === 'MINE') {
         return (
           proj.leadAuthorId === currentUserId ||
+          proj.piId === currentUserId ||
           (Array.isArray(proj.memberIds) && proj.memberIds.includes(currentUserId))
         );
       }
       return true;
     });
-  }, [projects, currentAccessRole, currentUserId, effectiveIsAdmin, workspaceScope]);
+  }, [
+    localizedView.projects,
+    currentAccessRole,
+    currentUserId,
+    effectiveIsAdmin,
+    workspaceScope,
+  ]);
 
   const visibleDirectRequests = useMemo(() => {
-    return directRequests.filter((req) =>
+    return localizedView.directRequests.filter((req) =>
       canViewDirectRequest(req, currentUserId, workspaceScope)
     );
-  }, [directRequests, currentUserId, workspaceScope]);
+  }, [localizedView.directRequests, currentUserId, workspaceScope]);
 
   const pendingRequestsForMeCount = useMemo(() => {
     if (!currentUserId) return 0;
-    return directRequests.filter(
+    return localizedView.directRequests.filter(
       (req) => req.recipientId === currentUserId && req.status !== 'RESOLVED'
     ).length;
-  }, [directRequests, currentUserId]);
+  }, [localizedView.directRequests, currentUserId]);
 
   // Admin Session Actions (Server-Side Auth)
   const unlockAdmin = async (password: string): Promise<boolean> => {
@@ -1101,7 +1374,9 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     const id = `member-${Date.now()}`;
     const defaultAccess: AccessRole =
       data.accessRole || (data.role === 'VISITING_SCHOLAR' ? 'AUDITOR_GUEST' : 'STUDENT_RA');
-    const displayName = data.nameZh || data.nameEn;
+    const displayName =
+      language === 'en' ? data.nameEn || data.nameZh : data.nameZh || data.nameEn;
+    const roleTitles = getRoleDefaultTitles(data.role);
     const cleanViews = sanitizePreferredViews(data.preferredViews);
     const resolvedDefaultView =
       data.defaultView && cleanViews.includes(data.defaultView)
@@ -1115,9 +1390,8 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       nameEn: data.nameEn || data.nameZh,
       role: data.role,
       accessRole: defaultAccess,
-      titleZh:
-        data.role === 'RA' ? '科研助理' : data.role === 'PHD_CANDIDATE' ? '博士研究生' : '课题组成员',
-      titleEn: data.role === 'RA' ? 'Research Assistant' : 'PhD Researcher',
+      titleZh: roleTitles.titleZh,
+      titleEn: roleTitles.titleEn,
       avatar: generateInitialsAvatar(displayName, id),
       email: data.email || `${id}@labflow.edu`,
       pin: hashedPin,
@@ -1130,7 +1404,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setWorkspaceScope('MINE');
     setFilterMemberId('all');
     setViewMode(resolvedDefaultView);
-    addToast(t.welcomeMember, `${newMember.nameZh || newMember.nameEn}`, 'success');
+    addToast(t.welcomeMember, getMemberDisplayName(newMember, language), 'success');
     return newMember;
   };
 
@@ -1844,8 +2118,10 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
     setChecklistTemplates((prev) => {
       const existingIds = new Set(prev.map((tpl) => tpl.id));
-      const missingDefaults = DEFAULT_CHECKLIST_TEMPLATES.filter((d) => !existingIds.has(d.id));
-      return [...prev, ...structuredClone(missingDefaults)];
+      const missingDefaults = getDefaultChecklistTemplates(language).filter(
+        (d) => !existingIds.has(d.id)
+      );
+      return [...prev, ...missingDefaults];
     });
     addToast(
       language === 'zh' ? '已恢复内置参考模板' : 'Starter Templates Restored',
@@ -1866,7 +2142,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     weekKey?: string;
   }): ChecklistItem[] | null => {
     const targetTask = tasks.find((item) => item.id === taskId);
-    const template = checklistTemplates.find((tpl) => tpl.id === templateId);
+    const template = localizedView.checklistTemplates.find((tpl) => tpl.id === templateId);
     if (!targetTask || !template) return null;
 
     if (!canEditTask(targetTask)) {
@@ -1988,10 +2264,10 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       return 0;
     }
 
-    const template = checklistTemplates.find((tpl) => tpl.id === templateId);
+    const template = localizedView.checklistTemplates.find((tpl) => tpl.id === templateId);
     if (!template) return 0;
 
-    const linkedTask = taskId ? tasks.find((tk) => tk.id === taskId) : undefined;
+    const linkedTask = taskId ? localizedView.tasks.find((tk) => tk.id === taskId) : undefined;
     const allAdded: WeeklyTodoItem[] = [];
     let totalSkipped = 0;
 
@@ -2132,6 +2408,26 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
 
     setTasks((prev) => moveTaskToStage(prev, taskId, targetStage, newOrder));
+
+    if (targetStage === 'PI_REVIEW' && targetStage !== targetTask.stage) {
+      triggerExternalNotification({
+        type: 'pi_review',
+        title: targetTask.title,
+        subtitle:
+          language === 'zh'
+            ? `任务已推进至「导师内部审阅 (PI Review)」`
+            : `Task moved to PI Review stage`,
+        actorName: currentMember
+          ? getMemberDisplayName(currentMember, language, currentMember.id)
+          : targetTask.leadAuthor?.nameEn,
+        targetName: targetTask.pi
+          ? getMemberDisplayName(targetTask.pi, language, targetTask.pi.id)
+          : 'PI',
+        projectTag: targetTask.projectTag,
+        deadline: targetTask.deadline,
+        isPrivate: targetTask.visibility === 'PI_ONLY',
+      });
+    }
   };
 
   const reorderTasks = (
@@ -2169,6 +2465,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     projectId?: string;
     taskId?: string;
     dueDate?: string;
+    notifyChannel?: boolean;
   }): DirectRequest | null => {
     const cleanTitle = input.title.trim();
     const cleanRecipient = input.recipientId.trim();
@@ -2201,6 +2498,26 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         ? targetMember.nameZh
         : targetMember.nameEn
       : cleanRecipient;
+    const linkedProj = newReq.projectId
+      ? projects.find((p) => p.id === newReq.projectId)
+      : undefined;
+
+    if (newReq.visibility === 'PUBLIC' && input.notifyChannel) {
+      triggerExternalNotification({
+        type: 'public_request',
+        title: newReq.title,
+        subtitle:
+          language === 'zh'
+            ? `${getMemberDisplayName(currentMember, language, currentMember.id)} -> ${recipientName}`
+            : `${getMemberDisplayName(currentMember, language, currentMember.id)} -> ${recipientName}`,
+        body: newReq.content ? newReq.content.slice(0, 260) : undefined,
+        actorName: getMemberDisplayName(currentMember, language, currentMember.id),
+        targetName: recipientName,
+        projectTag: linkedProj?.tag,
+        deadline: newReq.dueDate,
+        isPrivate: false,
+      });
+    }
     addToast(
       language === 'zh' ? '已发起 1对1 申请/交流' : '1-on-1 Request Sent',
       `${recipientName} · ${
@@ -2275,7 +2592,8 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const reportBlocker = (
     taskId: string,
     blocker: BlockerInfo,
-    requestVisibility: RequestVisibility = 'PRIVATE'
+    requestVisibility: RequestVisibility = 'PRIVATE',
+    notifyChannel = false
   ) => {
     const target = tasks.find((item) => item.id === taskId);
     if (target && !canEditTask(target)) {
@@ -2298,11 +2616,16 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
     if (blocker.escalatedToId && members.some((m) => m.id === blocker.escalatedToId)) {
       const now = new Date().toISOString();
+      const isZh = language === 'zh';
       const linkedReq: DirectRequest = {
         id: `req-blk-${Date.now()}`,
         kind: 'BLOCKER_HELP',
-        title: target ? `[卡点求助] ${target.title}` : blocker.details.slice(0, 48),
-        content: `${blocker.details}\n${blocker.tried ? `\n已尝试：${blocker.tried}` : ''}`.trim(),
+        title: target
+          ? `${isZh ? '[卡点求助]' : '[Blocker Help]'} ${target.title}`
+          : blocker.details.slice(0, 48),
+        content: `${blocker.details}\n${
+          blocker.tried ? `\n${isZh ? '已尝试：' : 'Tried so far: '}${blocker.tried}` : ''
+        }`.trim(),
         senderId: currentUserId || target?.leadAuthor?.id || members[0]?.id || '',
         recipientId: blocker.escalatedToId,
         visibility: requestVisibility,
@@ -2316,6 +2639,25 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         updatedAt: now,
       };
       setDirectRequests((prev) => [linkedReq, ...prev]);
+    }
+
+    if (requestVisibility === 'PUBLIC' && notifyChannel && target?.visibility !== 'PI_ONLY') {
+      triggerExternalNotification({
+        type: 'blocker',
+        title: target?.title || 'Task Blocker Reported',
+        subtitle:
+          language === 'zh'
+            ? `卡点已升级给 ${blocker.escalatedTo}`
+            : `Blocker escalated to ${blocker.escalatedTo}`,
+        body: blocker.details.slice(0, 260),
+        actorName: currentMember
+          ? getMemberDisplayName(currentMember, language, currentMember.id)
+          : target?.leadAuthor?.nameEn,
+        targetName: blocker.escalatedTo,
+        projectTag: target?.projectTag,
+        deadline: target?.deadline,
+        isPrivate: false,
+      });
     }
 
     addToast(
@@ -2582,6 +2924,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       directRequests,
       allowPeerAcceptance,
       checklistTemplates,
+      notificationSettings,
     };
     const jsonStr = JSON.stringify(backupData, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -2600,8 +2943,22 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       if (!data.tasks || !data.stages) return false;
       if (data.stages) setStages(data.stages);
       if (data.tasks) setTasks(data.tasks);
-      if (data.projects) setProjects(data.projects);
-      if (data.members) setMembers(data.members);
+      if (data.projects) setProjects(sanitizeProjects(data.projects));
+      if (Array.isArray(data.members) && data.members.length > 0) {
+        setMembers(data.members);
+        const stillExists = data.members.some((m: LabMember) => m.id === currentUserId);
+        if (!stillExists) {
+          const fallbackUser =
+            data.members.find((m: LabMember) => m.accessRole === 'SYS_ADMIN') ||
+            data.members.find((m: LabMember) => m.accessRole !== 'ADMIN_PI') ||
+            data.members[0];
+          if (fallbackUser) {
+            setCurrentUserId(fallbackUser.id);
+            setIsAuthenticatedSession(true);
+            setViewMode(resolveMemberDefaultView(fallbackUser));
+          }
+        }
+      }
       if (data.venues) setVenues(data.venues);
       if (data.resources) setResources(data.resources);
       if (Array.isArray(data.weeklyTodos)) {
@@ -2615,6 +2972,9 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       }
       if (Array.isArray(data.checklistTemplates)) {
         setChecklistTemplates(sanitizeChecklistTemplates(data.checklistTemplates));
+      }
+      if (data.notificationSettings && typeof data.notificationSettings === 'object') {
+        setNotificationSettings(sanitizeNotificationSettings(data.notificationSettings));
       }
       triggerConfetti();
       addToast(
@@ -2633,21 +2993,31 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const generateMyWeeklyDigest = (targetMemberId?: string): string => {
     const activeId = targetMemberId || currentUserId;
     const userMember = members.find((m) => m.id === activeId) || members[0];
-    return buildWeeklyDigestMarkdown({ member: userMember, tasks, language });
+    return buildWeeklyDigestMarkdown({ member: userMember, tasks: localizedView.tasks, language });
   };
 
   const resetToMockData = () => {
     const applyReset = () => {
-      setTasks(INITIAL_TASKS);
-      setProjects(INITIAL_PROJECTS);
+      const localizedDemo = localizeWorkspaceCollections(
+        {
+          projects: INITIAL_PROJECTS,
+          tasks: INITIAL_TASKS,
+          weeklyTodos: createInitialWeeklyTodos(),
+          directRequests: createInitialDirectRequests(),
+          checklistTemplates: getDefaultChecklistTemplates(language),
+        },
+        language
+      );
+      setTasks(localizedDemo.tasks);
+      setProjects(localizedDemo.projects);
       setResources(INITIAL_RESOURCES);
       setStages(DEFAULT_STAGES);
       setMembers(LAB_MEMBERS);
       setVenues(DEFAULT_VENUES);
-      setWeeklyTodos(createInitialWeeklyTodos());
-      setDirectRequests(createInitialDirectRequests());
+      setWeeklyTodos(localizedDemo.weeklyTodos);
+      setDirectRequests(localizedDemo.directRequests);
       setAllowPeerAcceptance(false);
-      setChecklistTemplates(structuredClone(DEFAULT_CHECKLIST_TEMPLATES));
+      setChecklistTemplates(localizedDemo.checklistTemplates);
       setWorkspaceScope('MINE');
       setWorkCategoryFilter('ALL');
       setFilterOnlyBlockers(false);
@@ -2668,15 +3038,16 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const cleanSlateWipe = () => {
     const applyWipe = () => {
+      const isZh = language === 'zh';
       const initialUser: LabMember = {
         id: 'member-me',
         nameEn: 'Researcher 1',
-        nameZh: '研究员 1',
+        nameZh: isZh ? '研究员 1' : 'Researcher 1',
         role: 'PI',
         accessRole: 'ADMIN_PI',
         titleEn: 'Principal Investigator',
         titleZh: '课题组长 (PI)',
-        avatar: generateInitialsAvatar('研究员 1', 'member-me'),
+        avatar: generateInitialsAvatar(isZh ? '研究员 1' : 'Researcher 1', 'member-me'),
         email: 'pi@lab.edu',
       };
       setTasks([]);
@@ -2925,7 +3296,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <LabDataContext.Provider
       value={{
         language,
-        setLanguage,
+        setLanguage: handleSetLanguage,
         t,
         storageMode,
         syncStatus,
@@ -2958,11 +3329,17 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         allTasksCount: tasks.length,
         projects: visibleProjects,
         resources,
-        weeklyTodos,
+        weeklyTodos: localizedView.weeklyTodos,
         directRequests: visibleDirectRequests,
         pendingRequestsForMeCount,
         allowPeerAcceptance,
-        checklistTemplates,
+        checklistTemplates: localizedView.checklistTemplates,
+        notificationSettings,
+        updateNotificationSettings,
+        desktopNotificationsEnabled,
+        desktopNotificationPermission,
+        toggleDesktopNotifications,
+        sendTestDesktopNotification,
         addProject,
         updateProject,
         deleteProject,

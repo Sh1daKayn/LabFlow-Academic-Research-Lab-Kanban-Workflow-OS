@@ -8,7 +8,14 @@ import {
   aggregateProjectsByCategory,
   buildWordCloudTerms,
   getProjectMembers,
+  sanitizeProjectHandoffs,
+  sanitizeProjects,
 } from '@/utils/projectAnalytics';
+import {
+  buildCabLabImportPackJson,
+  buildCabLabPresetWorkspace,
+} from '@/data/cabLabPreset';
+import { sanitizeWorkspaceData } from '@/lib/store';
 import {
   applyTodoToggleToTasks,
   canAcceptWeeklyTodo,
@@ -29,6 +36,7 @@ import {
   updateLogicNode,
 } from '@/utils/taskLogicTree';
 import { DEFAULT_STAGES, LAB_MEMBERS, INITIAL_PROJECTS, INITIAL_TASKS } from '@/data/mockData';
+import { isTaskInPersonalScope } from '@/utils/rbac';
 import { ProjectItem, TaskItem, WeeklyTodoItem } from '@/types';
 
 describe('Expanded Typography Presets (12 EN + 12 ZH)', () => {
@@ -303,5 +311,136 @@ describe('Task Logic Tree Generation, Editing & Cycle Protection', () => {
       afterDelete.children.find((c) => c.id === secondBranch.id)?.children.some((c) => c.id === 'node-custom-1')
     ).toBe(false);
     expect(deleteLogicNode(afterDelete, afterDelete.id).id).toBe(afterDelete.id);
+  });
+});
+
+describe('Cross-Term Project Handoffs, Shared Datasets, Research Questions & CAB Lab Preset', () => {
+  it('sanitizes handoff timelines & project coordination fields and indexes shared datasets in word cloud', () => {
+    const cleaned = sanitizeProjectHandoffs([
+      {
+        term: ' Spring 2026 ',
+        memberName: ' Emma ',
+        roleLabel: 'Original Lead',
+        phaseSummary: 'Framed Caplan (2001) survey comparison',
+        status: 'HANDED_OFF',
+      },
+      {
+        term: 'Fall 2026',
+        memberId: 'member-daniel',
+        memberName: 'Daniel',
+        status: 'INVALID_STATUS',
+      },
+      { term: '  ', memberName: '' },
+    ]);
+    expect(cleaned).toHaveLength(2);
+    expect(cleaned[0].status).toBe('HANDED_OFF');
+    expect(cleaned[1].status).toBe('ACTIVE');
+
+    const [proj] = sanitizeProjects([
+      {
+        ...INITIAL_PROJECTS[0],
+        researchQuestion: '  Do retailers misread producer priorities? ',
+        sharedDataset: '  Large Commercial Producer Survey ',
+        handoffHistory: cleaned,
+      },
+    ]);
+    expect(proj.researchQuestion).toBe('Do retailers misread producer priorities?');
+    expect(proj.sharedDataset).toBe('Large Commercial Producer Survey');
+    expect(proj.handoffHistory).toHaveLength(2);
+
+    const terms = buildWordCloudTerms([proj], [], DEFAULT_STAGES, 'en');
+    expect(terms.some((t) => t.text === 'Large Commercial Producer Survey')).toBe(true);
+    expect(terms.some((t) => t.text.toLowerCase() === 'misread')).toBe(true);
+  });
+
+  it('excludes HANDED_OFF alumni without accounts from active roster counts while crediting ACTIVE/CO_LEAD members', () => {
+    const [activeLead, coLead] = [LAB_MEMBERS[2], LAB_MEMBERS[3]];
+    const project: ProjectItem = {
+      id: 'proj-handoff-headcount',
+      title: 'Sustainability vs. Regenerative',
+      targetVenue: 'Farm Foundation',
+      tag: 'Policy',
+      status: 'DRAFTING',
+      leadAuthorId: activeLead.id,
+      piId: LAB_MEMBERS[0].id,
+      assets: {},
+      handoffHistory: [
+        {
+          id: 'h1',
+          term: 'Spring 2026',
+          memberId: LAB_MEMBERS[4].id,
+          memberName: LAB_MEMBERS[4].nameEn,
+          status: 'HANDED_OFF',
+        },
+        {
+          id: 'h2',
+          term: 'Fall 2026',
+          memberId: coLead.id,
+          memberName: coLead.nameEn,
+          status: 'CO_LEAD',
+        },
+      ],
+    };
+
+    const activeMembers = getProjectMembers(project, [], LAB_MEMBERS);
+    expect(activeMembers.map((m) => m.id)).toContain(coLead.id);
+    expect(activeMembers.map((m) => m.id)).not.toContain(LAB_MEMBERS[4].id);
+  });
+
+  it('builds valid CAB Lab 2026 coordination preset with cross-term handoffs and Martin kept as shared support', () => {
+    const preset = buildCabLabPresetWorkspace('2026-W47');
+    expect(preset.members.some((m) => m.nameEn === 'Trey Malone' && m.accessRole === 'ADMIN_PI')).toBe(
+      true
+    );
+    expect(preset.members.some((m) => m.nameEn === 'Masie' && m.accessRole === 'SYS_ADMIN')).toBe(
+      true
+    );
+    expect(preset.projects).toHaveLength(10);
+
+    // Flagship cross-term Emma -> Daniel & Kyra -> Cassidy co-lead projects
+    const retailer = preset.projects.find((p) => p.id === 'proj-cab-retailer-misalignment');
+    expect(retailer?.handoffHistory?.map((h) => h.memberName)).toEqual(['Emma', 'Daniel']);
+    expect(retailer?.researchQuestion).toContain('sensemaking shortcuts');
+
+    const policy = preset.projects.find((p) => p.id === 'proj-cab-sustainability-policy');
+    expect(policy?.handoffHistory?.every((h) => h.status === 'CO_LEAD')).toBe(true);
+
+    // Every CAB Lab project must have >= 1 starter task so Categories and Tasks stay populated
+    expect(preset.tasks).toHaveLength(11);
+    expect(
+      preset.projects.every((p) => preset.tasks.some((t) => t.projectId === p.id))
+    ).toBe(true);
+
+    // Personal workspace scope (`MINE`) surfaces PI & project-member tasks cleanly while keeping student isolation
+    const treyTasks = preset.tasks.filter((t) =>
+      isTaskInPersonalScope(t, 'member-trey', preset.projects)
+    );
+    expect(treyTasks).toHaveLength(preset.tasks.length);
+
+    const asaTasks = preset.tasks.filter((t) =>
+      isTaskInPersonalScope(t, 'member-asa', preset.projects)
+    );
+    expect(asaTasks.map((t) => t.id)).toContain('task-cab-1');
+    expect(asaTasks.map((t) => t.id)).toContain('task-cab-2');
+    expect(asaTasks.map((t) => t.id)).not.toContain('task-cab-4');
+
+    // Martin supports clusters as shared technical resource, never project/task owner
+    expect(preset.projects.every((p) => p.leadAuthorId !== 'member-martin')).toBe(true);
+    expect(preset.tasks.every((t) => t.leadAuthor.id !== 'member-martin')).toBe(true);
+    expect(
+      preset.directRequests?.some(
+        (r) => r.recipientId === 'member-martin' && r.kind === 'BLOCKER_HELP'
+      )
+    ).toBe(true);
+
+    // Round-trips cleanly through JSON backup & workspace sanitizer
+    const json = buildCabLabImportPackJson();
+    const parsed = JSON.parse(json);
+    const sanitized = sanitizeWorkspaceData(parsed);
+    expect(sanitized.projects).toHaveLength(10);
+    expect(sanitized.tasks).toHaveLength(11);
+    expect(
+      sanitized.projects.find((p) => p.id === 'proj-cab-growth-expectations')?.sharedDataset
+    ).toBe('Large Commercial Producer Survey');
   });
 });

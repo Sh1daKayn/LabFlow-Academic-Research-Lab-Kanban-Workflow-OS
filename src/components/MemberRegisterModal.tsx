@@ -86,35 +86,52 @@ export const MemberRegisterModal: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
-          <div className="grid grid-cols-2 gap-3">
+          {language === 'zh' ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  中文姓名 *
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={nameZh}
+                  onChange={(e) => setNameZh(e.target.value)}
+                  placeholder="如 张三 / 李博"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  英文/拼音姓名
+                </label>
+                <input
+                  type="text"
+                  value={nameEn}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  placeholder="e.g. San Zhang"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          ) : (
             <div className="space-y-1">
               <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                {language === 'zh' ? '中文姓名' : 'Chinese Name'}
+                Full Name *
               </label>
               <input
                 type="text"
                 required
                 autoFocus
-                value={nameZh}
-                onChange={(e) => setNameZh(e.target.value)}
-                placeholder="如 张三 / 李博"
-                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                {language === 'zh' ? '英文/拼音姓名' : 'English / Pinyin Name'}
-              </label>
-              <input
-                type="text"
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
-                placeholder="e.g. San Zhang"
+                placeholder="e.g. Alex Rivera"
                 className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
               />
             </div>
-          </div>
+          )}
 
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -126,11 +143,21 @@ export const MemberRegisterModal: React.FC = () => {
               onChange={(e) => setRole(e.target.value as LabMember['role'])}
               className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
             >
-              <option value="PHD_CANDIDATE">博士研究生 (PhD Candidate)</option>
-              <option value="RA">科研助理 / 硕士生 (Research Assistant)</option>
-              <option value="SENIOR_PHD">高年级博士生 (Senior PhD)</option>
-              <option value="POSTDOC">博士后研究员 (Postdoc Fellow)</option>
-              <option value="VISITING_SCHOLAR">访问学者 (Visiting Scholar)</option>
+              <option value="PHD_CANDIDATE">
+                {language === 'zh' ? '博士研究生 (PhD Candidate)' : 'PhD Candidate'}
+              </option>
+              <option value="RA">
+                {language === 'zh' ? '科研助理 / 硕士生 (Research Assistant)' : 'Research Assistant / MS'}
+              </option>
+              <option value="SENIOR_PHD">
+                {language === 'zh' ? '高年级博士生 (Senior PhD)' : 'Senior PhD Candidate'}
+              </option>
+              <option value="POSTDOC">
+                {language === 'zh' ? '博士后研究员 (Postdoc Fellow)' : 'Postdoctoral Fellow'}
+              </option>
+              <option value="VISITING_SCHOLAR">
+                {language === 'zh' ? '访问学者 (Visiting Scholar)' : 'Visiting Scholar'}
+              </option>
             </select>
             <span className="text-[10px] text-slate-500 block">
               {language === 'zh'

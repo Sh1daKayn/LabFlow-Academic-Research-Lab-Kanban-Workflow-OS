@@ -24,6 +24,7 @@ import {
   ListChecks,
 } from 'lucide-react';
 import { GitHubIcon } from '@/components/icons/BrandIcons';
+import { ProjectHandoffSummary } from '@/components/ProjectHandoffSummary';
 import { TaskLogicTreeEditor } from '@/components/TaskLogicTreeEditor';
 import { TaskChecklistTemplateBar } from '@/components/TaskChecklistTemplateBar';
 
@@ -168,6 +169,8 @@ export const TaskDetailDrawer: React.FC = () => {
   const inputClass =
     'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-cyan-500/60 disabled:opacity-70';
 
+  const linkedProject = projects.find((p) => p.id === selectedTask.projectId);
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-2xl h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
@@ -300,6 +303,27 @@ export const TaskDetailDrawer: React.FC = () => {
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-cyan-500/60 disabled:opacity-70"
             />
           </div>
+
+          {linkedProject &&
+            (linkedProject.researchQuestion ||
+              linkedProject.sharedDataset ||
+              (linkedProject.handoffHistory && linkedProject.handoffHistory.length > 0) ||
+              (linkedProject.inheritedFrom && linkedProject.inheritedFrom.length > 0)) && (
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {language === 'zh'
+                    ? `所属课题脉络 · ${linkedProject.tag}`
+                    : `Project Context · ${linkedProject.tag}`}
+                </div>
+                <ProjectHandoffSummary
+                  project={linkedProject}
+                  language={language}
+                  members={members}
+                  allProjects={projects}
+                  compact={false}
+                />
+              </div>
+            )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>

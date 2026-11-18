@@ -2,14 +2,29 @@
 
 import React, { useMemo, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { LabMember, ProjectItem, TaskItem, VisibilityLevel, WorkCategory } from '@/types';
+import {
+  LabMember,
+  ProjectHandoffEntry,
+  ProjectHandoffStatus,
+  ProjectInheritanceLink,
+  ProjectInheritanceType,
+  ProjectItem,
+  TaskItem,
+  VisibilityLevel,
+  WorkCategory,
+} from '@/types';
 import {
   aggregateProjectsByCategory,
   buildWordCloudTerms,
   CATEGORY_COLOR_PALETTE,
   getProjectMembers,
+  sanitizeProjectHandoffs,
+  sanitizeProjectInheritanceLinks,
   WordCloudTerm,
 } from '@/utils/projectAnalytics';
+import { suggestNextAcademicTerm } from '@/utils/semesterLineage';
+import { getMemberDisplayName } from '@/utils/avatar';
+import { getSafeLeadAuthor, getSafePI } from '@/utils/rbac';
 import {
   WORK_CATEGORIES,
   WORK_CATEGORY_META,
@@ -17,6 +32,8 @@ import {
   resolveProjectWorkCategory,
 } from '@/utils/workCategory';
 import { MemberAvatar } from '@/components/MemberAvatar';
+import { ProjectHandoffSummary } from '@/components/ProjectHandoffSummary';
+import { SemesterLineageView } from '@/components/SemesterLineageView';
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,6 +44,8 @@ import {
   FolderKanban,
   FolderPlus,
   GitBranch,
+  GitFork,
+  History,
   Layers,
   Network,
   Pencil,
@@ -39,21 +58,27 @@ import {
 
 interface ProjectEditorModalProps {
   initialProject?: ProjectItem | null;
+  seedDraft?: Partial<ProjectItem> | null;
   existingCategories: string[];
+  existingDatasets: string[];
   onClose: () => void;
 }
 
 const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
   initialProject,
+  seedDraft,
   existingCategories,
+  existingDatasets,
   onClose,
 }) => {
   const {
     members,
+    projects,
     stages,
     addProject,
     updateProject,
     deleteProject,
+    addTask,
     currentUserId,
     language,
     effectiveIsAdmin,
@@ -61,39 +86,55 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
   } = useLabFlow();
   const isZh = language === 'zh';
 
+  const seed = initialProject || seedDraft || undefined;
+
   const [title, setTitle] = useState(initialProject?.title || '');
   const [workCategory, setWorkCategory] = useState<WorkCategory>(
-    resolveProjectWorkCategory(initialProject || undefined)
+    resolveProjectWorkCategory(seed)
   );
-  const [partnerOrg, setPartnerOrg] = useState(initialProject?.partnerOrg || '');
-  const [milestoneNode, setMilestoneNode] = useState(initialProject?.milestoneNode || '');
-  const [visibility, setVisibility] = useState<VisibilityLevel>(
-    initialProject?.visibility || 'PUBLIC'
-  );
+  const [partnerOrg, setPartnerOrg] = useState(seed?.partnerOrg || '');
+  const [milestoneNode, setMilestoneNode] = useState(seed?.milestoneNode || '');
+  const [visibility, setVisibility] = useState<VisibilityLevel>(seed?.visibility || 'PUBLIC');
   const [tag, setTag] = useState(initialProject?.tag || '');
-  const [category, setCategory] = useState(initialProject?.category || existingCategories[0] || '');
+  const [category, setCategory] = useState(seed?.category || existingCategories[0] || '');
   const [categoryColor, setCategoryColor] = useState(
-    initialProject?.categoryColor || CATEGORY_COLOR_PALETTE[0]
+    seed?.categoryColor || CATEGORY_COLOR_PALETTE[0]
   );
-  const [targetVenue, setTargetVenue] = useState(initialProject?.targetVenue || '');
+  const [targetVenue, setTargetVenue] = useState(seed?.targetVenue || '');
   const [submissionDeadline, setSubmissionDeadline] = useState(
     initialProject?.submissionDeadline || ''
   );
-  const [status, setStatus] = useState(initialProject?.status || stages[0]?.id || 'IDEATION');
+  const [status, setStatus] = useState(seed?.status || stages[0]?.id || 'IDEATION');
   const [leadAuthorId, setLeadAuthorId] = useState(
-    initialProject?.leadAuthorId || currentUserId || members[0]?.id || ''
+    seed?.leadAuthorId || currentUserId || members[0]?.id || ''
   );
   const [piId, setPiId] = useState(
-    initialProject?.piId ||
+    seed?.piId ||
       members.find((m) => m.role === 'PI' || m.accessRole === 'ADMIN_PI')?.id ||
       members[0]?.id ||
       ''
   );
   const [memberIds, setMemberIds] = useState<string[]>(
-    initialProject?.memberIds ||
-      Array.from(new Set([initialProject?.leadAuthorId || currentUserId].filter(Boolean)))
+    seed?.memberIds ||
+      Array.from(new Set([seed?.leadAuthorId || currentUserId].filter(Boolean)))
   );
   const [abstract, setAbstract] = useState(initialProject?.abstract || '');
+  const [researchQuestion, setResearchQuestion] = useState(
+    initialProject?.researchQuestion || ''
+  );
+  const [sharedDataset, setSharedDataset] = useState(seed?.sharedDataset || '');
+  const [handoffHistory, setHandoffHistory] = useState<ProjectHandoffEntry[]>(
+    () => seed?.handoffHistory || []
+  );
+  const [inheritedFrom, setInheritedFrom] = useState<ProjectInheritanceLink[]>(
+    () => seed?.inheritedFrom || []
+  );
+  const [createStarterTask, setCreateStarterTask] = useState(!initialProject);
+
+  const candidateParents = useMemo(
+    () => projects.filter((p) => p.id !== initialProject?.id),
+    [projects, initialProject]
+  );
 
   const toggleMember = (id: string) => {
     setMemberIds((prev) =>
@@ -101,11 +142,71 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
     );
   };
 
+  const handleAddHandoff = () => {
+    const leadMember = members.find((m) => m.id === leadAuthorId) || members[0];
+    setHandoffHistory((prev) => [
+      ...prev,
+      {
+        id: `ho-${Date.now()}-${prev.length + 1}`,
+        term: isZh ? '2026 秋季' : 'Fall 2026',
+        memberId: leadMember?.id,
+        memberName: leadMember ? getMemberDisplayName(leadMember, language, leadMember.id) : '',
+        roleLabel: isZh ? '阶段负责' : 'Term Lead',
+        phaseSummary: '',
+        status: 'ACTIVE',
+      },
+    ]);
+  };
+
+  const handleUpdateHandoff = (id: string, patch: Partial<ProjectHandoffEntry>) => {
+    setHandoffHistory((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+    );
+  };
+
+  const handleRemoveHandoff = (id: string) => {
+    setHandoffHistory((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleAddInheritanceLink = () => {
+    const defaultParent = candidateParents[0];
+    if (!defaultParent) return;
+    setInheritedFrom((prev) => [
+      ...prev,
+      {
+        id: `inh-${Date.now()}-${prev.length + 1}`,
+        parentProjectId: defaultParent.id,
+        relationType: 'SPINOFF',
+        fromTerm: defaultParent.handoffHistory?.[0]?.term || '',
+        toTerm: handoffHistory[0]?.term || '',
+        note: '',
+      },
+    ]);
+  };
+
+  const handleUpdateInheritanceLink = (
+    id: string,
+    patch: Partial<ProjectInheritanceLink>
+  ) => {
+    setInheritedFrom((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+    );
+  };
+
+  const handleRemoveInheritanceLink = (id: string) => {
+    setInheritedFrom((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     const normalizedMembers = Array.from(
       new Set([...memberIds, leadAuthorId, piId].filter(Boolean))
+    );
+    const cleanedHandoffs = sanitizeProjectHandoffs(handoffHistory);
+    const cleanedInherited = sanitizeProjectInheritanceLinks(
+      inheritedFrom,
+      initialProject?.id
     );
     const payload = {
       title: title.trim(),
@@ -128,6 +229,10 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
       leadAuthorId,
       piId,
       abstract: abstract.trim() || undefined,
+      researchQuestion: researchQuestion.trim() || undefined,
+      sharedDataset: sharedDataset.trim() || undefined,
+      handoffHistory: cleanedHandoffs.length > 0 ? cleanedHandoffs : undefined,
+      inheritedFrom: cleanedInherited.length > 0 ? cleanedInherited : undefined,
       assets: initialProject?.assets || {},
       visibility,
     };
@@ -135,7 +240,42 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
     if (initialProject) {
       updateProject(initialProject.id, payload);
     } else {
-      addProject(payload);
+      const created = addProject(payload);
+      if (createStarterTask) {
+        const starterLead = getSafeLeadAuthor(members, leadAuthorId || currentUserId);
+        const starterPI =
+          members.find((m) => m.id === piId) || getSafePI(members);
+        if (starterLead && starterPI) {
+          const todayIso = new Date().toISOString().slice(0, 10);
+          const fallbackDeadline = new Date(Date.now() + 14 * 86400000)
+            .toISOString()
+            .slice(0, 10);
+          addTask({
+            title:
+              created.milestoneNode ||
+              `${created.title} — ${isZh ? '首期推进任务' : 'Initial Milestone'}`,
+            description: created.researchQuestion || created.abstract,
+            workCategory: resolveProjectWorkCategory(created),
+            partnerOrg: created.partnerOrg,
+            milestoneNode: created.milestoneNode,
+            stage: created.status || stages[0]?.id || 'IDEATION',
+            priority: 'MEDIUM',
+            projectId: created.id,
+            projectTag: created.tag,
+            targetVenue: created.targetVenue,
+            startDate: todayIso,
+            deadline: created.submissionDeadline || fallbackDeadline,
+            progress: 0,
+            leadAuthor: starterLead,
+            pi: starterPI,
+            visibility: created.visibility || 'PUBLIC',
+            assets: created.assets || {},
+            isBlocked: false,
+            order: 0,
+            tags: [created.tag].filter(Boolean),
+          });
+        }
+      }
     }
     onClose();
   };
@@ -497,6 +637,46 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
 
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+              {isZh ? '核心研究问题 (Research Question)' : 'Core Research Question'}
+            </label>
+            <input
+              type="text"
+              value={researchQuestion}
+              onChange={(e) => setResearchQuestion(e.target.value)}
+              placeholder={
+                isZh
+                  ? '例如：零售商是否准确理解农户优先级，还是存在认知偏差？'
+                  : '1-sentence core research question driving this project'
+              }
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+              {isZh ? '共享数据集 / 数据仓（跨课题复用）' : 'Shared Dataset / Vault'}
+            </label>
+            <input
+              type="text"
+              list="labflow-existing-datasets"
+              value={sharedDataset}
+              onChange={(e) => setSharedDataset(e.target.value)}
+              placeholder={
+                isZh
+                  ? '例如：Large Commercial Producer Survey'
+                  : 'e.g. Large Commercial Producer Survey'
+              }
+              className={inputClass}
+            />
+            <datalist id="labflow-existing-datasets">
+              {existingDatasets.map((ds) => (
+                <option key={ds} value={ds} />
+              ))}
+            </datalist>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
               {isZh ? '课题摘要与目标说明' : 'Abstract / Scope'}
             </label>
             <textarea
@@ -506,6 +686,275 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
               className={inputClass}
             />
           </div>
+
+          {/* Cross-Term Baton Handoff Timeline */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <History className="w-3.5 h-3.5 text-indigo-500" />
+                <span>
+                  {isZh
+                    ? '跨学期接力时间线（记录不同阶段负责人与交接备忘）'
+                    : 'Cross-Term Handoff Timeline (Multi-Semester Contributors)'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddHandoff}
+                className="px-2.5 py-1 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{isZh ? '添加接力记录' : 'Add Term Entry'}</span>
+              </button>
+            </div>
+
+            {handoffHistory.length === 0 ? (
+              <p className="text-[11px] text-slate-400">
+                {isZh
+                  ? '暂无跨期接力记录；如本项目由多位同学跨学期接续完成，可在此按时间顺序列出。'
+                  : 'No handoff entries yet. Add chronological term records when multiple students work across semesters.'}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {handoffHistory.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                      <input
+                        type="text"
+                        value={entry.term}
+                        onChange={(e) => handleUpdateHandoff(entry.id, { term: e.target.value })}
+                        placeholder="Spring 2026"
+                        className="sm:col-span-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs"
+                      />
+                      <div className="sm:col-span-4 flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={entry.memberName}
+                          onChange={(e) => {
+                            const typed = e.target.value;
+                            const matched = members.find(
+                              (m) =>
+                                m.nameEn.toLowerCase() === typed.trim().toLowerCase() ||
+                                m.nameZh === typed.trim()
+                            );
+                            handleUpdateHandoff(entry.id, {
+                              memberName: typed,
+                              memberId: matched?.id,
+                            });
+                          }}
+                          placeholder={isZh ? '成员/前任姓名' : 'Contributor / Alumni name'}
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs"
+                        />
+                        <select
+                          aria-label={isZh ? '从成员库选择' : 'Pick roster member'}
+                          value={entry.memberId || ''}
+                          onChange={(e) => {
+                            const picked = members.find((m) => m.id === e.target.value);
+                            if (picked) {
+                              handleUpdateHandoff(entry.id, {
+                                memberId: picked.id,
+                                memberName: getMemberDisplayName(picked, language, picked.id),
+                              });
+                            }
+                          }}
+                          className="w-7 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1 text-[11px]"
+                          title={isZh ? '从当前成员列表快速填入' : 'Quick fill from roster'}
+                        >
+                          <option value="">+</option>
+                          {members.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {getMemberDisplayName(m, language, m.id)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <select
+                        value={entry.status}
+                        onChange={(e) =>
+                          handleUpdateHandoff(entry.id, {
+                            status: e.target.value as ProjectHandoffStatus,
+                          })
+                        }
+                        className="sm:col-span-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs"
+                      >
+                        <option value="ACTIVE">{isZh ? '本期主责 (Active)' : 'Active Lead'}</option>
+                        <option value="CO_LEAD">{isZh ? '联合主责 (Co-Lead)' : 'Co-Lead'}</option>
+                        <option value="HANDED_OFF">{isZh ? '已交接 (Handed Off)' : 'Handed Off'}</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveHandoff(entry.id)}
+                        className="sm:col-span-1 p-1 text-slate-400 hover:text-rose-500 justify-self-end"
+                        title={isZh ? '删除此条' : 'Remove'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={entry.roleLabel || ''}
+                        onChange={(e) =>
+                          handleUpdateHandoff(entry.id, { roleLabel: e.target.value })
+                        }
+                        placeholder={isZh ? '阶段角色（如 Framing & Survey）' : 'Role (e.g. Prior Lead)'}
+                        className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px]"
+                      />
+                      <input
+                        type="text"
+                        value={entry.phaseSummary || ''}
+                        onChange={(e) =>
+                          handleUpdateHandoff(entry.id, { phaseSummary: e.target.value })
+                        }
+                        placeholder={
+                          isZh
+                            ? '交接摘要（已完成内容 / 下步关注点）'
+                            : 'Handoff summary (outputs completed / next focus)'
+                        }
+                        className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px]"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Project-to-Project Inheritance / Spinoff Selector */}
+          <div className="space-y-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <GitFork className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  {isZh
+                    ? '继承自前置项目 (Project Lineage / Spinoff)'
+                    : 'Inherited From Prior Projects (Cross-Project Lineage)'}
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled={candidateParents.length === 0}
+                onClick={handleAddInheritanceLink}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold hover:bg-indigo-500/25 disabled:opacity-40"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{isZh ? '添加继承关系' : 'Add Parent Link'}</span>
+              </button>
+            </div>
+
+            {inheritedFrom.length === 0 ? (
+              <p className="text-[11px] text-slate-400">
+                {isZh
+                  ? '如果本项目延续或衍生自上学期某课题/数据（支持多选），可点击上方添加，将在「学期继承图谱」中连线展示。'
+                  : 'Optional: link one or more prior projects this work continues or spins off from to draw cross-term lineage.'}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {inheritedFrom.map((link) => (
+                  <div
+                    key={link.id}
+                    className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 space-y-2"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                      <select
+                        value={link.parentProjectId}
+                        onChange={(e) =>
+                          handleUpdateInheritanceLink(link.id, {
+                            parentProjectId: e.target.value,
+                          })
+                        }
+                        className="sm:col-span-6 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs"
+                      >
+                        {candidateParents.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            [{p.tag}] {p.title}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={link.relationType}
+                        onChange={(e) =>
+                          handleUpdateInheritanceLink(link.id, {
+                            relationType: e.target.value as ProjectInheritanceType,
+                          })
+                        }
+                        className="sm:col-span-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs"
+                      >
+                        <option value="SPINOFF">
+                          {isZh ? '衍生新课题 (Spinoff)' : 'Spinoff Track'}
+                        </option>
+                        <option value="CONTINUATION">
+                          {isZh ? '延续深化 (Continuation)' : 'Continuation'}
+                        </option>
+                        <option value="METHOD_OR_DATA">
+                          {isZh ? '复用方法/数据 (Method/Data)' : 'Method / Dataset'}
+                        </option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveInheritanceLink(link.id)}
+                        className="sm:col-span-1 p-1 text-slate-400 hover:text-rose-500 justify-self-end"
+                        title={isZh ? '删除关联' : 'Remove'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        value={link.fromTerm || ''}
+                        onChange={(e) =>
+                          handleUpdateInheritanceLink(link.id, { fromTerm: e.target.value })
+                        }
+                        placeholder={isZh ? '源学期 (如 Spring 2026)' : 'From term (e.g. Spring 2026)'}
+                        className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px]"
+                      />
+                      <input
+                        type="text"
+                        value={link.toTerm || ''}
+                        onChange={(e) =>
+                          handleUpdateInheritanceLink(link.id, { toTerm: e.target.value })
+                        }
+                        placeholder={isZh ? '承接学期 (如 Fall 2026)' : 'To term (e.g. Fall 2026)'}
+                        className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px]"
+                      />
+                      <input
+                        type="text"
+                        value={link.note || ''}
+                        onChange={(e) =>
+                          handleUpdateInheritanceLink(link.id, { note: e.target.value })
+                        }
+                        placeholder={isZh ? '继承说明（选填）' : 'Lineage note (optional)'}
+                        className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px]"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {!initialProject && (
+            <label className="flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createStarterTask}
+                onChange={(e) => setCreateStarterTask(e.target.checked)}
+                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span>
+                {isZh
+                  ? '同时在 Tasks 看板中创建首条里程碑任务卡片（确保新项目立即同步到 Tasks）'
+                  : 'Also create an initial milestone card on the Tasks board (so it appears immediately in Tasks)'}
+              </span>
+            </label>
+          )}
 
           <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
             <div>
@@ -649,6 +1098,7 @@ export const ArchitectureCloudView: React.FC = () => {
     tasks,
     members,
     stages,
+    currentUserId,
     language,
     t,
     setSelectedTask,
@@ -658,10 +1108,13 @@ export const ArchitectureCloudView: React.FC = () => {
     searchQuery,
     workCategoryFilter,
     setWorkCategoryFilter,
+    simpleMode,
   } = useLabFlow();
 
   const isZh = language === 'zh';
+  const [categoriesSubView, setCategoriesSubView] = useState<'clusters' | 'tree' | 'lineage'>('clusters');
   const [editingProject, setEditingProject] = useState<ProjectItem | null | undefined>(undefined);
+  const [projectSeedDraft, setProjectSeedDraft] = useState<Partial<ProjectItem> | null>(null);
   const [selectedKeyword, setSelectedKeyword] = useState<WordCloudTerm | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
@@ -686,6 +1139,18 @@ export const ArchitectureCloudView: React.FC = () => {
         new Set(
           projects
             .map((p) => (p.category || '').trim())
+            .filter(Boolean)
+        )
+      ),
+    [projects]
+  );
+
+  const existingDatasets = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          projects
+            .map((p) => (p.sharedDataset || '').trim())
             .filter(Boolean)
         )
       ),
@@ -757,6 +1222,18 @@ export const ArchitectureCloudView: React.FC = () => {
         md += `- **[${proj.tag}] ${proj.title}** (${proj.targetVenue}) — ${
           isZh ? '负责团队' : 'Team'
         }: ${pMembers}\n`;
+        if (proj.researchQuestion) {
+          md += `  - **RQ**: ${proj.researchQuestion}\n`;
+        }
+        if (proj.sharedDataset) {
+          md += `  - **Dataset**: ${proj.sharedDataset}\n`;
+        }
+        if (proj.handoffHistory && proj.handoffHistory.length > 0) {
+          const chain = proj.handoffHistory
+            .map((h) => `${h.memberName} (${h.term})`)
+            .join(' -> ');
+          md += `  - **Handoff Timeline**: ${chain}\n`;
+        }
         const pTasks = tasks.filter((item) => item.projectId === proj.id);
         for (const task of pTasks) {
           md += `  - [${getStageLabel(task.stage)}] ${task.title} (${
@@ -815,9 +1292,54 @@ export const ArchitectureCloudView: React.FC = () => {
             </span>
           </div>
 
+          <div
+            data-tour="arch-subview-switch"
+            className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
+          >
+            <button
+              type="button"
+              onClick={() => setCategoriesSubView('clusters')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold transition-colors ${
+                categoriesSubView === 'clusters'
+                  ? 'bg-violet-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>{isZh ? '按聚类分组' : 'By Cluster'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoriesSubView('tree')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold transition-colors ${
+                categoriesSubView === 'tree'
+                  ? 'bg-violet-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              <span>{isZh ? '架构树状图' : 'Architecture Tree'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoriesSubView('lineage')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold transition-colors ${
+                categoriesSubView === 'lineage'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <GitFork className="w-3.5 h-3.5" />
+              <span>{isZh ? '学期继承图谱' : 'Semester Lineage'}</span>
+            </button>
+          </div>
+
           <button
             type="button"
-            onClick={() => setEditingProject(null)}
+            onClick={() => {
+              setProjectSeedDraft(null);
+              setEditingProject(null);
+            }}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-sm transition-colors"
           >
             <FolderPlus className="w-4 h-4" />
@@ -826,7 +1348,8 @@ export const ArchitectureCloudView: React.FC = () => {
         </div>
       </div>
 
-      {/* Three-Category Project Grouping Strip (论文 / 纵向科研项目 / 横向企业项目) */}
+      {/* Three-Category Project Grouping Strip (Full Mode) */}
+      {!simpleMode && (
       <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {WORK_CATEGORIES.map((cat) => {
           const meta = WORK_CATEGORY_META[cat];
@@ -875,6 +1398,60 @@ export const ArchitectureCloudView: React.FC = () => {
           );
         })}
       </section>
+      )}
+
+      {categoriesSubView === 'lineage' && (
+        <SemesterLineageView
+          projects={filteredProjects}
+          tasks={tasks}
+          members={members}
+          stages={stages}
+          language={language}
+          onEditProject={(proj) => {
+            setProjectSeedDraft(null);
+            setEditingProject(proj);
+          }}
+          onSpinOffProject={(parentProj, fromTerm) => {
+            const nextTerm = suggestNextAcademicTerm(fromTerm);
+            const activeMember = members.find((m) => m.id === currentUserId) || members[0];
+            setProjectSeedDraft({
+              category: parentProj.category,
+              categoryColor: parentProj.categoryColor,
+              sharedDataset: parentProj.sharedDataset,
+              piId: parentProj.piId,
+              leadAuthorId: currentUserId || parentProj.leadAuthorId,
+              workCategory: parentProj.workCategory,
+              inheritedFrom: [
+                {
+                  id: `inh-${Date.now()}`,
+                  parentProjectId: parentProj.id,
+                  relationType: 'SPINOFF',
+                  fromTerm,
+                  toTerm: nextTerm,
+                  note: '',
+                },
+              ],
+              handoffHistory: [
+                {
+                  id: `ho-spin-${Date.now()}`,
+                  term: nextTerm,
+                  memberId: activeMember?.id,
+                  memberName: activeMember
+                    ? getMemberDisplayName(activeMember, language, activeMember.id)
+                    : '',
+                  roleLabel: isZh ? '衍生子课题主责' : 'Spinoff Lead',
+                  phaseSummary: '',
+                  status: 'ACTIVE',
+                },
+              ],
+            });
+            setEditingProject(null);
+          }}
+        />
+      )}
+
+      {categoriesSubView === 'clusters' && (
+        <>
 
       {/* Section 1: Project Category Summary Cards */}
       <section className="space-y-3">
@@ -1010,6 +1587,15 @@ export const ArchitectureCloudView: React.FC = () => {
                                   🎯 {proj.milestoneNode}
                                 </div>
                               )}
+                              <div className="mt-1.5">
+                                <ProjectHandoffSummary
+                                  project={proj}
+                                  language={language}
+                                  members={members}
+                                  allProjects={projects}
+                                  compact={true}
+                                />
+                              </div>
                             </div>
 
                             <div className="flex items-center gap-1 shrink-0">
@@ -1106,7 +1692,8 @@ export const ArchitectureCloudView: React.FC = () => {
         )}
       </section>
 
-      {/* Section 2: Auto Word Cloud */}
+      {/* Section 2: Auto Word Cloud (Shown in Full Coordinator View) */}
+      {!simpleMode && (
       <section className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -1190,8 +1777,12 @@ export const ArchitectureCloudView: React.FC = () => {
           )}
         </div>
       </section>
+      )}
+      </>
+      )}
 
       {/* Section 3: Interactive Project Architecture Tree Diagram */}
+      {categoriesSubView === 'tree' && (
       <section className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -1380,6 +1971,14 @@ export const ArchitectureCloudView: React.FC = () => {
                                     {proj.title}
                                   </div>
 
+                                  <ProjectHandoffSummary
+                                    project={proj}
+                                    language={language}
+                                    members={members}
+                                    allProjects={projects}
+                                    compact={true}
+                                  />
+
                                   <div className="flex items-center justify-between text-[10px] text-slate-500">
                                     <div className="flex items-center gap-1">
                                       <div className="flex -space-x-1">
@@ -1540,6 +2139,7 @@ export const ArchitectureCloudView: React.FC = () => {
           )}
         </div>
       </section>
+      )}
 
       {/* Shortcut hint back to Kanban */}
       <div className="flex items-center justify-end">
@@ -1556,8 +2156,13 @@ export const ArchitectureCloudView: React.FC = () => {
       {editingProject !== undefined && (
         <ProjectEditorModal
           initialProject={editingProject}
+          seedDraft={projectSeedDraft}
           existingCategories={existingCategories}
-          onClose={() => setEditingProject(undefined)}
+          existingDatasets={existingDatasets}
+          onClose={() => {
+            setEditingProject(undefined);
+            setProjectSeedDraft(null);
+          }}
         />
       )}
     </div>

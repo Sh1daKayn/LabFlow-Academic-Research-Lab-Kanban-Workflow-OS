@@ -24,6 +24,7 @@ export const BlockerModal: React.FC = () => {
     language,
     t,
     members,
+    notificationSettings,
   } = useLabFlow();
 
   const [category, setCategory] = useState<BlockerCategory>('MATH_DERIVATION');
@@ -31,6 +32,7 @@ export const BlockerModal: React.FC = () => {
   const [tried, setTried] = useState('');
   const [escalatedToId, setEscalatedToId] = useState('');
   const [requestVisibility, setRequestVisibility] = useState<RequestVisibility>('PRIVATE');
+  const [notifyChannel, setNotifyChannel] = useState<boolean>(true);
 
   useEffect(() => {
     const defaultPI =
@@ -49,18 +51,25 @@ export const BlockerModal: React.FC = () => {
         defaultPI;
       setEscalatedToId(matched?.id || '');
       setRequestVisibility('PRIVATE');
+      setNotifyChannel(true);
     } else {
       setCategory('MATH_DERIVATION');
       setDetails('');
       setTried('');
       setEscalatedToId(defaultPI?.id || '');
       setRequestVisibility('PRIVATE');
+      setNotifyChannel(true);
     }
   }, [activeBlockerTask, members]);
 
   if (!activeBlockerTask) return null;
 
   const isAlreadyBlocked = activeBlockerTask.isBlocked && activeBlockerTask.blocker;
+  const externalChannelsActive =
+    notificationSettings.enabled &&
+    activeBlockerTask.visibility !== 'PI_ONLY' &&
+    ((notificationSettings.teams.enabled && notificationSettings.teams.notifyOnBlocker) ||
+      (notificationSettings.slack.enabled && notificationSettings.slack.notifyOnBlocker));
 
   const handleReport = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +91,12 @@ export const BlockerModal: React.FC = () => {
       reportedAt: new Date().toISOString(),
     };
 
-    reportBlocker(activeBlockerTask.id, blockerInfo, requestVisibility);
+    reportBlocker(
+      activeBlockerTask.id,
+      blockerInfo,
+      requestVisibility,
+      requestVisibility === 'PUBLIC' && notifyChannel
+    );
     setActiveBlockerTask(null);
   };
 
@@ -306,6 +320,35 @@ export const BlockerModal: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {externalChannelsActive && (
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 mb-3 text-[11px]">
+              {requestVisibility === 'PUBLIC' ? (
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={notifyChannel}
+                    onChange={(e) => setNotifyChannel(e.target.checked)}
+                    className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                  />
+                  <span>
+                    {language === 'zh'
+                      ? '同时推送卡点求助卡片到已启用的 Teams / Slack 群频道'
+                      : 'Also post escalation card to enabled Teams / Slack channel'}
+                  </span>
+                </label>
+              ) : (
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Lock className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                  <span>
+                    {language === 'zh'
+                      ? '当前求助为「隐私 · 仅双方」，不会推送到 Teams/Slack 公共频道'
+                      : 'Private blocker request stays inside LabFlow (not posted to public Teams/Slack channels).'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex items-center justify-end gap-2 pt-2">
