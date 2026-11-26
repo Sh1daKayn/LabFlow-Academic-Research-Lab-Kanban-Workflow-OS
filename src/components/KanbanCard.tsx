@@ -19,6 +19,7 @@ import {
   Flame,
   GitBranch,
   GripVertical,
+  Link2,
   Lock,
   MessageSquare,
   Shield,
@@ -27,6 +28,8 @@ import { GitHubIcon } from '@/components/icons/BrandIcons';
 import { KanbanCardInlineEditor } from '@/components/KanbanCardInlineEditor';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { countLogicTreeStats } from '@/utils/taskLogicTree';
+import { extractNormalizedAssetEntries } from '@/utils/assets';
+import { resolveVenueUrl } from '@/utils/venues';
 import {
   WORK_CATEGORY_META,
   getWorkCategoryLabel,
@@ -41,6 +44,7 @@ interface KanbanCardProps {
 export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
   const {
     projects,
+    venues,
     currentUserId,
     openRequestModal,
     selectedTask,
@@ -64,6 +68,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
   const hasEditPermission = canEditTask(task);
   const isExpanded = selectedTask?.id === task.id;
   const ddlBadge = formatCountdownBadge(task.deadline, language);
+  const resolvedVenueUrl = resolveVenueUrl(
+    task.targetVenue,
+    venues,
+    task.targetVenueUrl || linkedProject?.targetVenueUrl
+  );
+  const assetLinks = extractNormalizedAssetEntries(task.assets);
 
   const blockerMeta = task.blocker
     ? BLOCKER_CATEGORIES[task.blocker.category] || BLOCKER_CATEGORIES.OTHER
@@ -233,11 +243,32 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               </div>
             )}
 
-            {/* Task Title */}
+            {/* Task Title & Venue Link */}
             <div onClick={toggleExpand} className="cursor-pointer space-y-1">
-              <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors leading-snug line-clamp-2">
+              <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors leading-snug line-clamp-2">
                 {task.title}
               </h3>
+              {!simpleMode && task.targetVenue && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {resolvedVenueUrl ? (
+                    <a
+                      href={resolvedVenueUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25 transition-colors max-w-[180px]"
+                      title={`${task.targetVenue} — ${resolvedVenueUrl}`}
+                    >
+                      <span className="truncate">{task.targetVenue}</span>
+                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                    </a>
+                  ) : (
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[180px]">
+                      {task.targetVenue}
+                    </span>
+                  )}
+                </div>
+              )}
               {!simpleMode &&
                 (workCategory !== 'PAPER' || milestoneNode || partnerOrg) &&
                 (partnerOrg || milestoneNode) && (
@@ -267,72 +298,37 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
               </div>
             )}
 
-            {/* Direct Asset Quick-Links (shown directly in Full mode; always inside expanded card/drawer) */}
-            {!simpleMode &&
-              (task.assets.overleaf ||
-                task.assets.github ||
-                task.assets.dataset ||
-                task.assets.zotero) && (
+            {/* Direct Asset Quick-Links (standard + custom external links) */}
+            {!simpleMode && assetLinks.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                {task.assets.overleaf && (
-                  <a
-                    href={task.assets.overleaf}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                    title="Overleaf"
-                  >
-                    <FileText className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                    <span>Overleaf</span>
-                    <ExternalLink className="w-2 h-2 opacity-50" />
-                  </a>
-                )}
-
-                {task.assets.github && (
-                  <a
-                    href={task.assets.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                    title="GitHub"
-                  >
-                    <GitHubIcon className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                    <span>GitHub</span>
-                    <ExternalLink className="w-2 h-2 opacity-50" />
-                  </a>
-                )}
-
-                {task.assets.dataset && (
-                  <a
-                    href={task.assets.dataset}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                    title="Dataset"
-                  >
-                    <Database className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                    <span>Dataset</span>
-                    <ExternalLink className="w-2 h-2 opacity-50" />
-                  </a>
-                )}
-
-                {task.assets.zotero && (
-                  <a
-                    href={task.assets.zotero}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors"
-                    title="Zotero"
-                  >
-                    <BookOpen className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400" />
-                    <span>Zotero</span>
-                    <ExternalLink className="w-2 h-2 opacity-50" />
-                  </a>
-                )}
+                {assetLinks.map((link) => {
+                  const displayLabel = link.label;
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60 transition-colors max-w-[140px]"
+                      title={`${displayLabel}: ${link.url}`}
+                    >
+                      {link.iconKind === 'overleaf' ? (
+                        <FileText className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                      ) : link.iconKind === 'github' ? (
+                        <GitHubIcon className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                      ) : link.iconKind === 'dataset' ? (
+                        <Database className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                      ) : link.iconKind === 'zotero' ? (
+                        <BookOpen className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                      ) : (
+                        <Link2 className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                      )}
+                      <span className="truncate">{displayLabel}</span>
+                      <ExternalLink className="w-2 h-2 opacity-50 shrink-0" />
+                    </a>
+                  );
+                })}
               </div>
             )}
 
@@ -372,7 +368,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                               : `Sync on "${task.title}"`,
                         });
                       }}
-                      className="p-1 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                       title={language === 'zh' ? '发起 1 对 1 沟通/申请' : 'Send 1-on-1 request'}
                     >
                       <MessageSquare className="w-3 h-3" />
@@ -448,7 +444,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ task, index }) => {
                         }}
                         className={`p-0.5 rounded transition-colors ${
                           canStepForward
-                            ? 'text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-white dark:hover:bg-slate-800'
+                            ? 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800'
                             : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
                         }`}
                         title={language === 'zh' ? '推进至下一阶段' : 'Advance Stage'}

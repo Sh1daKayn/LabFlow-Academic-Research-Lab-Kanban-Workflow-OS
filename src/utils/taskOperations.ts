@@ -9,6 +9,7 @@ import {
 } from '@/types';
 import { subtractDays } from '@/utils/date';
 import { getSafeLeadAuthor, getSafePI } from '@/utils/rbac';
+import { normalizeExternalUrl, STANDARD_PAPER_MILESTONES } from '@/utils/venues';
 
 /**
  * Reorders tasks within a stage while preserving relative ordering for hidden/filtered tasks.
@@ -146,6 +147,7 @@ export function buildReverseDDLPipeline(
     milestoneNode: plan.milestoneNode?.trim() || undefined,
     category: plan.category?.trim() || undefined,
     targetVenue: plan.targetVenue,
+    targetVenueUrl: normalizeExternalUrl(plan.targetVenueUrl),
     tag: plan.tag || plan.targetVenue.split(' ')[0] || 'Paper',
     submissionDeadline: plan.deadlineDate,
     status: defaultStage,
@@ -164,32 +166,7 @@ export function buildReverseDDLPipeline(
   const steps =
     plan.customMilestones && plan.customMilestones.length > 0
       ? plan.customMilestones
-      : [
-          {
-            nameEn: 'Baseline & Empirical Freeze',
-            nameZh: '基线锁定与实验评测冻结',
-            offsetDays: 45,
-            stageId: stages[1]?.id || 'DATA_EXP',
-          },
-          {
-            nameEn: 'Full Manuscript Draft Ready',
-            nameZh: '完整学术论文初稿就绪',
-            offsetDays: 30,
-            stageId: stages[2]?.id || 'DRAFTING',
-          },
-          {
-            nameEn: 'Submit to Advisor for Review',
-            nameZh: '提交导师进行全篇审阅',
-            offsetDays: 14,
-            stageId: stages[3]?.id || 'PI_REVIEW',
-          },
-          {
-            nameEn: 'Camera & Formatting Check',
-            nameZh: '格式排版与匿名复核',
-            offsetDays: 3,
-            stageId: stages[3]?.id || 'PI_REVIEW',
-          },
-        ];
+      : STANDARD_PAPER_MILESTONES;
 
   const validStageIds = new Set(stages.map((s) => s.id));
   const now = new Date().toISOString();
@@ -212,6 +189,7 @@ export function buildReverseDDLPipeline(
       projectId,
       projectTag: project.tag,
       targetVenue: plan.targetVenue,
+      targetVenueUrl: normalizeExternalUrl(plan.targetVenueUrl),
       startDate: stepStart,
       deadline: stepDeadline,
       progress: idx === 0 ? 30 : 0,

@@ -1,21 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { AccessRole } from '@/types';
 import { deriveAccessRole } from '@/utils/rbac';
+import { computeMemberWorkloadMap, findDuplicateMemberGroups } from '@/utils/memberWorkload';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { MemberProfileEditor } from '@/components/settings/MemberProfileEditor';
-import { CheckCircle, Pencil, Trash2, UserPlus, X } from 'lucide-react';
+import {
+  Briefcase,
+  CheckCircle,
+  Flame,
+  GitMerge,
+  MessageSquare,
+  Pencil,
+  Trash2,
+  UserPlus,
+  X,
+} from 'lucide-react';
 
 export const MembersTab: React.FC = () => {
   const {
     members,
+    tasks,
+    projects,
+    directRequests,
     currentUserId,
     setCurrentUserId,
     addMember,
     updateMember,
     deleteMember,
+    mergeDuplicateMember,
     effectiveIsAdmin,
     canManageLab,
     canEditMemberProfile,
@@ -28,11 +43,18 @@ export const MembersTab: React.FC = () => {
   const [isAddingMember, setIsAddingMember] = useState<boolean>(false);
   const [addFormKey, setAddFormKey] = useState<number>(0);
 
+  const workloadMap = useMemo(
+    () => computeMemberWorkloadMap(members, projects, tasks, directRequests),
+    [members, projects, tasks, directRequests]
+  );
+
+  const duplicateGroups = useMemo(() => findDuplicateMemberGroups(members), [members]);
+
   return (
     <div className="space-y-4 animate-in fade-in duration-150">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {t.allMembers} ({members.length})
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">{t.memberManagerDesc}</p>
@@ -44,7 +66,7 @@ export const MembersTab: React.FC = () => {
             setEditingMemberId(null);
             setIsAddingMember((prev) => !prev);
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors"
         >
           {isAddingMember ? <X className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
           <span>{isAddingMember ? t.cancel : t.addNewMember}</span>
@@ -54,15 +76,61 @@ export const MembersTab: React.FC = () => {
       {effectiveIsAdmin && (
         <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-200 leading-relaxed">
           {language === 'zh'
-            ? '👑 导师委派权限：可在下方将任意学生设为「🛡️ 系统管理员（学生协管）」，其权限仅次于导师、高于所有学生，协助日常管理及与同学沟通。'
-            : '👑 PI Delegation: Assign any student as "🛡️ System Admin" below. They hold authority second only to PI to coordinate lab operations with students.'}
+            ? '👑 导师委派权限：可在下方将任意成员设为「🛡️ 系统管理员（学生协管）」，其权限仅次于导师、高于所有普通成员，协助日常管理及沟通协调。'
+            : '👑 PI Delegation: Assign any lab member as "🛡️ System Admin" below to delegate coordination authority second only to the PI.'}
+        </div>
+      )}
+
+      {canManageLab() && duplicateGroups.length > 0 && (
+        <div className="p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-200">
+            <GitMerge className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span>
+              {language === 'zh'
+                ? `检测到 ${duplicateGroups.length} 组重名账户（可一键合并并自动迁移名下课题、任务与请求）：`
+                : `${duplicateGroups.length} Duplicate Profile Group${
+                    duplicateGroups.length > 1 ? 's' : ''
+                  } Detected — Merge & Migrate Tasks:`}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {duplicateGroups.map((group) => {
+              const primary = group.members[0];
+              const dupes = group.members.slice(1);
+              return dupes.map((dup) => (
+                <div
+                  key={`${dup.id}->${primary.id}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/50 px-2.5 py-1.5 text-[11px]"
+                >
+                  <div className="text-slate-700 dark:text-slate-200">
+                    <span className="font-semibold">
+                      {language === 'zh' ? dup.nameZh : dup.nameEn}
+                    </span>{' '}
+                    <span className="text-slate-400 font-mono">({dup.id})</span> →{' '}
+                    <span className="font-semibold text-indigo-600 dark:text-indigo-300">
+                      {language === 'zh' ? primary.nameZh : primary.nameEn}
+                    </span>{' '}
+                    <span className="text-slate-400 font-mono">({primary.id})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => mergeDuplicateMember(dup.id, primary.id)}
+                    className="px-2.5 py-1 rounded-md bg-amber-600 hover:bg-amber-500 text-white font-semibold flex items-center gap-1"
+                  >
+                    <GitMerge className="w-3 h-3" />
+                    <span>{language === 'zh' ? '合并保留主号' : 'Merge into Primary'}</span>
+                  </button>
+                </div>
+              ));
+            })}
+          </div>
         </div>
       )}
 
       {isAddingMember && (
-        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-cyan-500/40 space-y-3">
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-indigo-500/40 space-y-3">
           <div className="font-bold text-xs text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-            <UserPlus className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+            <UserPlus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>{t.addNewMember}</span>
           </div>
           <MemberProfileEditor
@@ -104,13 +172,20 @@ export const MembersTab: React.FC = () => {
             (effectiveIsAdmin || (memberRole !== 'ADMIN_PI' && memberRole !== 'SYS_ADMIN'));
           const displayName = language === 'zh' ? m.nameZh : m.nameEn;
           const displayTitle = language === 'zh' ? m.titleZh : m.titleEn;
+          const load = workloadMap[m.id] || {
+            activeProjects: 0,
+            activeTasks: 0,
+            blockedTasks: 0,
+            openRequests: 0,
+            completedTasks: 0,
+          };
 
           return (
             <div
               key={m.id}
               className={`p-3 rounded-xl border text-xs transition-all space-y-3 ${
                 isCurrent
-                  ? 'bg-cyan-50/50 dark:bg-cyan-950/30 border-cyan-500/50 shadow-sm'
+                  ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500/50 shadow-sm'
                   : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800'
               }`}
             >
@@ -131,7 +206,7 @@ export const MembersTab: React.FC = () => {
                         </span>
                       )}
                       {isCurrent && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/40 font-semibold flex items-center gap-0.5">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/40 font-semibold flex items-center gap-0.5">
                           <CheckCircle className="w-2.5 h-2.5" />
                           {language === 'zh' ? '我本人' : 'Active User'}
                         </span>
@@ -140,6 +215,25 @@ export const MembersTab: React.FC = () => {
                     <span className="text-[10px] text-slate-500 truncate">
                       {displayTitle} · {m.email}
                     </span>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                        <Briefcase className="w-2.5 h-2.5 text-indigo-500" />
+                        {load.projectCount} {language === 'zh' ? '课题' : 'proj'} ·{' '}
+                        {load.taskCount} {language === 'zh' ? '活跃任务' : 'active'}
+                      </span>
+                      {load.blockedCount > 0 && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-rose-500/12 border border-rose-500/30 text-[10px] font-semibold text-rose-700 dark:text-rose-300">
+                          <Flame className="w-2.5 h-2.5" />
+                          {load.blockedCount} {language === 'zh' ? '卡点' : 'blocked'}
+                        </span>
+                      )}
+                      {load.openRequestsToMeCount > 0 && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-amber-500/12 border border-amber-500/30 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                          <MessageSquare className="w-2.5 h-2.5" />
+                          {load.openRequestsToMeCount} {language === 'zh' ? '待审' : 'open req'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -153,8 +247,8 @@ export const MembersTab: React.FC = () => {
                       }}
                       className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-medium transition-colors ${
                         isEditing
-                          ? 'bg-cyan-600 text-white border-cyan-600'
-                          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-cyan-500/50'
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-500/50'
                       }`}
                       title={t.editProfile}
                     >
@@ -191,7 +285,7 @@ export const MembersTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setCurrentUserId(m.id)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-cyan-700 dark:text-cyan-300 text-[11px] font-medium transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-indigo-700 dark:text-indigo-300 text-[11px] font-medium transition-colors"
                     >
                       {t.setAsActiveUser}
                     </button>

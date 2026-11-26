@@ -104,7 +104,7 @@ export const MyFocusBanner: React.FC = () => {
           onClick={() => setViewMode('requests')}
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-medium transition-colors ${
             pendingRequestsForMeCount + unreadRepliedCount > 0
-              ? 'bg-cyan-500/12 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/35'
+              ? 'bg-indigo-500/12 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/35'
               : 'bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200/70'
           }`}
         >

@@ -394,10 +394,10 @@ export const NotificationsTab: React.FC = () => {
       </div>
 
       {/* Scheme C: Browser Desktop Notifications (Per-Browser, Available to Every Member) */}
-      <div className="p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-3">
+      <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
-            <div className="p-2 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+            <div className="p-2 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
               <Bell className="w-4 h-4" />
             </div>
             <div>
@@ -439,8 +439,8 @@ export const NotificationsTab: React.FC = () => {
               onClick={() => void toggleDesktopNotifications()}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                 desktopNotificationsEnabled
-                  ? 'bg-cyan-600 border-cyan-500 text-white hover:bg-cyan-500'
-                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-cyan-500/50'
+                  ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500'
+                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-500/50'
               }`}
             >
               {desktopNotificationsEnabled
@@ -830,7 +830,7 @@ export const NotificationsTab: React.FC = () => {
       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4 text-violet-500" />
+            <CalendarClock className="w-4 h-4 text-indigo-500" />
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
                 {isZh
@@ -859,7 +859,7 @@ export const NotificationsTab: React.FC = () => {
             }
             className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
               notificationSettings.digest.enabled
-                ? 'bg-violet-600 border-violet-500 text-white'
+                ? 'bg-indigo-600 border-indigo-500 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500'
             }`}
           >
@@ -926,7 +926,7 @@ export const NotificationsTab: React.FC = () => {
           <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-violet-500" />
+                <Mail className="w-3.5 h-3.5 text-indigo-500" />
                 {isZh ? '同时发送真实邮件摘要' : 'Send Email Digest'}
               </span>
               <input
@@ -1029,7 +1029,7 @@ export const NotificationsTab: React.FC = () => {
                 type="button"
                 disabled={savingSecrets}
                 onClick={() => handleSaveSecrets()}
-                className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold"
               >
                 {isZh ? '保存发信凭据' : 'Save Email Config'}
               </button>
@@ -1039,7 +1039,7 @@ export const NotificationsTab: React.FC = () => {
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
             <span>
               {integrationStatus?.hasCronSecret
                 ? isZh
@@ -1065,7 +1065,7 @@ export const NotificationsTab: React.FC = () => {
               type="button"
               disabled={runningDigest}
               onClick={handleSendDigestNow}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isZh ? '立即发送摘要' : 'Send Digest Now'}</span>
@@ -1075,7 +1075,7 @@ export const NotificationsTab: React.FC = () => {
 
         {/* Live Digest Preview Card */}
         {digestPreview && (
-          <div className="p-3.5 rounded-xl border border-violet-500/30 bg-white dark:bg-slate-900 space-y-2 text-xs">
+          <div className="p-3.5 rounded-xl border border-indigo-500/30 bg-white dark:bg-slate-900 space-y-2 text-xs">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-slate-900 dark:text-slate-100">
                 {digestPreview.subject}

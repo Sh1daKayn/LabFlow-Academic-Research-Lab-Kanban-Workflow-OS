@@ -35,7 +35,7 @@ export const TaskLogicTreeModal: React.FC = () => {
                 <GitBranch className="w-3 h-3" />
                 {t.logicTreeTab}
               </span>
-              <span className="text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 shrink-0">
+              <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">
                 {task.projectTag}
               </span>
             </div>

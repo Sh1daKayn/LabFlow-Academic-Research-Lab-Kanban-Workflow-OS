@@ -109,10 +109,10 @@ export const AI_IMPORT_PROMPT_ZH = `你是一位顶尖的高校与科研实验�
   ],
   "resources": [
     {
-      "nameZh": "算力节点或设施名称（如：DGX H100 8卡计算节点）",
-      "nameEn": "DGX H100 Node 01",
+      "nameZh": "共享实验设备或计算节点（如：显微成像平台 / 计算服务器）",
+      "nameEn": "Shared Compute Server / Confocal Microscope",
       "type": "GPU | SERVER | CLUSTER | EQUIPMENT",
-      "specs": "8x NVIDIA H100 80GB SXM5, 512GB RAM"
+      "specs": "设备参数、存放房间或计算配置说明"
     }
   ]
 }
@@ -130,7 +130,7 @@ export const AI_IMPORT_PROMPT_ZH = `你是一位顶尖的高校与科研实验�
 
 export const AI_IMPORT_PROMPT_EN = `You are a Principal Academic Lab Operations Architect.
 Please analyze the provided academic laboratory documents (weekly reports, grant proposals, student rosters, paper plans, industry R&D specs, or meeting notes).
-Extract the lab members, projects/papers, milestones/tasks, and compute resources into the standard LabFlow JSON schema.
+Extract the lab members, projects/papers, milestones/tasks, and shared resources/equipment into the standard LabFlow JSON schema.
 
 Output Rules:
 1. Output ONLY a valid JSON markdown code block (starting with \`\`\`json and ending with \`\`\`), with zero conversational filler.
@@ -172,9 +172,9 @@ Output Rules:
   ],
   "resources": [
     {
-      "nameEn": "Resource Name (e.g. DGX H100 Node 01)",
+      "nameEn": "Resource Name (e.g. Confocal Microscope / Shared Compute Node)",
       "type": "GPU | SERVER | CLUSTER | EQUIPMENT",
-      "specs": "Hardware specs"
+      "specs": "Specifications, lab room, or capacity"
     }
   ]
 }
@@ -279,16 +279,16 @@ export const AI_SAMPLE_OUTPUT_ZH = `{
   ],
   "resources": [
     {
-      "nameZh": "算力集群 #01 (8卡 H100)",
-      "nameEn": "H100 Node 01",
-      "type": "GPU",
-      "specs": "8x NVIDIA H100 80GB SXM5, 100Gbps InfiniBand"
+      "nameZh": "共享设备 #01 (显微成像 / 实验分析平台)",
+      "nameEn": "Imaging & Wet-Lab Rig 01",
+      "type": "EQUIPMENT",
+      "specs": "Rm B204 · 需提前预约时段"
     },
     {
-      "nameZh": "仿真工作站 #02 (4卡 RTX 4090)",
-      "nameEn": "RTX 4090 Station",
+      "nameZh": "统计计算主机 #02 (多核共享工作站)",
+      "nameEn": "Analytics Workstation 02",
       "type": "SERVER",
-      "specs": "4x RTX 4090 24GB, AMD EPYC 64-Core"
+      "specs": "128-Core CPU, 512GB RAM, R / Python / Stata"
     }
   ]
 }`;
@@ -352,9 +352,14 @@ export const AI_SAMPLE_OUTPUT_EN = `{
   ],
   "resources": [
     {
-      "nameEn": "DGX H100 Cluster 01",
+      "nameEn": "Shared Compute Server 01",
       "type": "GPU",
-      "specs": "8x NVIDIA H100 80GB SXM5"
+      "specs": "Multi-GPU Workstation, 256GB RAM"
+    },
+    {
+      "nameEn": "Behavioral & Seminar Room 302",
+      "type": "EQUIPMENT",
+      "specs": "Shared Lab Space · Booking Slot"
     }
   ]
 }`;
@@ -728,9 +733,9 @@ export function parseAIDocumentText(
     rawResources.forEach((rr, idx) => {
       parsedResources.push({
         id: rr.id || `res-ai-${idx + 1}`,
-        nameZh: rr.nameZh || rr.name || rr.nameEn || (isZh ? `计算资源 #${idx + 1}` : `Resource #${idx + 1}`),
+        nameZh: rr.nameZh || rr.name || rr.nameEn || (isZh ? `共享资源 #${idx + 1}` : `Resource #${idx + 1}`),
         nameEn: rr.nameEn || rr.name || rr.nameZh || `Resource #${idx + 1}`,
-        type: rr.type && ['GPU', 'SERVER', 'CLUSTER', 'EQUIPMENT'].includes(rr.type) ? (rr.type as LabResource['type']) : 'GPU',
+        type: rr.type && ['GPU', 'SERVER', 'CLUSTER', 'EQUIPMENT'].includes(rr.type) ? (rr.type as LabResource['type']) : 'EQUIPMENT',
         specs: rr.specs || (isZh ? '标准配置' : 'Standard Specs'),
         status: 'IDLE',
       });

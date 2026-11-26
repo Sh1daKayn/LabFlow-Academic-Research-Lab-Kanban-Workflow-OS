@@ -34,7 +34,7 @@ export const MyProfileModal: React.FC = () => {
         </button>
 
         <div className="flex items-center gap-2.5 mb-4">
-          <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+          <div className="p-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
             <UserCog className="w-5 h-5" />
           </div>
           <div>

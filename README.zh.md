@@ -13,18 +13,18 @@
 
 ## 🌟 English Introduction / 英文概览
 
-Academic research is fundamentally governed by publication deadlines (DDLs), Overleaf LaTeX drafts, complex empirical pipelines, shared GPU cluster contention, weekly deliverable verification, and sudden mathematical/algorithmic bottlenecks. Generic project tools like **Jira** (built for software agile sprints) or **Notion** (unstructured blank canvases) fail to capture the reality of academic labs.
+Academic research is fundamentally governed by publication deadlines (DDLs), collaborative drafts, empirical or wet-lab pipelines, shared instrument and compute scheduling, weekly deliverable verification, and unexpected research bottlenecks. Generic project tools like **Jira** (built for software agile sprints) or **Notion** (unstructured blank canvases) fail to capture the reality of academic labs.
 
-**LabFlow** (`科研管理系统`) is purpose-built from the ground up for Principal Investigators (PIs), Student System Admins, Postdocs, PhD candidates, and Research Assistants (RAs). To reduce cognitive overload, it starts in **PIN-protected personal isolation mode** (`Mine`) and unifies **6 customizable views** under a clean **two-tier top navigation**:
+**LabFlow** (`科研管理系统`) is a discipline-agnostic OS purpose-built from the ground up for Principal Investigators (PIs), Student System Admins, Postdocs, PhD candidates, and Research Assistants (RAs). It starts in high-contrast **Light Mode** (with one-click Dark Mode & **Obsidian & Gold** theme preset) and **PIN-protected personal isolation mode** (`Mine`), unifying **6 customizable views** under an overflow-safe **two-tier top navigation**:
 
-1. **PIN-Gated Account Creation, Initial View Customization & Personal Isolation**: Students register a personal account protected by a 4+ character PIN (plain-username account selection), customize which views stay pinned in the top bar (defaulting to **Tasks · Weekly To-Do · 1-on-1 Requests**, with extra views tucked under **More**), and work in **"My Workspace" (`仅看我的`)** by default with a 1-click toggle to **"Lab Public" (`组内公开`)**.
-2. **Three Work Categories (`PAPER` / `VERTICAL_PROJECT` / `HORIZONTAL_PROJECT`)**: Clearly separates **Academic Papers**, **Vertical Government/Grant Projects**, and **Horizontal Enterprise Projects** (supporting partner/sponsor info and strict delivery milestone nodes) across filtering, grouped board display, and reverse deadline scheduling.
+1. **PIN-Gated Account Creation, Duplicate-Name Guard & Personal Isolation**: Students register a personal account protected by a 4+ character PIN; matching existing names trigger 1-click claim protection to avoid duplicate profiles (plus an Admin duplicate merge tool). Members customize pinned header tabs and start in **"My Workspace" (`仅看我的`)** with a 1-click toggle to **"Lab Public" (`组内公开`)**.
+2. **Three Work Categories (`PAPER` / `VERTICAL_PROJECT` / `HORIZONTAL_PROJECT`) + Dynamic Resource Links**: Clearly separates **Academic Papers**, **Grant / Funded Projects**, and **Industry / Partner Projects** across filtering, grouped board display, and reverse DDL scheduling, while allowing unlimited custom external links (Overleaf, GitHub, Dataset, Zotero, Qualtrics, Lab Notebook, Pre-registration, IRB Protocol) and **batch journal/conference URL import with one-click homepage links**.
 3. **1-on-1 Direct Requests & Privacy Control**: Every request, review approval, or blocker help escalation targets **strictly one chosen recipient**—never broadcast noise—with per-request **Private (default, sender & recipient only)** or **Public (Lab Feed)** visibility and inline reply threads.
-4. **Academic Kanban, Grouped Category Board & Stage Drag Matrix**: 6-stage customizable lifecycle (`IDEATION` → `DATA_EXP` → `DRAFTING` → `PI_REVIEW` → `REVISION` → `ACCEPTED`) supporting full drag-and-drop, bidirectional stage forward/rollback arrows (`←` / `→`), **Columns / By Category / Stage Cells Matrix** switching, and project timeline breakdown (**Gantt View**).
-5. **Project Categorization Tree & Research Word Cloud**: Grouped by the 3 work categories (`Paper / Vertical / Enterprise`) with member headcounts, interactive Lab → Category → Project → Task hierarchy tree, and auto-generated keyword cloud.
-6. **Weekly To-Dos & Peer Acceptance Verification**: Per-member weekly deliverable tracking bidirectionally linked to task checklists & acceptance criteria, with flexible **Advisor-only** or **Open Peer Verification** mode.
+4. **Academic Kanban, Grouped Category Board & Stage Drag Matrix**: 6-stage customizable lifecycle (`IDEATION` → `DATA_EXP` → `DRAFTING` → `PI_REVIEW` → `REVISION` → `ACCEPTED`) supporting full drag-and-drop, bidirectional stage forward/rollback arrows (`←` / `→`), **Columns / By Category / Stage Cells Matrix** switching, **Shared Resources & Equipment** reservations, and timeline breakdown (**Gantt View**).
+5. **Project Categorization, Semester Lineage & Outreach / Workshops (`Projects`)**: Grouped by the 3 work categories, complete with interactive **Architecture Tree**, **Research Word Cloud**, **Semester Lineage** cross-term handoff graph, and configurable **Outreach & Workshops** translation track scheduling (with reverse filtering in Kanban).
+6. **Weekly To-Dos, Workload Bubbles & Peer Acceptance Verification**: Per-member weekly deliverable tracking bidirectionally linked to task checklists & acceptance criteria, plus live active-project/task/blocker/review workload bubbles across Members & Standup views.
 7. **No-PPT Group Meeting Standup**: High-contrast 3-column presenter dashboard (with automatic Light/Dark theme adaptation and auto-collapsed header sub-bar) + instant Markdown minutes & personal weekly digest export.
-8. **Custom Checklist Templates, Editable Task Logic Trees & 5-Tier RBAC**: Save reusable verification rubrics, edit per-task logic trees synced to checklists, manage 5 academic RBAC tiers (`PI Advisor > Student SysAdmin > Project Lead > Student RA > Auditor Guest`) with photo avatars, and customize **12 EN + 12 ZH** font presets plus built-in **Feature Guide (`功能一览`)**.
+8. **Custom Checklist Templates, Editable Task Logic Trees & 5-Tier RBAC**: Save reusable verification rubrics, edit per-task logic trees synced to checklists, manage 5 academic RBAC tiers (`PI Advisor > Student SysAdmin > Project Lead > Student RA > Auditor Guest`) with photo avatars, customize **12 EN + 12 ZH** font presets + **Obsidian & Gold** accent palette, and explore the built-in **Feature Guide (`功能一览`)**.
 
 ---
 
@@ -34,11 +34,12 @@ Academic research is fundamentally governed by publication deadlines (DDLs), Ove
 - **Jira / Linear**：专为软件敏捷冲刺（Sprint）设计，充斥科研场景用不到的故事点与燃尽图，且对学生日常使用门槛偏高；
 - **Notion / Trello**：全员视图容易一上来信息过载，缺乏三类科研成果区分、点对点隐私交流、投稿倒排期与周验收联动。
 
-**LabFlow 科研管理系统**（*Research Management System*）：
-- **先注册、后隔离、低负担**：每位同学创建带 **个人密码 / PIN** 的账户并自定义保留的初始导航视图（默认仅保留 **任务看板｜本周待办｜1对1沟通**，其余收纳于 **更多视图**）；登录后默认进入 **「仅看我的」** 个人聚焦视角，需要全组协同参考时再一键切至 **「组内公开」**。
-- **三大类别清晰归类**：明确区分 **学术论文 (`PAPER`)**、**纵向科研项目 (`VERTICAL_PROJECT`)** 与 **横向企业项目 (`HORIZONTAL_PROJECT`，支持合作单位与明确节点日期)**，看板支持按类别一键筛选及 **「看板列 / 三类归类 / 阶段单元格」** 切换。
-- **严格 1 对 1 申请与交流**：进度对接、导师审阅、卡点求助、算力申请均只向**选定的单人**发出；每条请求可单独设为 **「隐私（默认，仅我与对方可见）」** 或 **「公开（组内可见）」**。
-- **六大视图与全套科研工具链**：整合 **任务看板｜本周待办｜1对1沟通｜时间轴甘特｜项目分类总览与词云｜组会汇报**，以及双层轻量顶栏、五级科研权限、执行清单模板库、任务树状逻辑图、AI 冷启动导入、12+12 中英混排字体体系与内置「功能一览」。
+**LabFlow 科研管理系统**（*Research Management System* —— 跨学科通用学术工作流操作系统）：
+- **开箱浅色模式、重名防重与「仅看我的」隔离**：默认采用高对比科学浅色模式（外观设置保留 **Obsidian & Gold** 黑金典雅强调色与其他色卡、支持浅/深色一键切换）；每位同学创建带 **个人密码 / PIN** 的账户，注册自动检测重名并提供一键认领或管理员重名合并；登录后默认进入 **「仅看我的」** 聚焦视角，按需切至 **「组内公开」**。
+- **三大类别 + 动态外链 + 期刊网址批量导入**：明确区分 **学术论文 (`PAPER`)**、**纵向科研项目 (`VERTICAL_PROJECT`)** 与 **横向合作项目 (`HORIZONTAL_PROJECT`)**；每个任务和课题支持**自由增删自定义外链标签**（如 Overleaf、GitHub、Dataset、Zotero、Lab Notebook、Pre-registration、Qualtrics、IRB Protocol 等），并在设置中支持**粘贴一批期刊/会议网址一键去重入库**，卡片徽章点击直达官网。
+- **成果转化排期 (`Outreach & Workshops`) + 共享设备与算力**：在「项目与成果」页内置可自由配置的转化与外联出口排期表（如研讨会/工作坊、产业/临床合作、政策简报、开源/专利发布），并与看板筛选联动；顶部共享资源条同时支持科研仪器、调研数据库、共享研讨室及 GPU/计算服务器预约。
+- **严格 1 对 1 沟通与成员负荷气泡**：进度对接、导师审阅、卡点求助均只向**选定的单人**发出（默认隐私，单条可设为组内公开）；成员管理与无 PPT 组会视图实时展示每位成员的活跃课题、任务、卡点与待审工作负载气泡。
+- **六大视图与全套科研工具链**：整合 **任务看板｜本周待办｜1对1沟通｜时间轴甘特｜项目分类总览（含跨学期脉络图与转化排期）｜组会汇报**，以及防挤压响应式顶栏、五级科研权限、执行清单模板库、任务树状逻辑图、AI 冷启动导入、12+12 中英混排字体体系与内置「功能一览」。
 
 ---
 
@@ -143,12 +144,12 @@ Academic research is fundamentally governed by publication deadlines (DDLs), Ove
 
 ---
 
-### 10. 12+12 中英混排学术字体、色卡拾色器与灰阶资源外链
+### 10. 默认浅色高对比体系、Obsidian & Gold 配色与动态外链规范
+- **默认浅色 (`Light Mode`) + `Obsidian & Gold` 可选色卡**：全站默认高对比科学浅色界面（支持暗色 `Obsidian` 一键切换），强调色默认 Indigo，同时内置 **Obsidian & Gold**、深蓝、深红、青绿等色卡及 HTML5 拾色器自由调整；
 - **12 种英文字体 + 12 种中文字体自由搭配（含自定义输入）**：
   - 英文涵盖 `Times New Roman`、`Georgia`、`Palatino`、`Garamond`、`Baskerville`、`Cambria`、`Geist Sans`、`Inter`、`Helvetica/Arial`、`Segoe/System Sans`、`JetBrains Mono`、`Fira Code`；
   - 中文涵盖 `苹方/微软雅黑`、`幼圆（圆润亲和）`、`宋体/思源宋体`、`华文中宋`、`楷体/华文楷体`、`霞鹜文楷`、`仿宋/华文仿宋`、`黑体/思源黑体`、`隶书`、`华文行楷`、`等线` 等；同时支持直接输入本机已安装字体名；
-- **名校主题色卡 + 吸色器**：黑金、深蓝、深红、青绿、酒红、靛紫等色卡 + HTML5 拾色器实时切换；
-- **三级字号与纯净外链规范**：紧凑小号 / 标准常规 / 舒适大号自由调节；Overleaf、GitHub、Dataset、Zotero 外链统一低饱和度学术灰阶展示。
+- **动态自定义外链 + 期刊/会议官网直达**：每个任务/课题可自由添加、编辑或删除任意科研外链（内置 Overleaf、GitHub、Dataset、Zotero、Lab Notebook、Pre-registration、Qualtrics、IRB Protocol、HuggingFace 等快捷预设）；「设置 -> 期刊会议与转化」支持批量粘贴 URL 导入，卡片与抽屉徽章可点击直达官网。
 
 ---
 
@@ -302,10 +303,10 @@ LabFlow 深度集成了 Progressive Web App (PWA) 协议：
   ],
   "resources": [
     {
-      "nameZh": "算力节点或设施名称（如：DGX H100 8卡计算节点）",
-      "nameEn": "DGX H100 Node 01",
+      "nameZh": "共享实验设备或计算节点（如：显微成像平台 / 计算服务器）",
+      "nameEn": "Shared Compute Server / Confocal Microscope",
       "type": "GPU | SERVER | CLUSTER | EQUIPMENT",
-      "specs": "8x NVIDIA H100 80GB SXM5, 512GB RAM"
+      "specs": "设备参数、存放房间或计算配置说明"
     }
   ]
 }

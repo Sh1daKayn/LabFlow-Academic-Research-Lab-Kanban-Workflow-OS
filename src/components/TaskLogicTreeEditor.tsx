@@ -242,8 +242,8 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
           compact ? 'min-w-[200px]' : 'min-w-[220px] max-w-[270px]'
         } ${
           isSelected
-            ? 'bg-cyan-500/10 dark:bg-cyan-950/50 border-cyan-500 ring-2 ring-cyan-500/20 shadow-sm'
-            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-cyan-400/70'
+            ? 'bg-indigo-500/10 dark:bg-indigo-950/50 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm'
+            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-400/70'
         }`}
       >
         <div className="flex items-start justify-between gap-2">
@@ -319,7 +319,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                   e.stopPropagation();
                   handleAddChild(node.id, node.nodeType);
                 }}
-                className="px-1.5 py-0.5 rounded bg-cyan-500/12 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 text-[10px] font-medium flex items-center gap-0.5"
+                className="px-1.5 py-0.5 rounded bg-indigo-500/12 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[10px] font-medium flex items-center gap-0.5"
               >
                 <Plus className="w-2.5 h-2.5" />
                 <span>{t.addChildNode}</span>
@@ -369,7 +369,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
           <button
             type="button"
             onClick={() => handleToggleCollapse(node)}
-            className="ml-2 px-2 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-cyan-500/20 hover:text-cyan-700 dark:hover:text-cyan-300"
+            className="ml-2 px-2 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-indigo-500/20 hover:text-indigo-700 dark:hover:text-indigo-300"
           >
             +{node.children.length}
           </button>
@@ -413,7 +413,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5">
         <div className="flex flex-wrap items-center gap-2 text-[11px]">
           <span className="inline-flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-200">
-            <GitBranch className="w-3.5 h-3.5 text-cyan-500" />
+            <GitBranch className="w-3.5 h-3.5 text-indigo-500" />
             <span>
               {isZh
                 ? `共 ${stats.total} 节点 · 已完成 ${stats.done}`
@@ -445,7 +445,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
               onClick={() => setOrientation('horizontal')}
               className={`px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1 transition-colors ${
                 orientation === 'horizontal'
-                  ? 'bg-cyan-600 text-white'
+                  ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -457,7 +457,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
               onClick={() => setOrientation('outline')}
               className={`px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1 transition-colors ${
                 orientation === 'outline'
-                  ? 'bg-cyan-600 text-white'
+                  ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -490,7 +490,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
             <button
               type="button"
               onClick={onExpandFullscreen}
-              className="px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors"
             >
               <Maximize2 className="w-3 h-3" />
               <span>{isZh ? '大画布编辑' : 'Fullscreen'}</span>
@@ -510,7 +510,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
               <button
                 type="button"
                 onClick={() => handleAddChild(selectedNode.id, selectedNode.nodeType)}
-                className="px-2 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold flex items-center gap-1"
+                className="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 <span>{t.addChildNode}</span>
@@ -528,7 +528,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => commitTree(moveLogicNodeOrder(resolvedTree, selectedNode.id, 'up'))}
-                    className="p-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-cyan-500"
+                    className="p-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-500"
                     title={isZh ? '同级上移' : 'Move Up'}
                   >
                     <ArrowUp className="w-3.5 h-3.5" />
@@ -536,7 +536,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => commitTree(moveLogicNodeOrder(resolvedTree, selectedNode.id, 'down'))}
-                    className="p-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-cyan-500"
+                    className="p-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-500"
                     title={isZh ? '同级下移' : 'Move Down'}
                   >
                     <ArrowDown className="w-3.5 h-3.5" />
@@ -577,7 +577,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
               onChange={(e) =>
                 commitTree(updateLogicNode(resolvedTree, selectedNode.id, { label: e.target.value }))
               }
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white outline-none focus:border-cyan-500 disabled:opacity-60"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500 disabled:opacity-60"
             />
           </div>
 
@@ -595,7 +595,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                   })
                 )
               }
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-60"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 disabled:opacity-60"
             >
               {(Object.keys(LOGIC_NODE_TYPE_META) as TaskLogicNodeType[]).map((key) => (
                 <option key={key} value={key}>
@@ -619,7 +619,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                   })
                 )
               }
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-60"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 disabled:opacity-60"
             >
               {(Object.keys(LOGIC_NODE_STATUS_META) as TaskLogicNodeStatus[]).map((key) => (
                 <option key={key} value={key}>
@@ -645,7 +645,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                   })
                 )
               }
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-60"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 disabled:opacity-60"
             >
               <option value="">{isZh ? '未指定' : 'Unassigned'}</option>
               {members.map((m) => (
@@ -667,7 +667,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                 if (!e.target.value) return;
                 commitTree(reparentLogicNode(resolvedTree, selectedNode.id, e.target.value));
               }}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500 disabled:opacity-60"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 disabled:opacity-60"
             >
               {selectedNode.id === resolvedTree.id ? (
                 <option value="">{isZh ? '根节点' : 'Root Node'}</option>
@@ -696,7 +696,7 @@ export const TaskLogicTreeEditor: React.FC<TaskLogicTreeEditorProps> = ({
                 commitTree(updateLogicNode(resolvedTree, selectedNode.id, { note: e.target.value }))
               }
               placeholder={isZh ? '参数、前提或判定依据...' : 'Parameters or rationale...'}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white outline-none focus:border-cyan-500 disabled:opacity-60"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500 disabled:opacity-60"
             />
           </div>
         </div>

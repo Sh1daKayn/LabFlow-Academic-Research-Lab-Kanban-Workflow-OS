@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { UserPlus, X, GraduationCap, Mail, Sparkles, Lock, AlertCircle } from 'lucide-react';
+import { UserPlus, X, GraduationCap, Mail, Sparkles, Lock, AlertCircle, UserCheck } from 'lucide-react';
 import { LabMember } from '@/types';
+import { findMatchingMembersByName } from '@/utils/memberWorkload';
+import { getMemberDisplayName } from '@/utils/avatar';
+import { MemberAvatar } from '@/components/MemberAvatar';
 
 export const MemberRegisterModal: React.FC = () => {
   const {
+    members,
     isRegisterModalOpen,
     setIsRegisterModalOpen,
     registerNewMember,
+    setCurrentUserId,
     language,
     t,
   } = useLabFlow();
@@ -20,7 +25,18 @@ export const MemberRegisterModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
   const [error, setError] = useState('');
+
+  const matchingMembers = useMemo(
+    () =>
+      findMatchingMembersByName(
+        members,
+        language === 'zh' ? nameZh || nameEn : nameEn || nameZh,
+        language === 'zh' ? nameEn : nameZh
+      ),
+    [members, nameZh, nameEn, language]
+  );
 
   if (!isRegisterModalOpen) return null;
 
@@ -28,6 +44,14 @@ export const MemberRegisterModal: React.FC = () => {
     e.preventDefault();
     setError('');
     if (!nameZh.trim() && !nameEn.trim()) return;
+    if (matchingMembers.length > 0 && !confirmDuplicate) {
+      setError(
+        language === 'zh'
+          ? '检测到已有同名成员，可直接点击下方切换使用，或勾选“确为不同成员”。'
+          : 'A profile with this name already exists. Claim it below or confirm creating a separate profile.'
+      );
+      return;
+    }
     if (pin.trim().length < 4) {
       setError(
         language === 'zh'
@@ -54,6 +78,7 @@ export const MemberRegisterModal: React.FC = () => {
     setEmail('');
     setPin('');
     setConfirmPin('');
+    setConfirmDuplicate(false);
     setError('');
     setIsRegisterModalOpen(false);
   };
@@ -62,11 +87,11 @@ export const MemberRegisterModal: React.FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 overflow-hidden">
         {/* Glow */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
@@ -99,7 +124,7 @@ export const MemberRegisterModal: React.FC = () => {
                   value={nameZh}
                   onChange={(e) => setNameZh(e.target.value)}
                   placeholder="如 张三 / 李博"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
@@ -112,7 +137,7 @@ export const MemberRegisterModal: React.FC = () => {
                   value={nameEn}
                   onChange={(e) => setNameEn(e.target.value)}
                   placeholder="e.g. San Zhang"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -128,20 +153,20 @@ export const MemberRegisterModal: React.FC = () => {
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
                 placeholder="e.g. Alex Rivera"
-                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
               />
             </div>
           )}
 
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <GraduationCap className="w-3.5 h-3.5 text-cyan-500" />
+              <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
               {t.memberRole}
             </label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as LabMember['role'])}
-              className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
             >
               <option value="PHD_CANDIDATE">
                 {language === 'zh' ? '博士研究生 (PhD Candidate)' : 'PhD Candidate'}
@@ -168,7 +193,7 @@ export const MemberRegisterModal: React.FC = () => {
 
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-cyan-500" />
+              <Mail className="w-3.5 h-3.5 text-indigo-500" />
               {t.memberEmail}
             </label>
             <input
@@ -176,14 +201,14 @@ export const MemberRegisterModal: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="e.g. yourname@university.edu"
-              className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-cyan-500" />
+                <Lock className="w-3.5 h-3.5 text-indigo-500" />
                 {language === 'zh' ? '个人密码 / PIN *（4+位）' : 'Personal PIN * (4+)'}
               </label>
               <input
@@ -193,7 +218,7 @@ export const MemberRegisterModal: React.FC = () => {
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder={language === 'zh' ? '用于个人账号登录切换' : 'Required 4+ chars'}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
               />
             </div>
             <div className="space-y-1">
@@ -207,10 +232,56 @@ export const MemberRegisterModal: React.FC = () => {
                 value={confirmPin}
                 onChange={(e) => setConfirmPin(e.target.value)}
                 placeholder={language === 'zh' ? '再次输入 PIN' : 'Confirm PIN'}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:outline-none"
               />
             </div>
           </div>
+
+          {matchingMembers.length > 0 && (
+            <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50/90 dark:bg-amber-950/35 p-2.5 space-y-1.5">
+              <div className="text-[11px] font-semibold text-amber-900 dark:text-amber-200">
+                {language === 'zh'
+                  ? '发现同名账号，可直接切换避免重复：'
+                  : 'Existing account matches this name:'}
+              </div>
+              {matchingMembers.map((existing) => (
+                <div
+                  key={existing.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-900 px-2 py-1 border border-amber-200 dark:border-amber-800/40 text-xs"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <MemberAvatar member={existing} size="xs" />
+                    <span className="truncate font-medium">
+                      {getMemberDisplayName(existing, language, existing.id)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentUserId(existing.id);
+                      setIsRegisterModalOpen(false);
+                    }}
+                    className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-semibold shrink-0 flex items-center gap-1"
+                  >
+                    <UserCheck className="w-3 h-3" />
+                    <span>{language === 'zh' ? '切换使用' : 'Switch'}</span>
+                  </button>
+                </div>
+              ))}
+              <label className="flex items-center gap-1.5 text-[11px] text-amber-800 dark:text-amber-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={confirmDuplicate}
+                  onChange={(e) => setConfirmDuplicate(e.target.checked)}
+                />
+                <span>
+                  {language === 'zh'
+                    ? '确为同名不同成员，继续建新号'
+                    : 'Different person — create anyway'}
+                </span>
+              </label>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
@@ -229,7 +300,7 @@ export const MemberRegisterModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 shadow-sm transition-all flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm transition-all flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{language === 'zh' ? '登记并进入实验室' : 'Join Lab'}</span>

@@ -11,6 +11,13 @@ import {
 } from '@/types';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
 import { normalizeWorkCategory } from '@/utils/workCategory';
+import {
+  normalizeWorkshopTargetDate,
+  normalizeWorkshopTranslationStatus,
+  sanitizeWorkshopPrograms,
+} from '@/utils/outreachTracks';
+import { sanitizeAssetLinks } from '@/utils/assets';
+import { normalizeExternalUrl } from '@/utils/venues';
 
 export const CATEGORY_COLOR_PALETTE = [
   '#6366f1', // indigo
@@ -476,9 +483,15 @@ export function sanitizeProjects(raw: unknown): ProjectItem[] {
     .map((p) => {
       const cleanHandoffs = sanitizeProjectHandoffs(p.handoffHistory);
       const cleanInherited = sanitizeProjectInheritanceLinks(p.inheritedFrom, p.id);
+      const cleanPrograms = sanitizeWorkshopPrograms(p.workshopPrograms);
       return {
         ...p,
         workCategory: normalizeWorkCategory(p.workCategory),
+        targetVenueUrl: normalizeExternalUrl(p.targetVenueUrl),
+        assets: sanitizeAssetLinks(p.assets),
+        workshopPrograms: cleanPrograms.length > 0 ? cleanPrograms : undefined,
+        workshopTranslationStatus: normalizeWorkshopTranslationStatus(p.workshopTranslationStatus),
+        workshopTargetDate: normalizeWorkshopTargetDate(p.workshopTargetDate),
         researchQuestion:
           typeof p.researchQuestion === 'string' && p.researchQuestion.trim()
             ? p.researchQuestion.trim()

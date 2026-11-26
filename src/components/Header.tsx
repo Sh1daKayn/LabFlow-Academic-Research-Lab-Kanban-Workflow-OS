@@ -56,6 +56,8 @@ export const Header: React.FC = () => {
     setSelectedStageFilter,
     selectedProjectFilter,
     setSelectedProjectFilter,
+    selectedWorkshopFilter,
+    setSelectedWorkshopFilter,
     viewMode,
     setViewMode,
     workspaceScope,
@@ -117,7 +119,8 @@ export const Header: React.FC = () => {
       filterMemberId !== 'all' ||
       filterOnlyBlockers ||
       selectedStageFilter !== 'all' ||
-      selectedProjectFilter !== 'all'
+      selectedProjectFilter !== 'all' ||
+      selectedWorkshopFilter !== 'ALL'
   );
 
   const handleClearFilters = () => {
@@ -126,6 +129,7 @@ export const Header: React.FC = () => {
     setFilterOnlyBlockers(false);
     setSelectedStageFilter('all');
     setSelectedProjectFilter('all');
+    setSelectedWorkshopFilter('ALL');
   };
 
   const viewTabs: Array<{
@@ -145,13 +149,13 @@ export const Header: React.FC = () => {
       id: 'todos',
       label: t.todos,
       icon: <ListChecks className="w-3.5 h-3.5" />,
-      activeClass: 'bg-emerald-600 text-white shadow-sm',
+      activeClass: 'bg-indigo-600 text-white shadow-sm',
     },
     {
       id: 'requests',
       label: isZh ? '1对1沟通' : 'Requests',
       icon: <MessageSquare className="w-3.5 h-3.5" />,
-      activeClass: 'bg-cyan-600 text-white shadow-sm',
+      activeClass: 'bg-indigo-600 text-white shadow-sm',
       badge: pendingRequestsForMeCount,
     },
     {
@@ -164,19 +168,24 @@ export const Header: React.FC = () => {
       id: 'architecture',
       label: t.architecture,
       icon: <Network className="w-3.5 h-3.5" />,
-      activeClass: 'bg-violet-600 text-white shadow-sm',
+      activeClass: 'bg-indigo-600 text-white shadow-sm',
     },
     {
       id: 'meeting',
       label: t.meeting,
       icon: <Presentation className="w-3.5 h-3.5" />,
-      activeClass: 'bg-cyan-600 text-white shadow-sm',
+      activeClass: 'bg-indigo-600 text-white shadow-sm',
     },
   ];
 
-  const pinnedTabs = viewTabs.filter((tab) => preferredViews.includes(tab.id));
-  const extraTabs = viewTabs.filter((tab) => !preferredViews.includes(tab.id));
-  const isViewingExtraTab = extraTabs.some((tab) => tab.id === viewMode);
+  const MAX_INLINE_HEADER_TABS = 3;
+  const allPinnedTabs = viewTabs.filter((tab) => preferredViews.includes(tab.id));
+  const visibleTabs = allPinnedTabs.slice(0, MAX_INLINE_HEADER_TABS);
+  const pinnedOverflowTabs = allPinnedTabs.slice(MAX_INLINE_HEADER_TABS);
+  const unpinnedTabs = viewTabs.filter((tab) => !preferredViews.includes(tab.id));
+  const extraTabs = [...pinnedOverflowTabs, ...unpinnedTabs];
+  const activeExtraTab = extraTabs.find((tab) => tab.id === viewMode) || null;
+  const isViewingExtraTab = Boolean(activeExtraTab);
 
   const syncTitle =
     syncStatus === 'offline'
@@ -194,35 +203,35 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/92 backdrop-blur-md transition-colors shadow-sm">
-      {/* Tier 1: Primary Brand, 5 Core View Tabs (never squeezed), and Global Identity/System */}
+      {/* Tier 1: Compact Brand, up to 3 Primary View Tabs + Dynamic More, and Streamlined Actions */}
       <div className="max-w-[1780px] mx-auto px-3 lg:px-5">
-        <div className="flex flex-wrap lg:flex-nowrap items-center justify-between min-h-12 py-1.5 gap-2 lg:gap-4">
-          {/* Left: Brand + Spacious 5-Tab View Switcher */}
-          <div className="flex items-center gap-2.5 lg:gap-3 min-w-0 max-w-full lg:shrink-0">
-            <div className="flex items-center gap-2.5 shrink-0">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-sm text-white">
+        <div className="flex flex-wrap items-center justify-between min-h-12 py-1.5 gap-x-2.5 gap-y-1.5">
+          {/* Left: Brand + Core View Switcher */}
+          <div className="flex items-center gap-2 min-w-0 max-w-full">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 shadow-sm text-white">
                 <FlaskConical className="w-4 h-4" />
               </div>
               <div className="flex flex-col items-start leading-none">
-                <span className="font-bold text-base tracking-tight text-slate-900 dark:text-slate-100 flex items-center">
-                  Lab<span className="text-cyan-500 dark:text-cyan-400 font-extrabold">Flow</span>
+                <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-slate-100 flex items-center">
+                  Lab<span className="text-indigo-600 dark:text-indigo-400 font-extrabold">Flow</span>
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 tracking-wide mt-0.5">
+                <span className="hidden 2xl:block text-[10px] font-medium text-slate-500 dark:text-slate-400 tracking-wide mt-0.5">
                   {t.labTitle}
                 </span>
               </div>
             </div>
 
-            <div className="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-800 shrink-0" />
+            <div className="hidden sm:block h-4 w-px bg-slate-200 dark:bg-slate-800 shrink-0" />
 
-            {/* View Mode Switcher (Customizable Pinned Views + More Dropdown) */}
-            <div className="relative flex items-center gap-1.5 max-w-full">
+            {/* View Mode Switcher (Max 3 Inline Tabs + More Dropdown) */}
+            <div className="relative flex items-center gap-1 min-w-0 max-w-full">
               <nav
                 data-tour="primary-tabs"
                 aria-label={isZh ? '主视图切换' : 'Primary Views'}
-                className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs xl:text-[13px] overflow-x-auto scrollbar-none max-w-full"
+                className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs overflow-x-auto scrollbar-none max-w-full"
               >
-                {pinnedTabs.map((tab) => (
+                {visibleTabs.map((tab) => (
                   <button
                     key={tab.id}
                     type="button"
@@ -230,7 +239,7 @@ export const Header: React.FC = () => {
                       setViewMode(tab.id);
                       setShowMoreViewsMenu(false);
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg font-medium whitespace-nowrap shrink-0 transition-all ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg font-medium whitespace-nowrap shrink-0 transition-all ${
                       viewMode === tab.id
                         ? tab.activeClass
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
@@ -252,13 +261,16 @@ export const Header: React.FC = () => {
                     setShowMoreViewsMenu((v) => !v);
                     setShowAccountMenu(false);
                   }}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-medium whitespace-nowrap shrink-0 transition-all ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg font-medium whitespace-nowrap shrink-0 transition-all ${
                     isViewingExtraTab || showMoreViewsMenu
-                      ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
+                      ? activeExtraTab
+                        ? activeExtraTab.activeClass
+                        : 'bg-indigo-600 text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
                   }`}
                 >
-                  <span>{isZh ? '更多视图' : 'More'}</span>
+                  {activeExtraTab ? activeExtraTab.icon : null}
+                  <span>{activeExtraTab ? activeExtraTab.label : isZh ? '更多' : 'More'}</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
               </nav>
@@ -299,7 +311,7 @@ export const Header: React.FC = () => {
                       setShowMoreViewsMenu(false);
                       setIsViewCustomizerOpen(true);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-cyan-600 dark:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-xs text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium flex items-center gap-2"
                   >
                     <LayoutGrid className="w-3.5 h-3.5" />
                     {isZh ? '自定义初始视图' : 'Customize Views'}
@@ -309,15 +321,15 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Scope Switch + Core CTA + Identity/RBAC + System Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
+          {/* Right: Compact Scope Switch + Filter Icon + Split New CTA + Account + Settings */}
+          <div className="flex flex-wrap items-center gap-1.5 ml-auto max-w-full">
             {/* Compact Workspace Scope Switch: My Isolation vs Group Public */}
             <div
               data-tour="scope-toggle"
               className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px]"
               title={
                 isZh
-                  ? '默认仅看个人任务与 1 对 1 请求，需要时可切换为组内公开'
+                  ? '默认仅看个人任务与 1 对 1 请求，需要时可切换为全组公开'
                   : 'Switch between My Workspace only and Lab Public items'
               }
             >
@@ -327,26 +339,26 @@ export const Header: React.FC = () => {
                   setWorkspaceScope('MINE');
                   setFilterMemberId('all');
                 }}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
                   workspaceScope === 'MINE'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 <Lock className="w-3 h-3" />
-                <span>{isZh ? '仅看我的' : 'Mine'}</span>
+                <span>{isZh ? '我的' : 'Mine'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setWorkspaceScope('PUBLIC_LAB')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
                   workspaceScope === 'PUBLIC_LAB'
-                    ? 'bg-white dark:bg-slate-800 text-cyan-700 dark:text-cyan-300 shadow-xs'
+                    ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 font-semibold shadow-xs'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 <Globe className="w-3 h-3" />
-                <span>{isZh ? '组内公开' : 'Lab Public'}</span>
+                <span>{isZh ? '全组' : 'Lab'}</span>
               </button>
             </div>
 
@@ -356,38 +368,26 @@ export const Header: React.FC = () => {
                 type="button"
                 data-tour="filter-toggle"
                 onClick={toggleSubBar}
-                className={`relative flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                className={`relative flex items-center justify-center p-1.5 rounded-lg border text-xs font-medium transition-colors shrink-0 ${
                   hasActiveFilters || totalBlockers > 0
-                    ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-700 dark:text-cyan-300'
-                    : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-cyan-500/40'
+                    ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-700 dark:text-indigo-300'
+                    : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-500/40'
                 }`}
                 title={isZh ? '展开搜索与筛选栏' : 'Search & filters'}
+                aria-label={isZh ? '展开搜索与筛选栏' : 'Search & filters'}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">{isZh ? '筛选' : 'Filter'}</span>
                 {(hasActiveFilters || totalBlockers > 0) && (
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      totalBlockers > 0 ? 'bg-rose-500' : 'bg-cyan-500'
+                    className={`w-1.5 h-1.5 rounded-full ml-1 ${
+                      totalBlockers > 0 ? 'bg-rose-500' : 'bg-indigo-500'
                     }`}
                   />
                 )}
               </button>
             )}
 
-            {/* Quick 1-on-1 Request CTA */}
-            <button
-              type="button"
-              data-tour="quick-request"
-              onClick={() => openRequestModal()}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-xs font-semibold transition-colors shrink-0"
-              title={isZh ? '向指定一人发起申请或交流' : 'Send 1-on-1 request'}
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{isZh ? '1对1' : 'Request'}</span>
-            </button>
-
-            {/* Unified Split CTA: + New Task + Dropdown for Projects / DDL Planner / AI Import / Templates */}
+            {/* Unified Split CTA: + New + Dropdown (Requests / Projects / DDL Planner / AI Import / Templates) */}
             <div
               data-tour="new-split-cta"
               className="relative inline-flex items-center rounded-lg bg-indigo-600 text-white shadow-xs shrink-0"
@@ -398,11 +398,11 @@ export const Header: React.FC = () => {
                   setShowNewMenu(false);
                   setIsNewTaskOpen(true);
                 }}
-                className="flex items-center gap-1 pl-2.5 pr-2 py-1.5 rounded-l-lg hover:bg-indigo-500 text-xs font-semibold transition-colors"
+                className="flex items-center gap-1 pl-2 pr-1.5 py-1.5 rounded-l-lg hover:bg-indigo-500 text-xs font-semibold whitespace-nowrap transition-colors"
                 title={t.newTask}
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isZh ? '新建任务' : 'New Task'}</span>
+                <span>{isZh ? '新建' : 'New'}</span>
               </button>
               <button
                 type="button"
@@ -439,7 +439,7 @@ export const Header: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
-                    <Send className="w-3.5 h-3.5 text-cyan-500" />
+                    <Send className="w-3.5 h-3.5 text-indigo-500" />
                     <span>{isZh ? '发起 1对1 申请/沟通' : '1-on-1 Request'}</span>
                   </button>
                   <button
@@ -450,8 +450,8 @@ export const Header: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
-                    <Network className="w-3.5 h-3.5 text-violet-500" />
-                    <span>{isZh ? '项目管理与学期继承' : 'Projects & Lineage'}</span>
+                    <Network className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{isZh ? '项目管理与转化排期' : 'Projects & Outreach'}</span>
                   </button>
                   <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
                   <button
@@ -473,7 +473,7 @@ export const Header: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                     <span>{t.aiImportTitle}</span>
                   </button>
                   <button
@@ -505,7 +505,7 @@ export const Header: React.FC = () => {
                       setShowNewMenu(false);
                       setIsFeatureGuideOpen(true);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-cyan-600 dark:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                    className="w-full px-3 py-2 text-left text-xs text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
                   >
                     <Compass className="w-3.5 h-3.5" />
                     <span>{isZh ? '快速上手指南' : 'Quick Start Guide'}</span>
@@ -548,7 +548,7 @@ export const Header: React.FC = () => {
             {/* Unified User & Quick-Preferences Capsule */}
             <div
               data-tour="account-capsule"
-              className="relative flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs"
+              className="relative flex items-center gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs"
             >
               <button
                 type="button"
@@ -557,11 +557,11 @@ export const Header: React.FC = () => {
                   setShowMoreViewsMenu(false);
                   setShowNewMenu(false);
                 }}
-                className="flex items-center gap-1.5 pl-0.5 pr-1.5 py-0.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+                className="flex items-center gap-1.5 pl-0.5 pr-1 py-0.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
                 title={isZh ? '账户、视图与外观设置' : 'Account & preferences'}
               >
                 <MemberAvatar member={currentMember} size="xs" />
-                <span className="max-w-[84px] truncate font-semibold text-slate-800 dark:text-slate-200">
+                <span className="max-w-[72px] truncate font-semibold text-slate-800 dark:text-slate-200">
                   {isZh ? currentMember.nameZh : currentMember.nameEn}
                 </span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -609,7 +609,7 @@ export const Header: React.FC = () => {
                         onClick={() => void toggleDesktopNotifications()}
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold border ${
                           desktopNotificationsEnabled
-                            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300'
+                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300'
                             : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
                         }`}
                       >
@@ -634,7 +634,7 @@ export const Header: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-cyan-600 dark:text-cyan-400"
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
                       >
                         <Globe className="w-3 h-3" />
                         <span>{t.switchLang}</span>
@@ -642,10 +642,10 @@ export const Header: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-200"
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
                       >
                         {theme === 'dark' ? (
-                          <Sun className="w-3 h-3 text-amber-400" />
+                          <Sun className="w-3 h-3 text-amber-500" />
                         ) : (
                           <Moon className="w-3 h-3 text-indigo-500" />
                         )}
@@ -673,7 +673,7 @@ export const Header: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
-                    <LayoutGrid className="w-3.5 h-3.5 text-cyan-500" />
+                    <LayoutGrid className="w-3.5 h-3.5 text-indigo-500" />
                     {isZh ? '自定义视图与 PIN' : 'Views & Personal PIN'}
                   </button>
                   <button
@@ -686,9 +686,9 @@ export const Header: React.FC = () => {
                   >
                     <span className="flex items-center gap-2">
                       {storageMode === 'postgres' ? (
-                        <Database className="w-3.5 h-3.5 text-emerald-500" />
+                        <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       ) : (
-                        <HardDrive className="w-3.5 h-3.5 text-cyan-500" />
+                        <HardDrive className="w-3.5 h-3.5 text-indigo-500" />
                       )}
                       <span>
                         {storageMode === 'postgres'
@@ -721,11 +721,11 @@ export const Header: React.FC = () => {
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${
                   currentAccessRole === 'ADMIN_PI'
-                    ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                    ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/35'
                     : currentAccessRole === 'SYS_ADMIN'
                     ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35'
                     : currentAccessRole === 'PROJECT_LEAD'
-                    ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30'
+                    ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30'
                     : currentAccessRole === 'STUDENT_RA'
                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                     : 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30'
@@ -795,7 +795,7 @@ export const Header: React.FC = () => {
                   placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-lg pl-8 pr-7 py-1 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500/60"
+                  className="w-full bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-lg pl-8 pr-7 py-1 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500/60"
                 />
                 {searchQuery && (
                   <button
@@ -883,10 +883,10 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsFeatureGuideOpen(true)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-500/50 text-xs font-medium transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-500/50 text-xs font-medium transition-colors"
                     title={isZh ? '功能一览与上手指南' : 'Feature Overview & Quick Start'}
                   >
-                    <Compass className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                    <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     <span>{t.featureGuide}</span>
                   </button>
 
@@ -912,10 +912,10 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsAIImportOpen(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:from-cyan-500/25 hover:to-indigo-500/25 text-xs font-bold transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/12 border border-indigo-500/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 text-xs font-bold transition-all shadow-sm"
                     title={t.aiImportTitle}
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 fill-cyan-400/20" />
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 fill-indigo-400/20" />
                     <span>{t.aiImport}</span>
                   </button>
 

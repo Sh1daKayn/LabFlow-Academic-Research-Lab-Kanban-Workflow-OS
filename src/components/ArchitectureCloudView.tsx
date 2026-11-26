@@ -9,9 +9,11 @@ import {
   ProjectInheritanceLink,
   ProjectInheritanceType,
   ProjectItem,
+  AssetLinks,
   TaskItem,
   VisibilityLevel,
   WorkCategory,
+  WorkshopTranslationStatus,
 } from '@/types';
 import {
   aggregateProjectsByCategory,
@@ -34,12 +36,23 @@ import {
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { ProjectHandoffSummary } from '@/components/ProjectHandoffSummary';
 import { SemesterLineageView } from '@/components/SemesterLineageView';
+import { AssetLinksEditor } from '@/components/AssetLinksEditor';
+import { OutreachWorkshopsView } from '@/components/OutreachWorkshopsView';
+import {
+  DEFAULT_OUTREACH_TRACKS,
+  OUTREACH_STATUS_META,
+  WORKSHOP_TRANSLATION_STATUSES,
+  sanitizeWorkshopPrograms,
+} from '@/utils/outreachTracks';
+import { normalizeExternalUrl, resolveVenueUrl } from '@/utils/venues';
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
   ChevronDown,
   ChevronRight,
   Download,
+  ExternalLink,
   FileText,
   FolderKanban,
   FolderPlus,
@@ -75,6 +88,8 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
     members,
     projects,
     stages,
+    venues,
+    outreachTracks,
     addProject,
     updateProject,
     deleteProject,
@@ -101,6 +116,7 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
     seed?.categoryColor || CATEGORY_COLOR_PALETTE[0]
   );
   const [targetVenue, setTargetVenue] = useState(seed?.targetVenue || '');
+  const [targetVenueUrl, setTargetVenueUrl] = useState(seed?.targetVenueUrl || '');
   const [submissionDeadline, setSubmissionDeadline] = useState(
     initialProject?.submissionDeadline || ''
   );
@@ -123,6 +139,24 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
     initialProject?.researchQuestion || ''
   );
   const [sharedDataset, setSharedDataset] = useState(seed?.sharedDataset || '');
+  const [assets, setAssets] = useState<AssetLinks>(seed?.assets || {});
+  const availableOutreachTracks = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...(outreachTracks.length > 0 ? outreachTracks : DEFAULT_OUTREACH_TRACKS),
+          ...(seed?.workshopPrograms || []),
+        ])
+      ),
+    [outreachTracks, seed]
+  );
+  const [workshopPrograms, setWorkshopPrograms] = useState<string[]>(() =>
+    sanitizeWorkshopPrograms(seed?.workshopPrograms)
+  );
+  const [workshopTranslationStatus, setWorkshopTranslationStatus] = useState<
+    WorkshopTranslationStatus | undefined
+  >(seed?.workshopTranslationStatus);
+  const [workshopTargetDate, setWorkshopTargetDate] = useState(seed?.workshopTargetDate || '');
   const [handoffHistory, setHandoffHistory] = useState<ProjectHandoffEntry[]>(
     () => seed?.handoffHistory || []
   );
@@ -208,6 +242,15 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
       inheritedFrom,
       initialProject?.id
     );
+    const resolvedVenue =
+      targetVenue.trim() ||
+      (workCategory === 'HORIZONTAL_PROJECT'
+        ? 'Enterprise Delivery'
+        : workCategory === 'VERTICAL_PROJECT'
+          ? 'Grant Milestone'
+          : 'Target Venue');
+    const resolvedVenueUrl = normalizeExternalUrl(targetVenueUrl);
+    const cleanedOutreach = sanitizeWorkshopPrograms(workshopPrograms);
     const payload = {
       title: title.trim(),
       workCategory,
@@ -217,13 +260,8 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
       category: category.trim() || undefined,
       categoryColor,
       memberIds: normalizedMembers,
-      targetVenue:
-        targetVenue.trim() ||
-        (workCategory === 'HORIZONTAL_PROJECT'
-          ? 'Enterprise Delivery'
-          : workCategory === 'VERTICAL_PROJECT'
-            ? 'Grant Milestone'
-            : 'Target Venue'),
+      targetVenue: resolvedVenue,
+      targetVenueUrl: resolvedVenueUrl,
       submissionDeadline: submissionDeadline || undefined,
       status,
       leadAuthorId,
@@ -233,7 +271,13 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
       sharedDataset: sharedDataset.trim() || undefined,
       handoffHistory: cleanedHandoffs.length > 0 ? cleanedHandoffs : undefined,
       inheritedFrom: cleanedInherited.length > 0 ? cleanedInherited : undefined,
-      assets: initialProject?.assets || {},
+      workshopPrograms: cleanedOutreach.length > 0 ? cleanedOutreach : undefined,
+      workshopTranslationStatus:
+        cleanedOutreach.length > 0 || workshopTranslationStatus
+          ? workshopTranslationStatus || 'IN_PREP'
+          : undefined,
+      workshopTargetDate: workshopTargetDate || undefined,
+      assets,
       visibility,
     };
 
@@ -263,6 +307,7 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
             projectId: created.id,
             projectTag: created.tag,
             targetVenue: created.targetVenue,
+            targetVenueUrl: created.targetVenueUrl || resolveVenueUrl(created.targetVenue, venues),
             startDate: todayIso,
             deadline: created.submissionDeadline || fallbackDeadline,
             progress: 0,
@@ -295,7 +340,7 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="p-2 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-600 dark:text-violet-400">
+          <div className="p-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
             <FolderKanban className="w-5 h-5" />
           </div>
           <div>
@@ -518,6 +563,32 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                {isZh ? '投稿 / 官网链接' : 'Venue Website URL'}
+              </label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="url"
+                  value={targetVenueUrl}
+                  onChange={(e) => setTargetVenueUrl(e.target.value)}
+                  placeholder="https://..."
+                  className={inputClass}
+                />
+                {resolveVenueUrl(targetVenue, venues, targetVenueUrl) && (
+                  <a
+                    href={resolveVenueUrl(targetVenue, venues, targetVenueUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
+                    title={isZh ? '打开网址' : 'Open URL'}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 {isZh ? '当前阶段' : 'Stage'}
               </label>
               <select
@@ -685,6 +756,98 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
               onChange={(e) => setAbstract(e.target.value)}
               className={inputClass}
             />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3">
+            <AssetLinksEditor
+              value={assets}
+              onChange={setAssets}
+              label={isZh ? '课题共享外链与仓库 (Custom Assets)' : 'Project Links & Resources'}
+              language={language}
+            />
+          </div>
+
+          {/* Outreach & Workshops Downstream Translation Tracks */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <CalendarClock className="w-3.5 h-3.5 text-indigo-500" />
+                <span>
+                  {isZh
+                    ? '成果转化与外联出口 (Outreach & Workshops)'
+                    : 'Outreach & Translation Tracks (Workshops / Partners)'}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                {isZh ? '勾选关联出口以进入排期视图' : 'Select tracks to schedule downstream'}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {availableOutreachTracks.map((track) => {
+                const selected = workshopPrograms.includes(track);
+                return (
+                  <button
+                    key={track}
+                    type="button"
+                    onClick={() =>
+                      setWorkshopPrograms((prev) =>
+                        prev.includes(track)
+                          ? prev.filter((item) => item !== track)
+                          : [...prev, track]
+                      )
+                    }
+                    className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors ${
+                      selected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400'
+                    }`}
+                  >
+                    {track}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {isZh ? '转化排期状态' : 'Translation Status'}
+                </label>
+                <select
+                  value={workshopTranslationStatus || ''}
+                  onChange={(e) =>
+                    setWorkshopTranslationStatus(
+                      (e.target.value || undefined) as WorkshopTranslationStatus | undefined
+                    )
+                  }
+                  className={inputClass}
+                >
+                  <option value="">
+                    {isZh ? '暂未设定状态' : 'Not scheduled yet'}
+                  </option>
+                  {WORKSHOP_TRANSLATION_STATUSES.map((st) => {
+                    const meta = OUTREACH_STATUS_META[st];
+                    return (
+                      <option key={st} value={st}>
+                        {isZh ? meta.labelZh : meta.labelEn}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {isZh ? '目标汇报 / 落地日期' : 'Target Presentation / Delivery Date'}
+                </label>
+                <input
+                  type="date"
+                  value={workshopTargetDate}
+                  onChange={(e) => setWorkshopTargetDate(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Cross-Term Baton Handoff Timeline */}
@@ -994,7 +1157,7 @@ const ProjectEditorModal: React.FC<ProjectEditorModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-sm"
+                className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm"
               >
                 {isZh ? '保存项目设置' : 'Save Project'}
               </button>
@@ -1098,6 +1261,7 @@ export const ArchitectureCloudView: React.FC = () => {
     tasks,
     members,
     stages,
+    venues,
     currentUserId,
     language,
     t,
@@ -1112,7 +1276,7 @@ export const ArchitectureCloudView: React.FC = () => {
   } = useLabFlow();
 
   const isZh = language === 'zh';
-  const [categoriesSubView, setCategoriesSubView] = useState<'clusters' | 'tree' | 'lineage'>('clusters');
+  const [categoriesSubView, setCategoriesSubView] = useState<'clusters' | 'tree' | 'lineage' | 'workshops'>('clusters');
   const [editingProject, setEditingProject] = useState<ProjectItem | null | undefined>(undefined);
   const [projectSeedDraft, setProjectSeedDraft] = useState<Partial<ProjectItem> | null>(null);
   const [selectedKeyword, setSelectedKeyword] = useState<WordCloudTerm | null>(null);
@@ -1264,7 +1428,7 @@ export const ArchitectureCloudView: React.FC = () => {
       {/* Header Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-600 dark:text-violet-400">
+          <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
             <Network className="w-6 h-6" />
           </div>
           <div>
@@ -1287,21 +1451,21 @@ export const ArchitectureCloudView: React.FC = () => {
               {projects.length} {isZh ? '个科研项目' : 'Projects'}
             </span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400">
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400">
               {totalUniqueMembers} {isZh ? '人参与负责' : 'Contributors'}
             </span>
           </div>
 
           <div
             data-tour="arch-subview-switch"
-            className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
+            className="flex flex-wrap items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
           >
             <button
               type="button"
               onClick={() => setCategoriesSubView('clusters')}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold transition-colors ${
                 categoriesSubView === 'clusters'
-                  ? 'bg-violet-600 text-white shadow-xs'
+                  ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -1313,7 +1477,7 @@ export const ArchitectureCloudView: React.FC = () => {
               onClick={() => setCategoriesSubView('tree')}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold transition-colors ${
                 categoriesSubView === 'tree'
-                  ? 'bg-violet-600 text-white shadow-xs'
+                  ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -1332,6 +1496,18 @@ export const ArchitectureCloudView: React.FC = () => {
               <GitFork className="w-3.5 h-3.5" />
               <span>{isZh ? '学期继承图谱' : 'Semester Lineage'}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setCategoriesSubView('workshops')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold transition-colors ${
+                categoriesSubView === 'workshops'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <CalendarClock className="w-3.5 h-3.5" />
+              <span>{isZh ? '转化与外联' : 'Outreach & Workshops'}</span>
+            </button>
           </div>
 
           <button
@@ -1340,7 +1516,7 @@ export const ArchitectureCloudView: React.FC = () => {
               setProjectSeedDraft(null);
               setEditingProject(null);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-sm transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors"
           >
             <FolderPlus className="w-4 h-4" />
             <span>{isZh ? '新建 / 归类项目' : 'New Project'}</span>
@@ -1450,6 +1626,16 @@ export const ArchitectureCloudView: React.FC = () => {
         />
       )}
 
+      {categoriesSubView === 'workshops' && (
+        <OutreachWorkshopsView
+          projects={filteredProjects}
+          onEditProject={(proj) => {
+            setProjectSeedDraft(null);
+            setEditingProject(proj);
+          }}
+        />
+      )}
+
       {categoriesSubView === 'clusters' && (
         <>
 
@@ -1457,7 +1643,7 @@ export const ArchitectureCloudView: React.FC = () => {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-violet-500" />
+            <Layers className="w-4 h-4 text-indigo-500" />
             <span>
               {isZh
                 ? '研究大类归档与负责人数总览（同大类多项目自动聚合去重）'
@@ -1468,7 +1654,7 @@ export const ArchitectureCloudView: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedKeyword(null)}
-              className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
             >
               <X className="w-3.5 h-3.5" />
               <span>
@@ -1521,7 +1707,7 @@ export const ArchitectureCloudView: React.FC = () => {
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1 whitespace-nowrap">
+                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 whitespace-nowrap">
                         <Users className="w-3.5 h-3.5" />
                         {cat.memberCount} {t.responsibleCount}
                       </span>
@@ -1550,7 +1736,7 @@ export const ArchitectureCloudView: React.FC = () => {
                           key={proj.id}
                           className={`p-2.5 rounded-xl border text-xs transition-all ${
                             isHighlighted
-                              ? 'bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-500 ring-1 ring-cyan-500/40'
+                              ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/40'
                               : 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
                         >
@@ -1574,9 +1760,25 @@ export const ArchitectureCloudView: React.FC = () => {
                                     {isZh ? projStageCfg.labelZh : projStageCfg.labelEn}
                                   </span>
                                 )}
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 inline-flex items-center gap-1 flex-wrap">
                                   {proj.partnerOrg ? `${proj.partnerOrg} · ` : ''}
-                                  {proj.targetVenue}
+                                  {resolveVenueUrl(proj.targetVenue, venues, proj.targetVenueUrl) ? (
+                                    <a
+                                      href={resolveVenueUrl(
+                                        proj.targetVenue,
+                                        venues,
+                                        proj.targetVenueUrl
+                                      )}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                                    >
+                                      <span>{proj.targetVenue}</span>
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </a>
+                                  ) : (
+                                    <span>{proj.targetVenue}</span>
+                                  )}
                                 </span>
                               </div>
                               <div className="font-semibold text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">
@@ -1626,7 +1828,7 @@ export const ArchitectureCloudView: React.FC = () => {
                                   }
                                   className={`p-0.5 rounded transition-colors ${
                                     projStageIdx >= 0 && projStageIdx < stages.length - 1
-                                      ? 'text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400'
+                                      ? 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400'
                                       : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
                                   }`}
                                   title={isZh ? '推进至下一阶段' : 'Advance Stage'}
@@ -1698,7 +1900,7 @@ export const ArchitectureCloudView: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-cyan-500" />
+              <Sparkles className="w-4 h-4 text-indigo-500" />
               <span>{t.wordCloudTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -1715,7 +1917,7 @@ export const ArchitectureCloudView: React.FC = () => {
                 {isZh ? '大类' : 'Category'}
               </span>
               <span className="flex items-center gap-1">
-                <i className="w-2 h-2 rounded-full bg-cyan-500 inline-block" />
+                <i className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
                 {isZh ? '项目' : 'Project'}
               </span>
               <span className="flex items-center gap-1">
@@ -1787,7 +1989,7 @@ export const ArchitectureCloudView: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <GitBranch className="w-4 h-4 text-violet-500" />
+              <GitBranch className="w-4 h-4 text-indigo-500" />
               <span>{t.architectureTreeTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -1804,7 +2006,7 @@ export const ArchitectureCloudView: React.FC = () => {
                 onClick={() => setTreeOrientation('horizontal')}
                 className={`px-2.5 py-1 rounded-md font-medium ${
                   treeOrientation === 'horizontal'
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
@@ -1815,7 +2017,7 @@ export const ArchitectureCloudView: React.FC = () => {
                 onClick={() => setTreeOrientation('vertical')}
                 className={`px-2.5 py-1 rounded-md font-medium ${
                   treeOrientation === 'vertical'
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
@@ -1839,7 +2041,7 @@ export const ArchitectureCloudView: React.FC = () => {
             <div className="min-w-[820px] flex items-stretch gap-5 p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
               {/* Level 0: Lab Root */}
               <div className="flex items-center shrink-0">
-                <div className="w-48 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg space-y-1.5">
+                <div className="w-48 p-3.5 rounded-2xl bg-indigo-600 text-white shadow-lg space-y-1.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">
                     LAB ROOT
                   </span>
@@ -1899,7 +2101,7 @@ export const ArchitectureCloudView: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between text-[10px] text-slate-500">
-                          <span className="font-semibold text-cyan-600 dark:text-cyan-400">
+                          <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                             {cat.memberCount} {t.responsibleCount}
                           </span>
                           <span>
@@ -1929,7 +2131,7 @@ export const ArchitectureCloudView: React.FC = () => {
                                 <div
                                   className={`w-64 shrink-0 p-2.5 rounded-xl border shadow-sm space-y-1.5 ${
                                     isProjHit
-                                      ? 'bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-500'
+                                      ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-500'
                                       : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
                                   }`}
                                 >
@@ -2007,7 +2209,7 @@ export const ArchitectureCloudView: React.FC = () => {
                                             task.isBlocked
                                               ? 'bg-red-50/70 dark:bg-red-950/30 border-red-400/50'
                                               : isTaskHit
-                                              ? 'bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-500'
+                                              ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-500'
                                               : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
                                           }`}
                                         >
@@ -2016,7 +2218,7 @@ export const ArchitectureCloudView: React.FC = () => {
                                             <button
                                               type="button"
                                               onClick={() => openTaskFromTree(task)}
-                                              className="font-medium text-slate-800 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-cyan-300 truncate text-left"
+                                              className="font-medium text-slate-800 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-300 truncate text-left"
                                             >
                                               {task.title}
                                             </button>
@@ -2028,7 +2230,7 @@ export const ArchitectureCloudView: React.FC = () => {
                                             <button
                                               type="button"
                                               onClick={() => setLogicTreeTaskId(task.id)}
-                                              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-500/15 hover:bg-violet-500/25 text-violet-700 dark:text-violet-300 text-[10px] font-semibold"
+                                              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold"
                                               title={isZh ? '编辑任务树状逻辑图' : 'Edit Task Logic Tree'}
                                             >
                                               <GitBranch className="w-3 h-3" />
@@ -2065,7 +2267,7 @@ export const ArchitectureCloudView: React.FC = () => {
                         style={{ backgroundColor: cat.color }}
                       />
                       <span>{cat.category}</span>
-                      <span className="text-[11px] font-normal text-cyan-600 dark:text-cyan-400">
+                      <span className="text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
                         ({cat.projects.length} {isZh ? '项目' : 'projects'} · {cat.memberCount}{' '}
                         {t.responsibleCount})
                       </span>
@@ -2120,7 +2322,7 @@ export const ArchitectureCloudView: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setLogicTreeTaskId(task.id)}
-                                    className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold shrink-0 flex items-center gap-1"
+                                    className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold shrink-0 flex items-center gap-1"
                                   >
                                     <GitBranch className="w-3 h-3" />
                                     <span>{isZh ? '逻辑树图' : 'Logic Tree'}</span>

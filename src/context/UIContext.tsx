@@ -52,6 +52,8 @@ export interface UIContextType {
   setSelectedStageFilter: (val: string) => void;
   selectedProjectFilter: string;
   setSelectedProjectFilter: (val: string) => void;
+  selectedWorkshopFilter: string;
+  setSelectedWorkshopFilter: (val: string) => void;
   sortByDDLUrgency: boolean;
   setSortByDDLUrgency: (val: boolean) => void;
   viewMode: ViewMode;
@@ -132,6 +134,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
   const [selectedStageFilter, setSelectedStageFilter] = useState<string>('all');
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
+  const [selectedWorkshopFilter, setSelectedWorkshopFilter] = useState<string>('ALL');
   const [sortByDDLUrgency, setSortByDDLUrgency] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [workspaceScope, setWorkspaceScope] = useState<WorkspaceScope>('MINE');
@@ -216,6 +219,8 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         setSelectedStageFilter,
         selectedProjectFilter,
         setSelectedProjectFilter,
+        selectedWorkshopFilter,
+        setSelectedWorkshopFilter,
         sortByDDLUrgency,
         setSortByDDLUrgency,
         viewMode,

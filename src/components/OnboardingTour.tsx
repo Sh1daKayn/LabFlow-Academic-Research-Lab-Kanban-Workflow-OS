@@ -245,12 +245,12 @@ const TOUR_STEPS: TourStepConfig[] = [
     summaryZh: '需要某位老师看初稿、或者找方法同学讨论模型细节？不用在群里喊，直接在这里点名发起。',
     summaryEn: 'Send targeted requests for manuscript review, IRB/admin help, or methods advice to one person.',
     pointsZh: [
-      '全站快捷入口：任意界面点击右上角青色「1对1 / Request」按钮，就能立刻给指定一人发消息并关联任务/截止日；',
+      '全站快捷入口：任意界面点击右上角「+ 新建 → 1对1」或在「更多 → 1对1沟通」发起，就能立刻给指定一人发消息并关联任务/截止日；',
       '隐私与公开自由选：默认可设为「仅双方私密可见」，也可以设为「组内公开」让大家共用经验；',
       '状态追踪闭环：收件人回复后支持多轮行内追问，问题解决后双方都可点击「标为已解决 ✓」归档。',
     ],
     pointsEn: [
-      'Click "Request" in the top header anytime to message a specific person linked to a project/task.',
+      'Open "+ New -> 1-on-1 Request" top-right anytime to message a specific member linked to a project/task.',
       'Choose Private (sender + recipient only) or Public (shared across Lab Public feed).',
       'Track Open -> Replied -> Resolved states so no review ask gets buried.',
     ],
@@ -287,17 +287,17 @@ const TOUR_STEPS: TourStepConfig[] = [
     placement: 'bottom',
     titleZh: '12. 系统设置、Teams 推送与数据备份',
     titleEn: '12. Lab Settings, Teams Webhooks & Backups',
-    summaryZh: '管理员和导师可以在这里管理全组邮箱、导入 CAB Lab 预置包，并开启群聊与邮件自动推送。',
+    summaryZh: '管理员和导师可以在这里管理全组邮箱、导入/导出 JSON 数据包，并开启群聊与邮件自动推送。',
     summaryEn: 'Configure team rosters, Microsoft Teams / Slack Webhooks, scheduled email digests, and JSON backups.',
     pointsZh: [
       '团队成员与邮箱：新增成员、配置 PI/骨干/学生权限，以及用于邮件摘要的真实邮箱；',
       'Teams / Slack Webhook & 内置教程：打开「通知与集成」标签即可查看在 Microsoft Teams 创建 Incoming Webhook 的图文步骤与一键测试；',
-      '48 小时临期 / 周会前定时摘要 + 数据备份：支持导入 CAB Lab 预置数据包，以及随时导出/恢复全量 JSON 快照。',
+      '48 小时临期 / 周会前定时摘要 + 数据备份：随时导出或导入恢复全量 JSON 数据快照，支持自定义转化出口与期刊库。',
     ],
     pointsEn: [
       'Team & Emails: manage member roles and recipient emails for digests.',
       'Notifications & Webhooks: includes a step-by-step Microsoft Teams Incoming Webhook tutorial + test trigger.',
-      'Data & Backup: import CAB Lab preset pack or export/restore full JSON state anytime.',
+      'Data & Backup: export/restore full JSON workspace snapshots and configure outreach tracks & venue links.',
     ],
   },
 ];
@@ -714,47 +714,47 @@ export const OnboardingTour: React.FC = () => {
           opacity: peekBehind ? 0.88 : 1,
           transition: 'top 180ms ease, left 180ms ease, opacity 150ms ease',
         }}
-        className="bg-white dark:bg-slate-900 border-2 border-cyan-500/45 shadow-2xl p-4 text-slate-900 dark:text-slate-100"
+        className="bg-white dark:bg-slate-900 border-2 border-indigo-500/45 shadow-2xl p-4 text-slate-900 dark:text-slate-100"
       >
         {/* Pointer Arrow aimed cleanly at target center */}
         {targetRect && popoverPos.placement === 'bottom' && (
           <div
             data-tour-layer="true"
             style={{ left: `${popoverPos.arrowLeft - 7}px`, top: '-8px' }}
-            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-l-2 border-t-2 border-cyan-500/45"
+            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-l-2 border-t-2 border-indigo-500/45"
           />
         )}
         {targetRect && popoverPos.placement === 'top' && (
           <div
             data-tour-layer="true"
             style={{ left: `${popoverPos.arrowLeft - 7}px`, bottom: '-8px' }}
-            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-r-2 border-b-2 border-cyan-500/45"
+            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-r-2 border-b-2 border-indigo-500/45"
           />
         )}
         {targetRect && popoverPos.placement === 'right' && (
           <div
             data-tour-layer="true"
             style={{ left: '-8px', top: `${popoverPos.arrowTop - 7}px` }}
-            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-l-2 border-b-2 border-cyan-500/45"
+            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-l-2 border-b-2 border-indigo-500/45"
           />
         )}
         {targetRect && popoverPos.placement === 'left' && (
           <div
             data-tour-layer="true"
             style={{ right: '-8px', top: `${popoverPos.arrowTop - 7}px` }}
-            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-r-2 border-t-2 border-cyan-500/45"
+            className="absolute w-3.5 h-3.5 rotate-45 bg-white dark:bg-slate-900 border-r-2 border-t-2 border-indigo-500/45"
           />
         )}
 
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-start gap-2.5 min-w-0">
-            <span className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5">
+            <span className="p-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5">
               <Compass className="w-4 h-4" />
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/12 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25">
                   {isZh ? currentStep.chapterZh : currentStep.chapterEn}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400">
@@ -775,7 +775,7 @@ export const OnboardingTour: React.FC = () => {
               onClick={() => setPeekBehind((p) => !p)}
               className={`p-1 rounded-lg border text-[11px] transition-colors ${
                 peekBehind
-                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-700 dark:text-cyan-300'
+                  ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-700 dark:text-indigo-300'
                   : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
               title={
@@ -813,7 +813,7 @@ export const OnboardingTour: React.FC = () => {
               key={i}
               className="flex items-start gap-2 text-[11.5px] text-slate-700 dark:text-slate-200 leading-relaxed"
             >
-              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0" />
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
               <span>{pt}</span>
             </li>
           ))}
@@ -837,9 +837,9 @@ export const OnboardingTour: React.FC = () => {
                 onClick={() => setTourStepIndex(idx)}
                 className={`h-1.5 rounded-full transition-all ${
                   idx === safeStepIndex
-                    ? 'w-4 bg-cyan-500'
+                    ? 'w-4 bg-indigo-500'
                     : idx < safeStepIndex
-                    ? 'w-1.5 bg-cyan-500/45 hover:bg-cyan-500'
+                    ? 'w-1.5 bg-indigo-500/45 hover:bg-indigo-500'
                     : 'w-1.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400'
                 }`}
                 aria-label={`Step ${idx + 1}: ${isZh ? s.titleZh : s.titleEn}`}
@@ -871,7 +871,7 @@ export const OnboardingTour: React.FC = () => {
             <button
               type="button"
               onClick={handleNext}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-sm"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm"
             >
               {isLast ? (
                 <>

@@ -6,6 +6,7 @@
   --background: #020617;
   --foreground: #f8fafc;
   --lab-accent: #6366f1;
+  --lab-accent-fg: #ffffff;
   --lab-accent-hover: #4f46e5;
   --lab-accent-light: rgba(99, 102, 241, 0.12);
   --lab-accent-border: rgba(99, 102, 241, 0.35);
@@ -70,6 +71,7 @@ button.bg-indigo-600,
 .bg-indigo-600,
 [class*="bg-indigo-600"] {
   background-color: var(--lab-accent) !important;
+  color: var(--lab-accent-fg, #ffffff) !important;
 }
 button.bg-indigo-600:hover,
 [class*="hover:bg-indigo-500"]:hover,
@@ -81,21 +83,33 @@ button.bg-indigo-600:hover,
 [class*="text-indigo-600"] {
   color: var(--lab-accent) !important;
 }
+html.dark [class*="text-indigo-300"],
+html.dark [class*="text-indigo-400"] {
+  color: color-mix(in srgb, var(--lab-accent) 62%, #ffffff) !important;
+}
+html.light [class*="text-indigo-700"] {
+  color: color-mix(in srgb, var(--lab-accent) 82%, #000000) !important;
+}
 [class*="border-indigo-500"],
-[class*="border-indigo-600"] {
+[class*="border-indigo-600"],
+[class*="border-indigo-400"] {
   border-color: var(--lab-accent-border) !important;
 }
 [class*="ring-indigo-500"] {
   --tw-ring-color: var(--lab-accent) !important;
 }
 [class*="bg-indigo-500/10"],
-[class*="bg-indigo-50/"] {
-  background-color: var(--lab-accent-light) !important;
-}
+[class*="bg-indigo-500/12"],
 [class*="bg-indigo-500/15"],
 [class*="bg-indigo-500/20"],
-[class*="bg-indigo-950/20"] {
+[class*="bg-indigo-50/"],
+[class*="bg-indigo-950/"] {
   background-color: var(--lab-accent-light) !important;
+}
+
+::selection {
+  background-color: var(--lab-accent-light);
+  color: inherit;
 }
 
 /* ========================================================================= */
@@ -194,10 +208,8 @@ html.light .fixed.inset-0:not([data-tour-root]):not([data-tour-layer]) {
   backdrop-filter: blur(6px) !important;
 }
 
-/* 2. Modal Windows & Dialog Cards (Crisp pure white body) */
-html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) > div:not([data-tour-layer]),
-html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) [class*="rounded-2xl"]:not([data-tour-layer]),
-html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) [class*="rounded-xl"]:not([data-tour-layer]) {
+/* 2. Modal Dialog Shells Only (avoid overriding nested rounded-xl buttons/alerts inside modals) */
+html.light [class*="fixed"][class*="inset-0"]:not([data-tour-root]):not([data-tour-layer]) > div:not([data-tour-layer]) {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: var(--lab-border-subtle-light) !important;
@@ -212,7 +224,7 @@ html.light [class*="bg-slate-900"] {
 }
 
 /* 4. Kanban Columns, Wells & Sub-boxes immersed in delicate color tone */
-html.light [class*="bg-slate-950"],
+html.light [class*="bg-slate-950"]:not([class*="fixed"]),
 html.light [class*="bg-slate-100"],
 html.light [class*="bg-slate-50"] {
   background-color: var(--lab-bg-surface-light) !important;
@@ -221,7 +233,6 @@ html.light [class*="bg-slate-50"] {
 }
 
 /* Sub-boxes inside Modals */
-html.light [class*="fixed"][class*="inset-0"] form,
 html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950"],
 html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-900/90"],
 html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950/80"] {
@@ -231,13 +242,19 @@ html.light [class*="fixed"][class*="inset-0"] [class*="bg-slate-950/80"] {
 }
 
 /* 5. Inputs, Textareas, Selects: Crisp White with Tinted Borders */
-html.light input,
-html.light select,
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.light select:not(.bg-transparent):not([data-status-select]),
 html.light textarea {
   background-color: #ffffff !important;
   border-color: var(--lab-border-subtle-light) !important;
   color: #0f172a !important;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+html.light select.bg-transparent {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
 }
 
 html.light input:focus,
@@ -323,7 +340,9 @@ html[data-bg="warm"].light [class*="bg-slate-100"] {
 
 /* 10. Preserved Brand & Status Colors */
 html.light button.bg-indigo-600,
-html.light [class*="bg-indigo-600"],
+html.light [class*="bg-indigo-600"] {
+  color: var(--lab-accent-fg, #ffffff) !important;
+}
 html.light [class*="from-amber-500"],
 html.light [class*="from-cyan-600"] {
   color: #ffffff !important;
@@ -340,7 +359,7 @@ html.light [class*="from-cyan-600"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #475569;
   border-radius: 9999px;
 }
 
@@ -349,5 +368,5 @@ html.light ::-webkit-scrollbar-thumb {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--lab-accent);
 }

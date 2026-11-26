@@ -100,7 +100,15 @@ import {
   sanitizeNotificationSettings,
 } from '@/utils/notificationPayloads';
 import { detectNewPersonalAlerts, PersonalDesktopAlert } from '@/utils/desktopNotifications';
-import { buildWeeklyDigestMarkdown } from '@/utils/weeklyDigest';
+import {
+  buildWeeklyDigestMarkdown,
+} from '@/utils/weeklyDigest';
+import {
+  DEFAULT_OUTREACH_TRACKS,
+  sanitizeOutreachTracks,
+} from '@/utils/outreachTracks';
+import { normalizeExternalUrl } from '@/utils/venues';
+import { sanitizeAssetLinks } from '@/utils/assets';
 import { ThemeContextType, ThemeProvider, useLabTheme } from '@/context/ThemeContext';
 import { ToastItem, UIContextType, UIProvider, useLabUI } from '@/context/UIContext';
 
@@ -132,7 +140,14 @@ interface LabDataContextType {
   // Target Venues
   venues: VenuePreset[];
   addVenue: (venue: VenuePreset) => void;
+  addVenues: (items: VenuePreset[]) => number;
+  updateVenue: (venueId: string, updates: Partial<VenuePreset>) => void;
   deleteVenue: (venueId: string) => void;
+
+  // Outreach / Workshop Tracks
+  outreachTracks: string[];
+  addOutreachTrack: (trackName: string) => void;
+  removeOutreachTrack: (trackName: string) => void;
 
   // Members & Current User
   members: LabMember[];
@@ -153,6 +168,7 @@ interface LabDataContextType {
   addMember: (member: LabMember) => void;
   updateMember: (id: string, updates: Partial<LabMember>) => void;
   deleteMember: (id: string) => void;
+  mergeDuplicateMember: (sourceMemberId: string, targetMemberId: string) => void;
 
   // Core Data
   tasks: TaskItem[];
@@ -329,6 +345,7 @@ const CACHE_KEYS = {
   WEEKLY_TODOS: 'labflow_weekly_todos_v3',
   DIRECT_REQUESTS: 'labflow_direct_requests_v3',
   ALLOW_PEER_ACCEPTANCE: 'labflow_peer_acceptance_v3',
+  OUTREACH_TRACKS: 'labflow_outreach_tracks_v1',
   CHECKLIST_TEMPLATES: 'labflow_checklist_templates_v3',
   NOTIFICATION_SETTINGS: 'labflow_notification_settings_v3',
   DESKTOP_NOTIFY: 'labflow_desktop_notify_v1',
@@ -348,6 +365,7 @@ function serializeWorkspace(workspace: LabWorkspaceData): string {
     weeklyTodos: workspace.weeklyTodos || [],
     directRequests: sanitizeDirectRequests(workspace.directRequests),
     allowPeerAcceptance: Boolean(workspace.allowPeerAcceptance),
+    outreachTracks: sanitizeOutreachTracks(workspace.outreachTracks),
     checklistTemplates: sanitizeChecklistTemplates(workspace.checklistTemplates),
     notificationSettings: sanitizeNotificationSettings(workspace.notificationSettings),
   });
@@ -361,6 +379,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setFilterMemberId,
     setSelectedStageFilter,
     setSelectedProjectFilter,
+    setSelectedWorkshopFilter,
     setViewMode,
     workspaceScope,
     setWorkspaceScope,
@@ -386,6 +405,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     createInitialDirectRequests()
   );
   const [allowPeerAcceptance, setAllowPeerAcceptance] = useState<boolean>(false);
+  const [outreachTracks, setOutreachTracks] = useState<string[]>(() => [...DEFAULT_OUTREACH_TRACKS]);
   const [checklistTemplates, setChecklistTemplates] = useState<ChecklistAcceptanceTemplate[]>(() =>
     structuredClone(DEFAULT_CHECKLIST_TEMPLATES)
   );
@@ -430,6 +450,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     weeklyTodos: [],
     directRequests: [],
     allowPeerAcceptance: false,
+    outreachTracks: [...DEFAULT_OUTREACH_TRACKS],
     checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
     notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
   });
@@ -444,6 +465,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     weeklyTodos,
     directRequests,
     allowPeerAcceptance,
+    outreachTracks,
     checklistTemplates,
     notificationSettings,
   };
@@ -468,6 +490,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setWeeklyTodos(sanitizeWeeklyTodos(snapshot.weeklyTodos));
     setDirectRequests(sanitizeDirectRequests(snapshot.directRequests));
     setAllowPeerAcceptance(Boolean(snapshot.allowPeerAcceptance));
+    setOutreachTracks(sanitizeOutreachTracks(snapshot.outreachTracks));
     setChecklistTemplates(sanitizeChecklistTemplates(snapshot.checklistTemplates));
     setNotificationSettings(sanitizeNotificationSettings(snapshot.notificationSettings));
   }, []);
@@ -531,6 +554,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         const cachedTodos = localStorage.getItem(CACHE_KEYS.WEEKLY_TODOS);
         const cachedRequests = localStorage.getItem(CACHE_KEYS.DIRECT_REQUESTS);
         const cachedPeerAcc = localStorage.getItem(CACHE_KEYS.ALLOW_PEER_ACCEPTANCE);
+        const cachedOutreach = localStorage.getItem(CACHE_KEYS.OUTREACH_TRACKS);
         const cachedTemplates = localStorage.getItem(CACHE_KEYS.CHECKLIST_TEMPLATES);
         const cachedNotifSettings = localStorage.getItem(CACHE_KEYS.NOTIFICATION_SETTINGS);
         const cachedDesktopNotify = localStorage.getItem(CACHE_KEYS.DESKTOP_NOTIFY);
@@ -547,6 +571,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         if (cachedTodos) setWeeklyTodos(sanitizeWeeklyTodos(JSON.parse(cachedTodos)));
         if (cachedRequests) setDirectRequests(sanitizeDirectRequests(JSON.parse(cachedRequests)));
         if (cachedPeerAcc !== null) setAllowPeerAcceptance(cachedPeerAcc === 'true');
+        if (cachedOutreach !== null) setOutreachTracks(sanitizeOutreachTracks(JSON.parse(cachedOutreach)));
         if (cachedTemplates !== null) {
           setChecklistTemplates(sanitizeChecklistTemplates(JSON.parse(cachedTemplates)));
         }
@@ -812,6 +837,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       weeklyTodos,
       directRequests,
       allowPeerAcceptance,
+      outreachTracks,
       checklistTemplates,
       notificationSettings,
     };
@@ -826,6 +852,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       localStorage.setItem(CACHE_KEYS.WEEKLY_TODOS, JSON.stringify(weeklyTodos));
       localStorage.setItem(CACHE_KEYS.DIRECT_REQUESTS, JSON.stringify(directRequests));
       localStorage.setItem(CACHE_KEYS.ALLOW_PEER_ACCEPTANCE, allowPeerAcceptance ? 'true' : 'false');
+      localStorage.setItem(CACHE_KEYS.OUTREACH_TRACKS, JSON.stringify(outreachTracks));
       localStorage.setItem(CACHE_KEYS.CHECKLIST_TEMPLATES, JSON.stringify(checklistTemplates));
       localStorage.setItem(
         CACHE_KEYS.NOTIFICATION_SETTINGS,
@@ -865,6 +892,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     weeklyTodos,
     directRequests,
     allowPeerAcceptance,
+    outreachTracks,
     checklistTemplates,
     notificationSettings,
     isHydrated,
@@ -1481,6 +1509,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setCurrentUserId('');
     setWorkspaceScope('MINE');
     setWorkCategoryFilter('ALL');
+    setSelectedWorkshopFilter('ALL');
     setFilterMemberId('all');
     setSelectedTask(null);
   };
@@ -1623,6 +1652,127 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     addToast(language === 'zh' ? '成员已移除' : 'Member Removed', '', 'info');
   };
 
+  const mergeDuplicateMember = (sourceMemberId: string, targetMemberId: string) => {
+    if (!canManageLab()) {
+      addToast(t.requireAdminNotice, '', 'warning');
+      return;
+    }
+    if (!sourceMemberId || !targetMemberId || sourceMemberId === targetMemberId) return;
+    const sourceMember = members.find((m) => m.id === sourceMemberId);
+    const targetMember = members.find((m) => m.id === targetMemberId);
+    if (!sourceMember || !targetMember) return;
+
+    const sourceRole = deriveAccessRole(sourceMember);
+    if (!effectiveIsAdmin && (sourceRole === 'ADMIN_PI' || sourceRole === 'SYS_ADMIN')) {
+      addToast(
+        language === 'zh'
+          ? '系统管理员无权合并导师或其他系统管理员账号'
+          : 'System Admin cannot merge PI or fellow System Admin accounts',
+        '',
+        'warning'
+      );
+      return;
+    }
+
+    const mergedTarget: LabMember = {
+      ...targetMember,
+      pin: hasMemberPin(targetMember) ? targetMember.pin : sourceMember.pin,
+      avatar: targetMember.avatar || sourceMember.avatar,
+      email:
+        targetMember.email && !targetMember.email.endsWith('@lab.edu')
+          ? targetMember.email
+          : sourceMember.email || targetMember.email,
+    };
+
+    const targetDisplayName =
+      language === 'zh'
+        ? mergedTarget.nameZh || mergedTarget.nameEn
+        : mergedTarget.nameEn || mergedTarget.nameZh;
+
+    setTasks((prev) =>
+      prev.map((task) => {
+        const replaceLead = task.leadAuthor?.id === sourceMemberId;
+        const replacePi = task.pi?.id === sourceMemberId;
+        const replaceEscalated = task.blocker?.escalatedToId === sourceMemberId;
+        if (!replaceLead && !replacePi && !replaceEscalated) return task;
+        return {
+          ...task,
+          leadAuthor: replaceLead ? mergedTarget : task.leadAuthor,
+          pi: replacePi ? mergedTarget : task.pi,
+          blocker:
+            replaceEscalated && task.blocker
+              ? {
+                  ...task.blocker,
+                  escalatedToId: mergedTarget.id,
+                  escalatedTo: targetDisplayName,
+                }
+              : task.blocker,
+        };
+      })
+    );
+
+    setProjects((prev) =>
+      prev.map((proj) => {
+        const nextMemberIds = proj.memberIds
+          ? Array.from(
+              new Set(
+                proj.memberIds.map((id) => (id === sourceMemberId ? targetMemberId : id))
+              )
+            )
+          : proj.memberIds;
+        const nextHandoffs = proj.handoffHistory?.map((entry) =>
+          entry.memberId === sourceMemberId
+            ? { ...entry, memberId: targetMemberId, memberName: targetDisplayName }
+            : entry
+        );
+        return {
+          ...proj,
+          leadAuthorId: proj.leadAuthorId === sourceMemberId ? targetMemberId : proj.leadAuthorId,
+          piId: proj.piId === sourceMemberId ? targetMemberId : proj.piId,
+          memberIds: nextMemberIds,
+          handoffHistory: nextHandoffs,
+        };
+      })
+    );
+
+    setWeeklyTodos((prev) =>
+      prev.map((todo) => ({
+        ...todo,
+        memberId: todo.memberId === sourceMemberId ? targetMemberId : todo.memberId,
+        assignedById:
+          todo.assignedById === sourceMemberId ? targetMemberId : todo.assignedById,
+        acceptedById:
+          todo.acceptedById === sourceMemberId ? targetMemberId : todo.acceptedById,
+      }))
+    );
+
+    setDirectRequests((prev) =>
+      prev.map((req) => ({
+        ...req,
+        senderId: req.senderId === sourceMemberId ? targetMemberId : req.senderId,
+        recipientId: req.recipientId === sourceMemberId ? targetMemberId : req.recipientId,
+        replies: req.replies?.map((reply) =>
+          reply.authorId === sourceMemberId ? { ...reply, authorId: targetMemberId } : reply
+        ),
+      }))
+    );
+
+    setMembers((prev) =>
+      prev
+        .filter((m) => m.id !== sourceMemberId)
+        .map((m) => (m.id === targetMemberId ? mergedTarget : m))
+    );
+    if (currentUserId === sourceMemberId) {
+      setCurrentUserId(targetMemberId);
+    }
+
+    addToast(
+      language === 'zh' ? '重复成员账号已合并' : 'Duplicate Member Merged',
+      `${sourceMember.nameEn || sourceMember.nameZh} -> ${targetDisplayName}`,
+      'success'
+    );
+  };
+
   // Project Management
   const addProject = (projectData: Omit<ProjectItem, 'id'> & { id?: string }): ProjectItem => {
     const newProject: ProjectItem = {
@@ -1655,7 +1805,11 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, ...updates } : p))
     );
-    if (updates.tag !== undefined || updates.targetVenue !== undefined) {
+    if (
+      updates.tag !== undefined ||
+      updates.targetVenue !== undefined ||
+      updates.targetVenueUrl !== undefined
+    ) {
       setTasks((prev) =>
         prev.map((item) =>
           item.projectId === projectId
@@ -1663,6 +1817,10 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 ...item,
                 projectTag: updates.tag ?? item.projectTag,
                 targetVenue: updates.targetVenue ?? item.targetVenue,
+                targetVenueUrl:
+                  updates.targetVenueUrl !== undefined
+                    ? normalizeExternalUrl(updates.targetVenueUrl)
+                    : item.targetVenueUrl,
                 updatedAt: new Date().toISOString(),
               }
             : item
@@ -2311,13 +2469,79 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Venue Management
   const addVenue = (venue: VenuePreset) => {
-    setVenues((prev) => [...prev, venue]);
-    addToast(language === 'zh' ? '目标会议已保存' : 'Target Venue Saved', venue.name, 'success');
+    const cleanUrl = normalizeExternalUrl(venue.url);
+    setVenues((prev) => [...prev, { ...venue, url: cleanUrl }]);
+    addToast(language === 'zh' ? '目标期刊/会议已保存' : 'Target Venue Saved', venue.name, 'success');
+  };
+
+  const addVenues = (items: VenuePreset[]): number => {
+    if (!Array.isArray(items) || items.length === 0) return 0;
+    const existingKeys = new Set(
+      venues
+        .flatMap((v) => [v.name.toLowerCase(), v.tag.toLowerCase(), v.url?.toLowerCase() || ''])
+        .filter(Boolean)
+    );
+    const fresh = items.filter(
+      (item) =>
+        !existingKeys.has(item.name.toLowerCase()) &&
+        (!item.url || !existingKeys.has(item.url.toLowerCase()))
+    );
+    if (fresh.length === 0) {
+      addToast(
+        language === 'zh' ? '未发现新增条目' : 'No New Venues Added',
+        language === 'zh' ? '所选条目均已存在' : 'All imported entries already exist',
+        'info'
+      );
+      return 0;
+    }
+    setVenues((prev) => [
+      ...prev,
+      ...fresh.map((item) => ({ ...item, url: normalizeExternalUrl(item.url) })),
+    ]);
+    addToast(
+      language === 'zh'
+        ? `已导入 ${fresh.length} 个期刊/会议预设`
+        : `Imported ${fresh.length} Venue Preset${fresh.length > 1 ? 's' : ''}`,
+      '',
+      'success'
+    );
+    return fresh.length;
+  };
+
+  const updateVenue = (venueId: string, updates: Partial<VenuePreset>) => {
+    setVenues((prev) =>
+      prev.map((v) =>
+        v.id === venueId
+          ? {
+              ...v,
+              ...updates,
+              url: updates.url !== undefined ? normalizeExternalUrl(updates.url) : v.url,
+            }
+          : v
+      )
+    );
+    addToast(language === 'zh' ? '期刊/会议网址已更新' : 'Venue Updated', '', 'info');
   };
 
   const deleteVenue = (venueId: string) => {
     setVenues((prev) => prev.filter((v) => v.id !== venueId));
     addToast(language === 'zh' ? '目标会议已删除' : 'Target Venue Removed', '', 'info');
+  };
+
+  // Outreach Track Management
+  const addOutreachTrack = (trackName: string) => {
+    const clean = trackName.trim();
+    if (!clean) return;
+    setOutreachTracks((prev) =>
+      prev.some((item) => item.toLowerCase() === clean.toLowerCase()) ? prev : [...prev, clean]
+    );
+    addToast(language === 'zh' ? '转化渠道已添加' : 'Outreach Track Added', clean, 'success');
+  };
+
+  const removeOutreachTrack = (trackName: string) => {
+    const needle = trackName.trim().toLowerCase();
+    setOutreachTracks((prev) => prev.filter((item) => item.toLowerCase() !== needle));
+    addToast(language === 'zh' ? '预设转化渠道已移除' : 'Outreach Track Removed', trackName, 'info');
   };
 
   // Stage Management
@@ -2923,6 +3147,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       weeklyTodos,
       directRequests,
       allowPeerAcceptance,
+      outreachTracks,
       checklistTemplates,
       notificationSettings,
     };
@@ -2942,7 +3167,15 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       const data = JSON.parse(jsonStr);
       if (!data.tasks || !data.stages) return false;
       if (data.stages) setStages(data.stages);
-      if (data.tasks) setTasks(data.tasks);
+      if (data.tasks) {
+        setTasks(
+          data.tasks.map((t: TaskItem) => ({
+            ...t,
+            targetVenueUrl: normalizeExternalUrl(t.targetVenueUrl),
+            assets: sanitizeAssetLinks(t.assets),
+          }))
+        );
+      }
       if (data.projects) setProjects(sanitizeProjects(data.projects));
       if (Array.isArray(data.members) && data.members.length > 0) {
         setMembers(data.members);
@@ -2959,7 +3192,14 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           }
         }
       }
-      if (data.venues) setVenues(data.venues);
+      if (data.venues) {
+        setVenues(
+          data.venues.map((v: VenuePreset) => ({
+            ...v,
+            url: normalizeExternalUrl(v.url),
+          }))
+        );
+      }
       if (data.resources) setResources(data.resources);
       if (Array.isArray(data.weeklyTodos)) {
         setWeeklyTodos(sanitizeWeeklyTodos(data.weeklyTodos));
@@ -2969,6 +3209,9 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       }
       if (typeof data.allowPeerAcceptance === 'boolean') {
         setAllowPeerAcceptance(data.allowPeerAcceptance);
+      }
+      if (Array.isArray(data.outreachTracks)) {
+        setOutreachTracks(sanitizeOutreachTracks(data.outreachTracks));
       }
       if (Array.isArray(data.checklistTemplates)) {
         setChecklistTemplates(sanitizeChecklistTemplates(data.checklistTemplates));
@@ -3017,9 +3260,12 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       setWeeklyTodos(localizedDemo.weeklyTodos);
       setDirectRequests(localizedDemo.directRequests);
       setAllowPeerAcceptance(false);
+      setOutreachTracks([...DEFAULT_OUTREACH_TRACKS]);
       setChecklistTemplates(localizedDemo.checklistTemplates);
       setWorkspaceScope('MINE');
       setWorkCategoryFilter('ALL');
+      setSelectedWorkshopFilter('ALL');
+      setSelectedWorkshopFilter('ALL');
       setFilterOnlyBlockers(false);
       setSearchQuery('');
       setFilterMemberId('all');
@@ -3060,6 +3306,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       setIsAuthenticatedSession(true);
       setWorkspaceScope('MINE');
       setWorkCategoryFilter('ALL');
+      setSelectedWorkshopFilter('ALL');
       setFilterOnlyBlockers(false);
       setSearchQuery('');
       setFilterMemberId('all');
@@ -3310,7 +3557,12 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         restoreDefaultStages,
         venues,
         addVenue,
+        addVenues,
+        updateVenue,
         deleteVenue,
+        outreachTracks,
+        addOutreachTrack,
+        removeOutreachTrack,
         members,
         currentUserId,
         setCurrentUserId: handleSetCurrentUserId,
@@ -3325,6 +3577,7 @@ const LabDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         addMember,
         updateMember,
         deleteMember,
+        mergeDuplicateMember,
         tasks: visibleTasks,
         allTasksCount: tasks.length,
         projects: visibleProjects,

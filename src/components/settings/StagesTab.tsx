@@ -18,9 +18,9 @@ export const StagesTab: React.FC = () => {
       id: newId,
       labelZh: newStageNameZh.trim() || newStageNameEn.trim(),
       labelEn: newStageNameEn.trim() || newStageNameZh.trim(),
-      color: 'text-indigo-400',
-      badgeBg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
-      borderColor: 'border-indigo-500/30',
+      color: 'text-indigo-600',
+      badgeBg: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/35',
+      borderColor: 'border-indigo-500/35',
     });
     setNewStageNameZh('');
     setNewStageNameEn('');

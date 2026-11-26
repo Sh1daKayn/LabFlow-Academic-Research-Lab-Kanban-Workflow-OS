@@ -79,9 +79,13 @@ export function getRoleDefaultTitles(role: LabMember['role']): {
 const DEMO_ZH_TO_EN: Record<string, string> = {
   // Categories & Tags
   '数字经济与计量实证': 'Econometrics & Digital Economy',
+  '数字经济与实证研究': 'Digital Economy & Empirical Research',
   '分布式优化与智能算法': 'Distributed Optimization & AI',
+  '计算方法与优化算法': 'Computational Methods & Optimization',
   '能源环境与碳市场': 'Energy & Carbon Markets',
+  '气候、能源与市场系统': 'Climate, Energy & Market Systems',
   '企业横向与工程落地': 'Industry & Systems Engineering',
+  '产学研转化与工程落地': 'Industry Translation & Engineering',
   '纵向 · NSFC': 'Vertical · NSF',
   '横向 · 智能装备': 'Industry · Apex',
   '横向交付': 'Industry Delivery',

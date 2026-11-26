@@ -43,7 +43,7 @@ export const MemberAvatar: React.FC<MemberAvatarProps> = ({
 
   return (
     <div
-      className={`relative rounded-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-cyan-600 dark:text-cyan-400 select-none ${SIZE_CLASSES[size]} ${className}`}
+      className={`relative rounded-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 select-none ${SIZE_CLASSES[size]} ${className}`}
       title={alt || displayName}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

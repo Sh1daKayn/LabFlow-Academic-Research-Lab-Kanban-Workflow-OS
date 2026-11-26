@@ -8,6 +8,7 @@ import {
   BarChart2,
   BookmarkPlus,
   BookOpen,
+  CalendarClock,
   CheckSquare,
   Compass,
   Cpu,
@@ -15,6 +16,7 @@ import {
   Flame,
   GitBranch,
   LayoutDashboard,
+  Link2,
   ListChecks,
   Network,
   Palette,
@@ -23,6 +25,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  UserCheck,
   UserCog,
   Users,
   X,
@@ -63,6 +66,7 @@ interface FeatureGuideItem {
     | 'templates'
     | 'settingsAppearance'
     | 'settingsMembers'
+    | 'settingsVenues'
     | 'settingsBackup';
 }
 
@@ -111,8 +115,8 @@ const ROLE_QUICK_STARTS: Record<
       {
         titleZh: '1. 直接管理设置中心（免导师密码）',
         titleEn: '1. Open Settings Directly',
-        descZh: '拥有仅次于导师的权限，可直接进入「成员、算力、阶段、顶会、备份」设置协助维护。',
-        descEn: 'Manage members, GPUs, stages, venues, and backups in Settings without PI password.',
+        descZh: '拥有仅次于导师的权限，可直接进入「成员、共享设备与资源、阶段、期刊、备份」设置协助维护。',
+        descEn: 'Manage members, shared resources, stages, venues, and backups in Settings without PI password.',
       },
       {
         titleZh: '2. 批量导入课题与协调权限',
@@ -205,7 +209,24 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     actionLabelEn: 'Open Tree & Cloud',
     keywords: '架构 树状图 词云 大类 归类 人数 statistics word cloud tree category',
     icon: <Network className="w-4 h-4" />,
-    accentClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
+    accentClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+    actionId: 'architecture',
+  },
+  {
+    id: 'outreachWorkshops',
+    category: 'views',
+    access: 'all',
+    titleZh: '课题 → 转化与外联排期视图 (Outreach & Workshops)',
+    titleEn: 'Outreach & Translation Track Scheduler',
+    summaryZh: '支持在 Settings 自由增删转化去向标签（Seminar、产业/临床合作、政策简报、开源专利等），并反向筛选看板。',
+    summaryEn: 'Assign customizable downstream outreach/translation tracks per project, schedule dates, and reverse-filter Kanban.',
+    whereZh: '顶部「更多 → 架构与云图」→ 子页签「转化与外联」，或在「系统设置 → 期刊与转化出口」自定义标签',
+    whereEn: 'Projects & Lineage -> "Outreach & Workshops" sub-view; customize tracks in Settings -> Venues & Outreach',
+    actionLabelZh: '查看转化排期',
+    actionLabelEn: 'Open Outreach',
+    keywords: '转化 外联 排期 seminar workshop outreach partner policy clinical patent',
+    icon: <CalendarClock className="w-4 h-4" />,
+    accentClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
     actionId: 'architecture',
   },
   {
@@ -233,13 +254,13 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     titleEn: 'Group Standup & Minutes Export',
     summaryZh: '三栏聚焦近期录用、推进中与紧急卡点，内置组会计时器、按汇报人切换，以及个人周报与 Markdown 纪要导出。',
     summaryEn: 'Presenter filter, live timer, 3-column summary, instant unblock, and Markdown minutes export.',
-    whereZh: '顶部标签第 5 项「组会」',
-    whereEn: 'Top tab #5 "Standup"',
+    whereZh: '顶部标签「更多 → 组会」',
+    whereEn: 'Top navigation "More -> Standup"',
     actionLabelZh: '开启组会模式',
     actionLabelEn: 'Open Standup',
     keywords: '组会 投屏 计时 纪要 周报 markdown meeting standup minutes digest',
     icon: <Presentation className="w-4 h-4" />,
-    accentClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+    accentClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
     actionId: 'meeting',
   },
   {
@@ -260,6 +281,40 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     actionId: 'reverseDDL',
   },
   {
+    id: 'venueUrls',
+    category: 'planning',
+    access: 'all',
+    titleZh: '期刊 / 会议网址批量导入与直达跳转',
+    titleEn: 'Batch Venue URL Import & Quick Open',
+    summaryZh: '粘贴一组期刊/会议 URL（或 全称 | 短标签 | URL）即可批量去重入库，在任务卡、项目卡和倒排表点击徽章直达官网。',
+    summaryEn: 'Paste a list of journal/conference URLs to import & deduplicate them, adding clickable links across cards & forms.',
+    whereZh: '顶部「系统设置」→「目标期刊/会议库」批量粘贴框',
+    whereEn: 'Settings -> Target Venues -> Batch URL Import box',
+    actionLabelZh: '管理期刊网址',
+    actionLabelEn: 'Manage Venues',
+    keywords: '期刊 会议 网址 批量导入 url venue journal conference import',
+    icon: <BookOpen className="w-4 h-4" />,
+    accentClass: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30',
+    actionId: 'settingsVenues',
+  },
+  {
+    id: 'customAssets',
+    category: 'planning',
+    access: 'all',
+    titleZh: '任务与项目动态自定义外链 (Custom Resource Links)',
+    titleEn: 'Flexible Custom External Links',
+    summaryZh: '不局限于固定 4 项链接！随时添加/重命名/删减 Lab Notebook、IRB、Qualtrics、Pre-reg、Box 等跨学科任意外链。',
+    summaryEn: 'Add, rename, or remove unlimited links per task or project using cross-disciplinary presets (Overleaf, GitHub, IRB, Survey, Drive...).',
+    whereZh: '任意任务卡片展开编辑器 / 任务详情抽屉 / 项目编辑弹窗中的「外链资源」区',
+    whereEn: 'Expanded task card editor, Task Detail Drawer, New Task modal, or Project Editor',
+    actionLabelZh: '前往任务管理外链',
+    actionLabelEn: 'Open Board',
+    keywords: '外链 链接 custom link resource overleaf github dataset irb qualtrics box',
+    icon: <Link2 className="w-4 h-4" />,
+    accentClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+    actionId: 'kanban',
+  },
+  {
     id: 'aiImport',
     category: 'planning',
     access: 'all',
@@ -273,7 +328,7 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     actionLabelEn: 'Open AI Import',
     keywords: 'ai 导入 冷启动 json 提示词 prompt 批量 import',
     icon: <Sparkles className="w-4 h-4" />,
-    accentClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+    accentClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
     actionId: 'aiImport',
   },
   {
@@ -290,7 +345,7 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     actionLabelEn: 'Go to Cards',
     keywords: '逻辑树 树状图 节点 拆解 清单 logic tree node checklist',
     icon: <GitBranch className="w-4 h-4" />,
-    accentClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+    accentClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
     actionId: 'kanban',
   },
   {
@@ -314,9 +369,9 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     id: 'blockers',
     category: 'planning',
     access: 'all',
-    titleZh: '技术卡点红灯报警与解除',
+    titleZh: '研究卡点红灯报警与解除',
     titleEn: 'Blocker Escalation & Filter',
-    summaryZh: '卡在算力、数据或审稿问题时点火焰图标标红求助，顶部「仅看卡点」与组会看板会集中置顶提示决策人。',
+    summaryZh: '卡在实验方法、数据、设备或审稿问题时点火焰图标标红求助，顶部「仅看卡点」与组会看板会集中置顶提示决策人。',
     summaryEn: 'Flag bottlenecks with escalation owner; highlight via top "Only Blockers" filter and Standup view.',
     whereZh: '卡片右下角火焰图标 🔥 / 顶部筛选栏「仅看卡点」筛选按钮',
     whereEn: 'Flame icon on task cards / top filter bar "Only Blockers" toggle',
@@ -326,6 +381,23 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     icon: <Flame className="w-4 h-4" />,
     accentClass: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
     actionId: 'blockers',
+  },
+  {
+    id: 'duplicateWorkload',
+    category: 'collab',
+    access: 'all',
+    titleZh: '重名防重认领、合并与工作负载气泡',
+    titleEn: 'Duplicate Account Guard & Workload Bubbles',
+    summaryZh: '注册或建档时自动检测重名并提供一键认领原账号；成员管理页与组会标签展示每人活跃课题、任务、阻塞与待审负荷气泡。',
+    summaryEn: 'Detects existing profiles by name to let members claim/switch directly, lets admins merge duplicates, and shows workload bubbles.',
+    whereZh: '注册登录页自动提醒 / 成员管理页 / 组会「汇报人」药丸标签',
+    whereEn: 'Sign-up gate & Register Modal / Settings -> Members / Standup presenter pills',
+    actionLabelZh: '查看成员与负载',
+    actionLabelEn: 'Open Member Roster',
+    keywords: '重名 合并 认领 负载 气泡 duplicate merge workload claim',
+    icon: <UserCheck className="w-4 h-4" />,
+    accentClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    actionId: 'settingsMembers',
   },
   {
     id: 'profile',
@@ -365,32 +437,32 @@ const GUIDE_FEATURES: FeatureGuideItem[] = [
     id: 'resources',
     category: 'collab',
     access: 'all',
-    titleZh: '公共算力与实验室设施认领',
-    titleEn: 'Shared Compute & GPU Claims',
-    summaryZh: '在顶部可折叠资源条查看 GPU 服务器与实验台使用时长倒计时，一键认领占用或提前释放。',
-    summaryEn: 'Inspect busy/idle lab GPU nodes and claim or release shared compute slots cleanly.',
-    whereZh: '导航栏下方「公共算力与设施」折叠条 →「认领节点」',
-    whereEn: 'Foldable "Shared Compute" strip below header -> "Claim Nodes"',
-    actionLabelZh: '管理算力认领',
-    actionLabelEn: 'Manage Compute',
-    keywords: '算力 gpu 服务器 节点 认领 设备 resource compute server',
+    titleZh: '共享实验设备与公共资源预约',
+    titleEn: 'Shared Resources & Equipment Claims',
+    summaryZh: '在顶部可折叠资源条查看仪器、服务器、共享数据集或会议室使用倒计时，一键预约使用或提前释放。',
+    summaryEn: 'Inspect busy/idle lab instruments, servers, rooms, or datasets and reserve/release shared slots cleanly.',
+    whereZh: '导航栏下方「共享资源与设备」折叠条 →「预约使用」',
+    whereEn: 'Foldable "Shared Resources" strip below header -> "Reserve"',
+    actionLabelZh: '管理共享资源',
+    actionLabelEn: 'Manage Resources',
+    keywords: '设备 仪器 资源 数据集 房间 节点 认领 预约 resource instrument equipment server',
     icon: <Cpu className="w-4 h-4" />,
-    accentClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+    accentClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
     actionId: 'resources',
   },
   {
     id: 'appearance',
     category: 'system',
     access: 'all',
-    titleZh: '24 种中英文字体混搭与浅深色模式',
-    titleEn: '12+12 Fonts & Light/Dark Theme',
-    summaryZh: '内置 12 种中文字体（含幼圆、楷体、宋体、思源等）与 12 种英文字体自由搭配，配合右上角一键日夜模式切换。',
-    summaryEn: 'Mix 12 Chinese (incl. YouYuan) and 12 English font presets alongside full light/dark theme support.',
-    whereZh: '顶部「系统设置」→「外观与字体」/ 右上角 ☀️🌙 切换按钮',
-    whereEn: 'Top "Settings" -> "Appearance & Fonts" / header Sun/Moon button',
-    actionLabelZh: '配置字体与外观',
-    actionLabelEn: 'Open Font Settings',
-    keywords: '字体 幼圆 中文 英文 主题 黑色 白色 浅色 深色 font youyuan theme dark light',
+    titleZh: '24 种字体混搭 · Light 默认主题 & Obsidian Gold 配色',
+    titleEn: '12+12 Fonts · Light Default & Obsidian Gold Accent',
+    summaryZh: '默认明亮浅色模式，内置 Classic Indigo、Obsidian & Gold（曜黑金）等多款强调色与 24 种中英文字体混搭。',
+    summaryEn: 'Light mode default with 12+12 font combinations plus built-in Classic Indigo, Obsidian & Gold, and custom accent themes.',
+    whereZh: '顶部「系统设置」→「外观与字体」/ 账户菜单 ☀️🌙 切换',
+    whereEn: 'Top "Settings" -> "Appearance & Fonts" / Account menu Light/Dark toggle',
+    actionLabelZh: '配置字体与主题',
+    actionLabelEn: 'Open Appearance Settings',
+    keywords: '字体 幼圆 中文 英文 主题 黑色 白色 浅色 深色 曜黑金 font theme obsidian gold light dark',
     icon: <Palette className="w-4 h-4" />,
     accentClass: 'bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/30',
     actionId: 'settingsAppearance',
@@ -469,7 +541,7 @@ export const FeatureGuideModal: React.FC = () => {
 
   if (!isFeatureGuideOpen) return null;
 
-  const openProtectedSettingsTab = (tab: 'members' | 'backup') => {
+  const openProtectedSettingsTab = (tab: 'members' | 'venues' | 'backup') => {
     setIsFeatureGuideOpen(false);
     if (canManageLab()) {
       setActiveSettingsTab(tab);
@@ -542,6 +614,9 @@ export const FeatureGuideModal: React.FC = () => {
       case 'settingsMembers':
         openProtectedSettingsTab('members');
         break;
+      case 'settingsVenues':
+        openProtectedSettingsTab('venues');
+        break;
       case 'settingsBackup':
         openProtectedSettingsTab('backup');
         break;
@@ -550,10 +625,10 @@ export const FeatureGuideModal: React.FC = () => {
 
   const categories: Array<{ id: GuideCategory; label: string }> = [
     { id: 'all', label: isZh ? `全部功能 (${GUIDE_FEATURES.length})` : `All (${GUIDE_FEATURES.length})` },
-    { id: 'views', label: isZh ? '五大核心视图' : '5 Core Views' },
-    { id: 'planning', label: isZh ? '排期与拆解' : 'Planning & Trees' },
-    { id: 'collab', label: isZh ? '协作与权限' : 'Roles & Compute' },
-    { id: 'system', label: isZh ? '字体与数据' : 'Fonts & Sync' },
+    { id: 'views', label: isZh ? '核心视图' : 'Core Views' },
+    { id: 'planning', label: isZh ? '排期与外链' : 'Planning & Links' },
+    { id: 'collab', label: isZh ? '协同与设备' : 'Collab & Resources' },
+    { id: 'system', label: isZh ? '主题与备份' : 'Theme & Sync' },
   ];
 
   const activeRoleGuide = ROLE_QUICK_STARTS[roleTab];
@@ -562,9 +637,9 @@ export const FeatureGuideModal: React.FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="relative w-full max-w-5xl h-[88vh] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-indigo-500/10 via-cyan-500/5 to-transparent flex items-center justify-between gap-3 shrink-0">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-indigo-500/8 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-sm shrink-0">
+            <div className="p-2.5 rounded-xl bg-indigo-600 text-white shadow-sm shrink-0">
               <Compass className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -752,7 +827,7 @@ export const FeatureGuideModal: React.FC = () => {
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
-                      <CheckSquare className="w-3 h-3 text-cyan-500 shrink-0 mt-0.5" />
+                      <CheckSquare className="w-3 h-3 text-indigo-500 shrink-0 mt-0.5" />
                       <span>
                         <strong className="text-slate-700 dark:text-slate-300">
                           {isZh ? '入口位置：' : 'Where: '}
@@ -781,7 +856,7 @@ export const FeatureGuideModal: React.FC = () => {
               {isZh ? '看板支持前移/退回阶段' : 'Stage moves are bidirectional'}
             </span>
             <span className="inline-flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-cyan-500" />
+              <Users className="w-3.5 h-3.5 text-indigo-500" />
               {isZh ? '右上角可随时切换账号体验不同视角' : 'Switch member top-right to preview roles'}
             </span>
             <span className="inline-flex items-center gap-1">
@@ -792,7 +867,7 @@ export const FeatureGuideModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsFeatureGuideOpen(false)}
-            className="px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+            className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-colors"
           >
             {isZh ? '我已了解，开始使用' : 'Got It'}
           </button>

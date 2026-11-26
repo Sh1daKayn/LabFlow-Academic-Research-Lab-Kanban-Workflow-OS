@@ -67,17 +67,18 @@ enum ResourceStatus {
 }
 
 model WorkspaceConfig {
-  id                  String   @id @default("default")
-  adminPasswordHash   String
-  sessionSecret       String
-  revision            Int      @default(1)
-  allowPeerAcceptance Boolean  @default(false)
+  id                   String   @id @default("default")
+  adminPasswordHash    String
+  sessionSecret        String
+  revision             Int      @default(1)
+  allowPeerAcceptance  Boolean  @default(false)
+  outreachTracks       Json?
   weeklyTodos          Json?
   directRequests       Json?
   checklistTemplates   Json?
   notificationSettings Json?
   createdAt            DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  updatedAt            DateTime @updatedAt
 }
 
 model Lab {
@@ -145,46 +146,52 @@ model Stage {
 }
 
 model VenuePreset {
-  id            String @id
+  id            String  @id
   name          String
   tag           String
+  url           String?
   defaultLeadId String
   milestones    Json
-  sortOrder     Int    @default(0)
+  sortOrder     Int     @default(0)
 }
 
 model Project {
-  id                 String          @id @default(uuid())
-  title              String
-  abstract           String?
-  researchQuestion   String?
-  sharedDataset      String?
-  handoffHistory     Json?
-  inheritedFrom      Json?
-  workCategory       String          @default("PAPER")
-  partnerOrg         String?
-  milestoneNode      String?
-  category           String?
-  categoryColor      String?
-  memberIds          Json?
-  targetVenue        String          // e.g. "AAAI 2027", "AEPP", "Management Science"
-  tag                String          // Short badge tag, e.g. "AAAI '27"
-  submissionDeadline DateTime?
-  status             String          @default("IDEATION")
-  visibility         VisibilityLevel @default(PUBLIC)
-  overleafUrl        String?
-  githubUrl          String?
-  datasetUrl         String?
-  zoteroUrl          String?
-  labId              String
-  leadAuthorId       String
-  piId               String
-  lab                Lab             @relation(fields: [labId], references: [id], onDelete: Cascade)
-  leadAuthor         User            @relation("ProjectLead", fields: [leadAuthorId], references: [id])
-  pi                 User            @relation("ProjectPI", fields: [piId], references: [id])
-  tasks              Task[]
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  id                        String          @id @default(uuid())
+  title                     String
+  abstract                  String?
+  researchQuestion          String?
+  sharedDataset             String?
+  handoffHistory            Json?
+  inheritedFrom             Json?
+  workshopPrograms          Json?
+  workshopTranslationStatus String?
+  workshopTargetDate        String?
+  workCategory              String          @default("PAPER")
+  partnerOrg                String?
+  milestoneNode             String?
+  category                  String?
+  categoryColor             String?
+  memberIds                 Json?
+  targetVenue               String          // e.g. "NeurIPS 2027", "Nature Comms", "Management Science"
+  targetVenueUrl            String?
+  tag                       String          // Short badge tag, e.g. "NeurIPS '27"
+  submissionDeadline        DateTime?
+  status                    String          @default("IDEATION")
+  visibility                VisibilityLevel @default(PUBLIC)
+  overleafUrl               String?
+  githubUrl                 String?
+  datasetUrl                String?
+  zoteroUrl                 String?
+  customAssets              Json?
+  labId                     String
+  leadAuthorId              String
+  piId                      String
+  lab                       Lab             @relation(fields: [labId], references: [id], onDelete: Cascade)
+  leadAuthor                User            @relation("ProjectLead", fields: [leadAuthorId], references: [id])
+  pi                        User            @relation("ProjectPI", fields: [piId], references: [id])
+  tasks                     Task[]
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
 }
 
 model Task {
@@ -197,6 +204,7 @@ model Task {
   stage                String           @default("IDEATION")
   projectTag           String           @default("")
   targetVenue          String           @default("")
+  targetVenueUrl       String?
   priority             Priority         @default(MEDIUM)
   visibility           VisibilityLevel  @default(PUBLIC)
   startDate            String?
@@ -210,6 +218,7 @@ model Task {
   githubUrl            String?
   datasetUrl           String?
   zoteroUrl            String?
+  customAssets         Json?
   tags                 Json?
   checklist            Json?
   logicTree            Json?

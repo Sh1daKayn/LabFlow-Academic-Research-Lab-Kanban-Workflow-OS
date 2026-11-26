@@ -5,7 +5,8 @@ import { useLabFlow } from '@/context/LabFlowContext';
 import { ReverseDDLForm, MilestoneTemplate, AcademicStage, VisibilityLevel, WorkCategory } from '@/types';
 import { subtractDays, formatDate } from '@/utils/date';
 import { WORK_CATEGORIES, WORK_CATEGORY_META } from '@/utils/workCategory';
-import { Zap, X, Sparkles, Plus, Trash2, ChevronUp } from 'lucide-react';
+import { normalizeExternalUrl, resolveVenueUrl } from '@/utils/venues';
+import { ExternalLink, Zap, X, Sparkles, Plus, Trash2, ChevronUp } from 'lucide-react';
 
 export const ReverseDDLModal: React.FC = () => {
   const {
@@ -28,6 +29,7 @@ export const ReverseDDLModal: React.FC = () => {
   const [milestoneNode, setMilestoneNode] = useState('');
   const [category, setCategory] = useState('');
   const [targetVenue, setTargetVenue] = useState('NeurIPS 2027');
+  const [targetVenueUrl, setTargetVenueUrl] = useState('');
   const [tag, setTag] = useState("NeurIPS '27");
   const [visibility, setVisibility] = useState<VisibilityLevel>('PI_ONLY');
 
@@ -51,6 +53,7 @@ export const ReverseDDLModal: React.FC = () => {
   const [isAddingVenue, setIsAddingVenue] = useState(false);
   const [newVenueName, setNewVenueName] = useState('');
   const [newVenueTag, setNewVenueTag] = useState('');
+  const [newVenueUrl, setNewVenueUrl] = useState('');
 
   useEffect(() => {
     if (!isReverseDDLOpen) return;
@@ -63,6 +66,8 @@ export const ReverseDDLModal: React.FC = () => {
 
   if (!isReverseDDLOpen) return null;
 
+  const resolvedPreviewUrl = resolveVenueUrl(targetVenue, venues, targetVenueUrl);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !deadlineDate) return;
@@ -74,6 +79,7 @@ export const ReverseDDLModal: React.FC = () => {
       milestoneNode: milestoneNode.trim() || undefined,
       category: category.trim() || undefined,
       targetVenue,
+      targetVenueUrl: normalizeExternalUrl(targetVenueUrl) || resolvedPreviewUrl,
       deadlineDate,
       leadAuthorId,
       tag: tag.trim() || targetVenue.split(' ')[0],
@@ -94,6 +100,7 @@ export const ReverseDDLModal: React.FC = () => {
   const handleSelectVenue = (v: (typeof venues)[0]) => {
     setTargetVenue(v.name);
     setTag(v.tag);
+    setTargetVenueUrl(v.url || resolveVenueUrl(v.name, venues) || '');
     if (v.defaultLeadId && members.some((m) => m.id === v.defaultLeadId)) {
       setLeadAuthorId(v.defaultLeadId);
     }
@@ -105,17 +112,21 @@ export const ReverseDDLModal: React.FC = () => {
   const handleAddCustomVenue = () => {
     if (!newVenueName.trim()) return;
     const vTag = newVenueTag.trim() || newVenueName.split(' ')[0];
+    const normalizedUrl = normalizeExternalUrl(newVenueUrl);
     addVenue({
       id: `venue-${Date.now()}`,
       name: newVenueName.trim(),
       tag: vTag,
+      url: normalizedUrl,
       defaultLeadId: leadAuthorId,
       milestones: [...milestones],
     });
     setTargetVenue(newVenueName.trim());
     setTag(vTag);
+    if (normalizedUrl) setTargetVenueUrl(normalizedUrl);
     setNewVenueName('');
     setNewVenueTag('');
+    setNewVenueUrl('');
     setIsAddingVenue(false);
   };
 
@@ -178,7 +189,7 @@ export const ReverseDDLModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Work Category Switcher */}
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
               {language === 'zh' ? '工作归属类别 *' : 'Work Category *'}
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -204,8 +215,8 @@ export const ReverseDDLModal: React.FC = () => {
                     }}
                     className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${
                       active
-                        ? 'border-amber-500 bg-amber-500/20 text-amber-200'
-                        : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                        ? 'border-amber-500 bg-amber-500/15 text-amber-800 dark:text-amber-200'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     {language === 'zh' ? meta.labelZh : meta.labelEn}
@@ -218,7 +229,7 @@ export const ReverseDDLModal: React.FC = () => {
           {workCategory !== 'PAPER' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {workCategory === 'HORIZONTAL_PROJECT'
                     ? language === 'zh'
                       ? '合作企业 / 甲方'
@@ -234,17 +245,17 @@ export const ReverseDDLModal: React.FC = () => {
                   placeholder={
                     workCategory === 'HORIZONTAL_PROJECT'
                       ? language === 'zh'
-                        ? '如：XX 智造有限公司'
-                        : 'Enterprise Co.'
+                        ? '如：XX 科技有限公司'
+                        : 'Partner Org'
                       : language === 'zh'
-                        ? '如：国家自然科学基金'
-                        : 'NSFC / MOST'
+                        ? '如：自然科学基金 / 专项资助'
+                        : 'Sponsor Agency'
                   }
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {language === 'zh' ? '节点交付要求' : 'Node Requirement'}
                 </label>
                 <input
@@ -253,10 +264,10 @@ export const ReverseDDLModal: React.FC = () => {
                   onChange={(e) => setMilestoneNode(e.target.value)}
                   placeholder={
                     language === 'zh'
-                      ? '如：合同约定 Q3 完成现场联合验收'
+                      ? '如：合同约定 Q3 完成验收'
                       : 'Contractual delivery milestone'
                   }
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
                 />
               </div>
             </div>
@@ -264,7 +275,7 @@ export const ReverseDDLModal: React.FC = () => {
 
           {/* Paper / Project Title */}
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
               {workCategory === 'PAPER'
                 ? `${t.paperTitle} *`
                 : language === 'zh'
@@ -276,21 +287,21 @@ export const ReverseDDLModal: React.FC = () => {
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Federated Stochastic Variance Reduction for Non-Convex Bilevel Optimization"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40"
+              placeholder="e.g. Causal Policy Evaluation for Sustainable Supply Chains"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40"
             />
           </div>
 
           {/* Target Venue & Presets */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-slate-300">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                 {t.targetVenue} *
               </label>
               <button
                 type="button"
                 onClick={() => setIsAddingVenue(!isAddingVenue)}
-                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
               >
                 {isAddingVenue ? <ChevronUp className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                 <span>{t.addVenue}</span>
@@ -306,8 +317,8 @@ export const ReverseDDLModal: React.FC = () => {
                     onClick={() => handleSelectVenue(v)}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
                       targetVenue === v.name
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/50'
+                        : 'bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     {v.name}
@@ -319,7 +330,7 @@ export const ReverseDDLModal: React.FC = () => {
                         e.stopPropagation();
                         deleteVenue(v.id);
                       }}
-                      className="hidden group-hover:inline-block ml-0.5 p-0.5 text-slate-500 hover:text-rose-400"
+                      className="hidden group-hover:inline-block ml-0.5 p-0.5 text-slate-400 hover:text-rose-500"
                       title={language === 'zh' ? '删除该预设' : 'Delete preset'}
                     >
                       ×
@@ -331,31 +342,38 @@ export const ReverseDDLModal: React.FC = () => {
 
             {/* Collapsible Add Custom Venue Form */}
             {isAddingVenue && (
-              <div className="mb-3 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-[11px] font-semibold text-slate-300 block">
+              <div className="mb-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block">
                   {language === 'zh' ? '添加自定义会议/期刊库' : 'Add Custom Target Venue'}
                 </span>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input
                     type="text"
                     value={newVenueName}
                     onChange={(e) => setNewVenueName(e.target.value)}
-                    placeholder={language === 'zh' ? '会议/期刊全称 (如 KDD 2027)' : 'Venue Full Name'}
-                    className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                    placeholder={language === 'zh' ? '期刊/会议全称' : 'Venue Full Name'}
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-200"
                   />
                   <input
                     type="text"
                     value={newVenueTag}
                     onChange={(e) => setNewVenueTag(e.target.value)}
-                    placeholder={language === 'zh' ? '简写标签 (如 KDD)' : 'Short Tag'}
-                    className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                    placeholder={language === 'zh' ? '简写标签' : 'Short Tag'}
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-200"
+                  />
+                  <input
+                    type="url"
+                    value={newVenueUrl}
+                    onChange={(e) => setNewVenueUrl(e.target.value)}
+                    placeholder={language === 'zh' ? '官网 URL（可选）' : 'Website URL (optional)'}
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-200"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setIsAddingVenue(false)}
-                    className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200"
+                    className="px-2 py-1 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   >
                     {t.cancel}
                   </button>
@@ -370,14 +388,14 @@ export const ReverseDDLModal: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               <input
                 type="text"
                 required
                 value={targetVenue}
                 onChange={(e) => setTargetVenue(e.target.value)}
                 placeholder="Target Venue"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
               <input
                 type="text"
@@ -385,22 +403,42 @@ export const ReverseDDLModal: React.FC = () => {
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
                 placeholder={t.badgeTag}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
               <input
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder={language === 'zh' ? '所属研究大类（可选）' : 'Project Category (optional)'}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="url"
+                  value={targetVenueUrl}
+                  onChange={(e) => setTargetVenueUrl(e.target.value)}
+                  placeholder={language === 'zh' ? '投稿网址 (选填)' : 'Venue URL (optional)'}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                />
+                {resolvedPreviewUrl && (
+                  <a
+                    href={resolvedPreviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
+                    title={language === 'zh' ? '打开投稿官网' : 'Open Venue URL'}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Submission Deadline & Lead Author */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t.submissionDDL} *
               </label>
               <input
@@ -408,21 +446,21 @@ export const ReverseDDLModal: React.FC = () => {
                 required
                 value={deadlineDate}
                 onChange={(e) => setDeadlineDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-amber-500/60"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t.leadAuthor} *
               </label>
               <select
                 value={leadAuthorId}
                 onChange={(e) => setLeadAuthorId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-amber-500/60"
               >
                 {members.map((m) => (
-                  <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
+                  <option key={m.id} value={m.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
                     {language === 'zh' ? `${m.nameZh} (${m.titleZh})` : `${m.nameEn} (${m.titleEn})`}
                   </option>
                 ))}
@@ -432,13 +470,13 @@ export const ReverseDDLModal: React.FC = () => {
 
           {/* Visibility / Confidentiality Scope */}
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
               {t.visibility}
             </label>
             <select
               value={visibility}
               onChange={(e) => setVisibility(e.target.value as VisibilityLevel)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500/60"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-amber-500/60"
             >
               <option value="PUBLIC">{t.visibilityPublic}</option>
               <option value="TEAM_ONLY">{t.visibilityTeamOnly}</option>
@@ -447,18 +485,18 @@ export const ReverseDDLModal: React.FC = () => {
           </div>
 
           {/* Customizable Milestone Steps Table (Offset Days & Stage Customization) */}
-          <div className="rounded-xl bg-slate-950 border border-slate-800 p-4 space-y-3">
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold text-slate-200">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   {t.customMilestoneOffsets}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={addMilestoneStep}
-                className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 <span>{t.addStep}</span>
@@ -473,11 +511,11 @@ export const ReverseDDLModal: React.FC = () => {
                 return (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs"
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-xs"
                   >
                     {/* Days Offset Input */}
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-slate-400 font-mono text-[11px]">T -</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">T -</span>
                       <input
                         type="number"
                         min={1}
@@ -486,9 +524,9 @@ export const ReverseDDLModal: React.FC = () => {
                         onChange={(e) =>
                           updateMilestone(idx, { offsetDays: parseInt(e.target.value) || 0 })
                         }
-                        className="w-14 bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-center font-mono font-bold text-amber-400 text-xs focus:outline-none focus:border-amber-500"
+                        className="w-14 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-1 text-center font-mono font-bold text-amber-600 dark:text-amber-400 text-xs focus:outline-none focus:border-amber-500"
                       />
-                      <span className="text-slate-400 text-[11px]">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
                         {language === 'zh' ? '天' : 'd'}
                       </span>
                     </div>
@@ -506,7 +544,7 @@ export const ReverseDDLModal: React.FC = () => {
                         )
                       }
                       placeholder={t.stepTitle}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                      className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-2.5 py-1 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-amber-500"
                     />
 
                     {/* Stage Select */}
@@ -515,7 +553,7 @@ export const ReverseDDLModal: React.FC = () => {
                       onChange={(e) =>
                         updateMilestone(idx, { stageId: e.target.value as AcademicStage })
                       }
-                      className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 shrink-0"
+                      className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-2 py-1 text-[11px] text-slate-700 dark:text-slate-300 shrink-0"
                     >
                       {stages.map((st) => (
                         <option key={st.id} value={st.id}>
@@ -526,14 +564,14 @@ export const ReverseDDLModal: React.FC = () => {
 
                     {/* Calculated Date Preview & Delete */}
                     <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                      <span className="text-[11px] font-mono text-cyan-400">
+                      <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400">
                         {formatDate(targetDate, language)}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeMilestone(idx)}
                         disabled={milestones.length <= 1}
-                        className="p-1 rounded text-slate-500 hover:text-rose-400 disabled:opacity-30 disabled:pointer-events-none"
+                        className="p-1 rounded text-slate-400 hover:text-rose-500 disabled:opacity-30 disabled:pointer-events-none"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -545,47 +583,47 @@ export const ReverseDDLModal: React.FC = () => {
           </div>
 
           {/* Optional Asset Links */}
-          <div className="border-t border-slate-800/80 pt-3">
-            <span className="text-xs font-medium text-slate-400 block mb-2">
+          <div className="border-t border-slate-200 dark:border-slate-800/80 pt-3">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-2">
               {language === 'zh' ? '科研资源直达链接 (选填)' : 'Asset Links (Optional)'}
             </span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input
                 type="url"
                 value={overleafUrl}
                 onChange={(e) => setOverleafUrl(e.target.value)}
                 placeholder="Overleaf URL"
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60"
               />
               <input
                 type="url"
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
                 placeholder="GitHub Repo URL"
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60"
               />
               <input
                 type="url"
                 value={datasetUrl}
                 onChange={(e) => setDatasetUrl(e.target.value)}
                 placeholder="Dataset URL"
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60"
               />
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setIsReverseDDLOpen(false)}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               {t.cancel}
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
               <span>{t.generatePipelineBtn}</span>

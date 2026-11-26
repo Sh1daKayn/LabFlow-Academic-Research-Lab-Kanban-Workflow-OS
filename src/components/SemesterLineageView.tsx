@@ -75,7 +75,7 @@ function getBadgeMeta(badge: SemesterNodeRoleBadge, isZh: boolean) {
     default:
       return {
         label: isZh ? '本期立项' : 'New Track',
-        cls: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30',
+        cls: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
       };
   }
 }
@@ -640,7 +640,7 @@ export const SemesterLineageView: React.FC<SemesterLineageViewProps> = ({
                                   entry.status === 'HANDED_OFF'
                                     ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                     : entry.status === 'CO_LEAD'
-                                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300 font-semibold'
+                                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-semibold'
                                     : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold'
                                 }`}
                               >

@@ -121,7 +121,7 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
   };
 
   const fieldClass =
-    'w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500';
+    'w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 text-xs">
@@ -149,7 +149,7 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isCompressing}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold shadow-sm transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold shadow-sm transition-colors disabled:opacity-50"
             >
               <Camera className="w-3.5 h-3.5" />
               <span>
@@ -361,7 +361,7 @@ export const MemberProfileEditor: React.FC<MemberProfileEditorProps> = ({
         )}
         <button
           type="submit"
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-sm transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors"
         >
           <Save className="w-3.5 h-3.5" />
           <span>{submitLabel || (isZh ? '保存成员资料' : 'Save Member')}</span>

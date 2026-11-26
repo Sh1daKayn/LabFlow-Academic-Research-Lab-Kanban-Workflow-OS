@@ -13,11 +13,14 @@ import {
   Eye,
   EyeOff,
   LayoutGrid,
+  UserCheck,
 } from 'lucide-react';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { LabMember, ViewMode } from '@/types';
 import { getMemberDisplayName } from '@/utils/avatar';
 import { hasMemberPin } from '@/utils/pin';
+import { findMatchingMembersByName } from '@/utils/memberWorkload';
+import { MemberAvatar } from '@/components/MemberAvatar';
 import {
   ALL_VIEW_MODES,
   DEFAULT_STUDENT_VIEWS,
@@ -61,6 +64,13 @@ export const AccountGate: React.FC = () => {
   const [preferredViews, setPreferredViews] = useState<ViewMode[]>(DEFAULT_STUDENT_VIEWS);
   const [defaultView, setDefaultView] = useState<ViewMode>(DEFAULT_STUDENT_VIEWS[0]);
   const [regError, setRegError] = useState('');
+  const [confirmDifferentPerson, setConfirmDifferentPerson] = useState(false);
+
+  const matchingExistingMembers = useMemo(() => {
+    const primary = isZh ? nameZh || nameEn : nameEn || nameZh;
+    const alt = isZh ? nameEn : nameZh;
+    return findMatchingMembersByName(members, primary, alt);
+  }, [members, nameZh, nameEn, isZh]);
 
   // --- Login Form State ---
   const defaultLoginId = useMemo(
@@ -109,6 +119,14 @@ export const AccountGate: React.FC = () => {
     const resolvedPrimary = isZh ? trimmedZh || trimmedEn : trimmedEn || trimmedZh;
     if (!resolvedPrimary) {
       setRegError(isZh ? '请输入你的姓名' : 'Please enter your full name');
+      return;
+    }
+    if (matchingExistingMembers.length > 0 && !confirmDifferentPerson) {
+      setRegError(
+        isZh
+          ? '检测到重名账户，请先在下方直接认领登录；确属同名不同人请勾选确认。'
+          : 'An account with this name already exists. Claim it below or confirm registering a distinct profile.'
+      );
       return;
     }
     if (pin.trim().length < 4) {
@@ -196,12 +214,12 @@ export const AccountGate: React.FC = () => {
         {/* Top Brand Header */}
         <div className="px-6 pt-6 pb-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-sm text-white shrink-0">
+            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-indigo-600 shadow-sm text-white shrink-0">
               <FlaskConical className="w-5 h-5" />
             </div>
             <div className="flex flex-col items-start">
               <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
-                Lab<span className="text-cyan-600 dark:text-cyan-400 font-extrabold">Flow</span>
+                Lab<span className="text-indigo-600 dark:text-indigo-400 font-extrabold">Flow</span>
               </span>
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400 tracking-wide mt-0.5">
                 {t.labTitle}
@@ -231,7 +249,7 @@ export const AccountGate: React.FC = () => {
               }}
               className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
                 mode === 'register'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-cyan-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
@@ -246,7 +264,7 @@ export const AccountGate: React.FC = () => {
               }}
               className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
                 mode === 'login'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-cyan-400 shadow-sm'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
@@ -268,6 +286,63 @@ export const AccountGate: React.FC = () => {
               </span>
             </div>
 
+            {matchingExistingMembers.length > 0 && (
+              <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50/90 dark:bg-amber-950/35 p-3 space-y-2">
+                <div className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <div className="space-y-1">
+                    <div className="font-semibold">
+                      {isZh
+                        ? '系统中已存在同名账号，可直接认领登录避免重复建号：'
+                        : 'An existing profile matches this name. Claim it to avoid duplicates:'}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {matchingExistingMembers.map((existing) => (
+                    <div
+                      key={existing.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/50 px-2.5 py-1.5 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MemberAvatar member={existing} size="xs" />
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {getMemberDisplayName(existing, language, existing.id)}
+                        </span>
+                        <span className="text-[10px] text-slate-500">[{existing.role}]</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberId(existing.id);
+                          setMode('login');
+                          setRegError('');
+                          setLoginError('');
+                        }}
+                        className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold shrink-0 flex items-center gap-1"
+                      >
+                        <UserCheck className="w-3 h-3" />
+                        <span>{isZh ? '认领登录' : 'Claim & Sign In'}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-[11px] text-amber-800 dark:text-amber-300 cursor-pointer pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={confirmDifferentPerson}
+                    onChange={(e) => setConfirmDifferentPerson(e.target.checked)}
+                    className="rounded border-amber-400 text-indigo-600"
+                  />
+                  <span>
+                    {isZh
+                      ? '我是另一位同名成员，确认注册全新独立账号'
+                      : 'I am a different person with the same name; create a separate account'}
+                  </span>
+                </label>
+              </div>
+            )}
+
             {isZh ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -280,7 +355,7 @@ export const AccountGate: React.FC = () => {
                     value={nameZh}
                     onChange={(e) => setNameZh(e.target.value)}
                     placeholder="例如：张明"
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -292,7 +367,7 @@ export const AccountGate: React.FC = () => {
                     value={nameEn}
                     onChange={(e) => setNameEn(e.target.value)}
                     placeholder="e.g. Ming Zhang"
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -307,8 +382,65 @@ export const AccountGate: React.FC = () => {
                   value={nameEn}
                   onChange={(e) => setNameEn(e.target.value)}
                   placeholder="e.g. Alex Rivera"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+            )}
+
+            {matchingExistingMembers.length > 0 && (
+              <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50/90 dark:bg-amber-950/35 p-3 space-y-2">
+                <div className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <div className="space-y-1">
+                    <div className="font-semibold">
+                      {isZh
+                        ? '系统中已存在同名账号，可直接认领登录避免重复建号：'
+                        : 'An existing profile matches this name. Claim it to avoid duplicates:'}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {matchingExistingMembers.map((existing) => (
+                    <div
+                      key={existing.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/50 px-2.5 py-1.5 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MemberAvatar member={existing} size="xs" />
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {getMemberDisplayName(existing, language, existing.id)}
+                        </span>
+                        <span className="text-[10px] text-slate-500">[{existing.role}]</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberId(existing.id);
+                          setMode('login');
+                          setRegError('');
+                          setLoginError('');
+                        }}
+                        className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold shrink-0 flex items-center gap-1"
+                      >
+                        <UserCheck className="w-3 h-3" />
+                        <span>{isZh ? '认领登录' : 'Claim & Sign In'}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-[11px] text-amber-800 dark:text-amber-300 cursor-pointer pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={confirmDifferentPerson}
+                    onChange={(e) => setConfirmDifferentPerson(e.target.checked)}
+                    className="rounded border-amber-400 text-indigo-600"
+                  />
+                  <span>
+                    {isZh
+                      ? '我是另一位同名成员，确认注册全新独立账号'
+                      : 'I am a different person with the same name; create a separate account'}
+                  </span>
+                </label>
               </div>
             )}
 
@@ -320,7 +452,7 @@ export const AccountGate: React.FC = () => {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as LabMember['role'])}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 >
                   {STUDENT_ROLE_OPTIONS.map((opt) => (
                     <option key={opt.id} value={opt.id}>
@@ -338,12 +470,69 @@ export const AccountGate: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@lab.edu"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
 
             {/* Required Personal PIN */}
+            {matchingExistingMembers.length > 0 && (
+              <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50/90 dark:bg-amber-950/35 p-3 space-y-2">
+                <div className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <div className="space-y-1">
+                    <div className="font-semibold">
+                      {isZh
+                        ? '系统中已存在同名账号，可直接认领登录避免重复建号：'
+                        : 'An existing profile matches this name. Claim it to avoid duplicates:'}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {matchingExistingMembers.map((existing) => (
+                    <div
+                      key={existing.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/50 px-2.5 py-1.5 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MemberAvatar member={existing} size="xs" />
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {getMemberDisplayName(existing, language, existing.id)}
+                        </span>
+                        <span className="text-[10px] text-slate-500">[{existing.role}]</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberId(existing.id);
+                          setMode('login');
+                          setRegError('');
+                          setLoginError('');
+                        }}
+                        className="px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold shrink-0 flex items-center gap-1"
+                      >
+                        <UserCheck className="w-3 h-3" />
+                        <span>{isZh ? '认领登录' : 'Claim & Sign In'}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-[11px] text-amber-800 dark:text-amber-300 cursor-pointer pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={confirmDifferentPerson}
+                    onChange={(e) => setConfirmDifferentPerson(e.target.checked)}
+                    className="rounded border-amber-400 text-indigo-600"
+                  />
+                  <span>
+                    {isZh
+                      ? '我是另一位同名成员，确认注册全新独立账号'
+                      : 'I am a different person with the same name; create a separate account'}
+                  </span>
+                </label>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
@@ -357,7 +546,7 @@ export const AccountGate: React.FC = () => {
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     placeholder={isZh ? '用于切换与保护个人数据' : 'Protects your account'}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 pr-9 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 pr-9 text-sm focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     type="button"
@@ -380,7 +569,7 @@ export const AccountGate: React.FC = () => {
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value)}
                   placeholder={isZh ? '再次输入 PIN' : 'Re-enter PIN'}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -389,7 +578,7 @@ export const AccountGate: React.FC = () => {
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-3.5 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <LayoutGrid className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                  <LayoutGrid className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                   {isZh ? '自定义保留的初始导航视图' : 'Customize Initial Views'}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -408,14 +597,14 @@ export const AccountGate: React.FC = () => {
                       onClick={() => togglePreferredView(view)}
                       className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-left text-xs transition-colors ${
                         selected
-                          ? 'border-cyan-500/70 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-200 font-medium'
+                          ? 'border-indigo-500/70 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-200 font-medium'
                           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
                       <span
                         className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
                           selected
-                            ? 'bg-cyan-600 border-cyan-600 text-white'
+                            ? 'bg-indigo-600 border-indigo-600 text-white'
                             : 'border-slate-300 dark:border-slate-600'
                         }`}
                       >
@@ -476,7 +665,7 @@ export const AccountGate: React.FC = () => {
                   setLoginBindPin('');
                   setLoginBindConfirmPin('');
                 }}
-                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500"
+                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
               >
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -501,7 +690,7 @@ export const AccountGate: React.FC = () => {
                     value={loginBindPin}
                     onChange={(e) => setLoginBindPin(e.target.value)}
                     placeholder={isZh ? '设置 4 位以上 PIN' : 'Set 4+ char PIN'}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                   />
                   <input
                     type="password"
@@ -510,7 +699,7 @@ export const AccountGate: React.FC = () => {
                     value={loginBindConfirmPin}
                     onChange={(e) => setLoginBindConfirmPin(e.target.value)}
                     placeholder={isZh ? '确认 PIN' : 'Confirm PIN'}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -540,7 +729,7 @@ export const AccountGate: React.FC = () => {
                           ? '输入你注册时设置的 PIN'
                           : 'Enter your personal PIN'
                     }
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     type="button"

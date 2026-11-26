@@ -131,7 +131,7 @@ export const DirectRequestModal: React.FC = () => {
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               {isZh ? '发起 1 对 1 申请 / 交流' : 'New 1-on-1 Request / Message'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -160,7 +160,7 @@ export const DirectRequestModal: React.FC = () => {
                 required
                 value={recipientId}
                 onChange={(e) => setRecipientId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               >
                 {recipientCandidates.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -177,7 +177,7 @@ export const DirectRequestModal: React.FC = () => {
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as DirectRequestKind)}
-                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               >
                 {DIRECT_REQUEST_KINDS.map((k) => (
                   <option key={k.id} value={k.id}>
@@ -218,7 +218,7 @@ export const DirectRequestModal: React.FC = () => {
                 onClick={() => setVisibility('PUBLIC')}
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-colors ${
                   visibility === 'PUBLIC'
-                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-200'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200'
                     : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
@@ -250,7 +250,7 @@ export const DirectRequestModal: React.FC = () => {
                   ? '简明说明需要对接、审阅或沟通的事项'
                   : 'Briefly state what you need from this person'
               }
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -267,7 +267,7 @@ export const DirectRequestModal: React.FC = () => {
                   ? '补充背景、时间节点或具体问题...'
                   : 'Add background context, deadline, or questions...'
               }
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 resize-none"
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
             />
           </div>
 

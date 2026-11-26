@@ -19,7 +19,7 @@ const HANDOFF_BADGE_STYLES: Record<ProjectHandoffStatus, string> = {
   ACTIVE:
     'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold',
   CO_LEAD:
-    'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30 font-semibold',
+    'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 font-semibold',
 };
 
 /**

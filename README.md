@@ -24,36 +24,40 @@ LabFlow keeps daily lab work simple and easy to follow.
 
 ### 2. Three types of lab work & 6-stage board (`Tasks`)
 Each project fits one of three groups:
-- **Paper Track** (`PAPER`) — journal articles, conference papers, and target venues (such as *AJAE*, *Choices*, or *Agribusiness*).
-- **Grant / Funded** (`VERTICAL_PROJECT`) — federal, state, or foundation grants (such as USDA, NSF, or Farm Foundation).
+- **Paper Track** (`PAPER`) — journal articles, conference papers, and target venues (such as *Nature Communications*, *PNAS*, *NeurIPS*, or *Management Science*), with clickable venue homepage badges and batch URL import.
+- **Grant / Funded** (`VERTICAL_PROJECT`) — federal, state, or foundation grants (such as NSF, NIH, NSFC, or Horizon Europe).
 - **Industry / Outreach** (`HORIZONTAL_PROJECT`) — partner projects and extension work, with fields for the partner organization and due dates.
 
 Inside **Tasks**, move cards across six stages (all stage names can be edited in Settings):
 1. **Ideation & Lit Review** (`IDEATION`)
-2. **Data & Modeling** (`DATA_EXP`)
+2. **Data & Experiments** (`DATA_EXP`)
 3. **Manuscript Drafting** (`DRAFTING`)
 4. **Advisor Review** (`PI_REVIEW`)
 5. **Submitted & R&R** (`REVISION`)
 6. **Accepted & Archived** (`ACCEPTED`)
+
+Every task and project supports **dynamic customizable Resource Links** (Overleaf, GitHub, Dataset, Zotero, Lab Notebook, Pre-registration, Qualtrics, IRB Protocol, HuggingFace, Slides, or custom labels) and a top **Shared Resources & Equipment** strip to reserve shared microscopes, compute servers, analytics enclaves, and seminar rooms.
 
 You can switch between three layouts:
 - **Columns:** Drag cards from one stage column to the next, or use the `←` and `→` arrows on each card.
 - **By Category:** Groups tasks under Paper Track, Grant / Funded, and Industry / Outreach.
 - **Stage Cells:** Shows projects that do not have task cards yet so newly added projects are easy to find.
 
-Need to plan backward from a journal deadline? Use **DDL Planner** to pick a due date and auto-create milestones (`T-45`, `T-30`, `T-14`, `T-3`).
+Need to plan backward from a journal or grant deadline? Use **DDL Planner** to pick a due date, optionally paste or pick a saved venue URL, and auto-create milestones (`T-45`, `T-30`, `T-14`, `T-3`).
 
-### 3. Multi-semester handoffs & `Semester Lineage` (`Projects`)
+### 3. Multi-semester handoffs, `Semester Lineage` & `Outreach & Workshops` (`Projects`)
 When a project moves from a Spring student to a Fall student, LabFlow keeps the history in one place:
 - **Core Research Question:** Saves the main question the project is trying to answer.
-- **Shared Dataset:** Tags common lab datasets (like *Large Commercial Producer Survey*) so you can see every project using the same data.
+- **Shared Dataset:** Tags common lab datasets or cohorts so you can see every project using the same data.
 - **Cross-Term Handoff Timeline:** Lists who led the work in `Spring 2026`, `Summer 2026`, or `Fall 2026`, along with handoff notes.
 - **Semester Lineage view:** Sorts columns automatically in academic calendar order (`Spring -> Summer -> Fall` + Year) and draws lines showing how a project continues across terms or splits into new papers. Click or hover over any card to highlight its connected projects.
+- **Outreach & Workshops view:** Link any project to configurable translation tracks (e.g. *Seminar & Research Workshop*, *Industry / Clinical Partner*, *Teaching & Course Module*, *Policy Brief & Public Outreach*, *Open-Source / Patent Release*), track delivery readiness & dates, and filter **Tasks** by outreach track.
 
-### 4. Weekly to-dos & advisor sign-off (`Weekly Todos`)
+### 4. Weekly to-dos, advisor sign-off & member workload
 - List what you plan to finish this week, link items to a project checklist, and write what "done" looks like.
 - Advisors (or peers, if turned on) can leave a note and mark each item **Accepted** or **Needs Revision**.
 - Advisors and leads can also assign weekly to-dos to several students at once in `Lab Public` mode.
+- **Duplicate-name guard & workload bubbles:** Self-registration detects matching existing names so students can claim their account instead of creating duplicates; admins can merge historical duplicate profiles, and member/standup views show live active project, task, blocker, and pending-review counts.
 
 ### 5. Private 1-on-1 requests (`Requests`)
 - Instead of posting everything in a group chat, send a **1-on-1 request** directly to one person (for example, asking your advisor to review a draft or asking a labmate about a regression model).
@@ -73,11 +77,15 @@ All notifications can be turned on or off depending on what your lab uses:
 
 ### 8. Lab roles & permissions
 No email verification server is needed to get started. Admins unlock extra settings with an admin password (default: `admin888`, which you can change):
-- **Advisor / PI (`ADMIN_PI`):** Full access to all settings, member roles, admin password, and data backups/resets.
-- **Lab Manager / SysAdmin (`SYS_ADMIN`):** Student coordinator role that helps add members, manage venues/stages/compute nodes, and run data imports.
+- **Advisor / PI (`ADMIN_PI`):** Full access to all settings, member roles/merges, admin password, and data backups/resets.
+- **Lab Manager / SysAdmin (`SYS_ADMIN`):** Student coordinator role that helps add members, manage venues/outreach tracks/stages/shared resources, and run data imports.
 - **Project Lead (`PROJECT_LEAD`):** Manages tasks across projects they lead.
 - **Lab Member / Student (`STUDENT_RA`):** Edits their own assigned tasks, posts requests, and checks off weekly to-dos.
 - **Guest (`AUDITOR_GUEST`):** Read-only access to public lab items.
+
+### 9. Appearance, themes & fonts
+- Ships in crisp high-contrast **Light Mode** by default with full **Dark Mode** parity (`Obsidian`), selectable accent presets including **Obsidian & Gold**, Indigo, Blue, Emerald, Crimson, and custom hex color pickers.
+- Pairs **12 English & 12 Chinese** academic fonts (Times New Roman, Georgia, Garamond, PingFang, Songti, Kaiti, LXGW WenKai, YouYuan, etc.) with custom local font entry.
 
 ---
 
@@ -96,7 +104,7 @@ npm run dev
 
 - **Windows shortcut:** Double-click [`Start-LabFlow.bat`](Start-LabFlow.bat) or run [`Start-LabFlow.ps1`](Start-LabFlow.ps1).
 - Open **`http://localhost:3000`** in Chrome or Edge.
-- **Want sample data right away?** Open **Settings -> Data & Backup** and load the built-in CAB Lab preset (or import [`CABLab_2026_Import_Pack.json`](CABLab_2026_Import_Pack.json)).
+- **Starting your own lab workspace:** LabFlow boots directly with cross-disciplinary starter projects so you can test every feature right away. When ready for your real group, open **Settings -> Data & Backup -> Clean Slate** (or use **AI Smart Importer**) to initialize your own roster, venues, and projects.
 - **Use as a desktop app:** In Chrome or Edge, click the **Install** icon in the address bar to pin LabFlow to your desktop or Start menu.
 
 ---
@@ -194,10 +202,10 @@ Rules:
   ],
   "projects": [
     {
-      "title": "Retailer Value Propositions & Misinterpretation",
+      "title": "Digital Servitization & Producer Subscription Dynamics",
       "workCategory": "PAPER | VERTICAL_PROJECT | HORIZONTAL_PROJECT",
-      "targetVenue": "AJAE / Agribusiness",
-      "tag": "C2 · Retailer",
+      "targetVenue": "INFORMS Management Science / Nature Communications",
+      "tag": "Mgt Sci",
       "abstract": "Short description of the project.",
       "leadAuthorName": "Daniel Vance"
     }
@@ -207,7 +215,7 @@ Rules:
       "title": "Finish robustness checks and Table 3 formatting",
       "description": "Verify clustered standard errors and clean up appendix notes.",
       "stage": "IDEATION | DATA_EXP | DRAFTING | PI_REVIEW | REVISION | ACCEPTED",
-      "projectName": "Retailer Value Propositions & Misinterpretation",
+      "projectName": "Digital Servitization & Producer Subscription Dynamics",
       "leadAuthorName": "Daniel Vance",
       "priority": "LOW | MEDIUM | HIGH | URGENT",
       "visibility": "PUBLIC | TEAM_ONLY | PI_ONLY",
@@ -217,9 +225,9 @@ Rules:
   ],
   "resources": [
     {
-      "nameEn": "Lab Linux Server",
+      "nameEn": "Shared Compute Server / Confocal Microscope",
       "type": "GPU | SERVER | CLUSTER | EQUIPMENT",
-      "specs": "2x NVIDIA A100 80GB, 256GB RAM"
+      "specs": "Room B204 · Shared Lab Booking / Multi-GPU Node"
     }
   ]
 }

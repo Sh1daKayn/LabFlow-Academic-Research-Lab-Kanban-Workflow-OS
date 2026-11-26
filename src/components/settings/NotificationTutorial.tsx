@@ -207,7 +207,7 @@ jobs:
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <div className="relative rounded-lg bg-slate-900 text-slate-200 p-2.5 font-mono text-[10px] overflow-x-auto">
-              <div className="text-cyan-400 mb-1">1. Vercel Cron (vercel.json)</div>
+              <div className="text-indigo-400 mb-1">1. Vercel Cron (vercel.json)</div>
               <button
                 type="button"
                 onClick={() => copySnippet('vercel', vercelCronSnippet)}
@@ -220,7 +220,7 @@ jobs:
             </div>
 
             <div className="relative rounded-lg bg-slate-900 text-slate-200 p-2.5 font-mono text-[10px] overflow-x-auto">
-              <div className="text-cyan-400 mb-1">2. GitHub Actions (.github/workflows/digest.yml)</div>
+              <div className="text-indigo-400 mb-1">2. GitHub Actions (.github/workflows/digest.yml)</div>
               <button
                 type="button"
                 onClick={() => copySnippet('gha', githubActionSnippet)}
@@ -234,7 +234,7 @@ jobs:
           </div>
 
           <div className="relative rounded-lg bg-slate-900 text-slate-200 p-2.5 font-mono text-[10px] overflow-x-auto">
-            <div className="text-cyan-400 mb-1">3. Self-hosted Server Crontab</div>
+            <div className="text-indigo-400 mb-1">3. Self-hosted Server Crontab</div>
             <button
               type="button"
               onClick={() => copySnippet('curl', curlCrontabSnippet)}

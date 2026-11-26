@@ -132,7 +132,7 @@ export const RequestsView: React.FC = () => {
     }
     if (status === 'REPLIED') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
           {isZh ? '已回复' : 'Replied'}
         </span>
       );
@@ -207,7 +207,7 @@ export const RequestsView: React.FC = () => {
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
                   req.visibility === 'PRIVATE'
                     ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    : 'border-cyan-200 dark:border-cyan-800/60 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/40'
+                    : 'border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
                 }`}
               >
                 {req.visibility === 'PRIVATE' ? (
@@ -227,7 +227,7 @@ export const RequestsView: React.FC = () => {
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
                   req.visibility === 'PRIVATE'
                     ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    : 'border-cyan-200 dark:border-cyan-800/60 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300'
+                    : 'border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
                 }`}
               >
                 {req.visibility === 'PRIVATE' ? (
@@ -327,7 +327,7 @@ export const RequestsView: React.FC = () => {
                 }
               }}
               placeholder={isZh ? '输入 1 对 1 回复内容...' : 'Write a reply...'}
-              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500"
+              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
               autoFocus
             />
             <button

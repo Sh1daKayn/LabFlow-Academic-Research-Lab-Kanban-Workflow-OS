@@ -14,37 +14,33 @@ import {
   CHINESE_FONT_PRESETS,
   ENGLISH_FONT_PRESETS,
   FontPresetMeta,
+  getAccentForegroundHex,
+  resolveAccentHex,
 } from '@/utils/theme';
 import { Check, ChevronDown, ChevronRight, Moon, Palette, Pipette, RotateCcw, Sun, Type } from 'lucide-react';
 
 const ACCENT_OPTIONS: { id: AccentColor; nameZh: string; nameEn: string; color: string }[] = [
-  { id: 'purdue', nameZh: '黑金', nameEn: 'Black Gold', color: '#C28E0E' },
-  { id: 'oxford', nameZh: '深蓝', nameEn: 'Deep Blue', color: '#1e40af' },
-  { id: 'cardinal', nameZh: '深红', nameEn: 'Deep Red', color: '#8c1515' },
-  { id: 'cambridge', nameZh: '青绿', nameEn: 'Teal Green', color: '#0f766e' },
-  { id: 'crimson', nameZh: '酒红', nameEn: 'Crimson', color: '#991b1b' },
-  { id: 'indigo', nameZh: '经典蓝紫', nameEn: 'Classic Indigo', color: '#6366f1' },
-  { id: 'cyan', nameZh: '计算青', nameEn: 'Cyan', color: '#06b6d4' },
-  { id: 'emerald', nameZh: '翠绿', nameEn: 'Emerald Green', color: '#10b981' },
-  { id: 'amber', nameZh: '琥珀金', nameEn: 'Amber Gold', color: '#f59e0b' },
-  { id: 'rose', nameZh: '玫瑰红', nameEn: 'Rose Red', color: '#f43f5e' },
-  { id: 'violet', nameZh: '深紫', nameEn: 'Deep Violet', color: '#8b5cf6' },
+  { id: 'indigo', nameZh: '学术靛蓝 (默认)', nameEn: 'Classic Indigo', color: '#6366f1' },
+  { id: 'obsidian-gold', nameZh: '曜黑金 (Obsidian & Gold)', nameEn: 'Obsidian & Gold', color: '#8E6F3E' },
+  { id: 'oxford', nameZh: '牛津深蓝', nameEn: 'Oxford Blue', color: '#1e40af' },
+  { id: 'cambridge', nameZh: '康桥青绿', nameEn: 'Teal Green', color: '#0f766e' },
+  { id: 'emerald', nameZh: '学术翠绿', nameEn: 'Emerald Green', color: '#10b981' },
+  { id: 'crimson', nameZh: '酒红文献', nameEn: 'Crimson', color: '#991b1b' },
+  { id: 'cardinal', nameZh: '绯红经典', nameEn: 'Cardinal Red', color: '#8c1515' },
+  { id: 'violet', nameZh: '科研深紫', nameEn: 'Deep Violet', color: '#8b5cf6' },
+  { id: 'rose', nameZh: '玫瑰批注', nameEn: 'Rose Red', color: '#f43f5e' },
 ];
 
 const COLOR_SWATCHES = [
-  { hex: '#C28E0E', nameZh: '黑金', nameEn: 'Black Gold' },
-  { hex: '#002147', nameZh: '深蓝', nameEn: 'Deep Blue' },
-  { hex: '#8C1515', nameZh: '深红', nameEn: 'Deep Red' },
-  { hex: '#A51C30', nameZh: '酒红', nameEn: 'Wine Red' },
-  { hex: '#00356B', nameZh: '藏青', nameEn: 'Navy Blue' },
-  { hex: '#E77500', nameZh: '暖橙', nameEn: 'Warm Orange' },
-  { hex: '#003262', nameZh: '宝石蓝', nameEn: 'Sapphire Blue' },
+  { hex: '#6366F1', nameZh: '经典靛蓝', nameEn: 'Indigo' },
+  { hex: '#8E6F3E', nameZh: '曜黑暖金', nameEn: 'Aged Gold (Obsidian)' },
+  { hex: '#CFB991', nameZh: '哑光香槟金', nameEn: 'Champagne Gold' },
+  { hex: '#555960', nameZh: '冷钢曜灰', nameEn: 'Obsidian Steel' },
+  { hex: '#000000', nameZh: '极简墨黑', nameEn: 'Obsidian Black' },
   { hex: '#0F766E', nameZh: '松青', nameEn: 'Teal' },
-  { hex: '#6366F1', nameZh: '蓝紫', nameEn: 'Indigo' },
-  { hex: '#06B6D4', nameZh: '青色', nameEn: 'Cyan' },
   { hex: '#059669', nameZh: '翠绿', nameEn: 'Emerald' },
-  { hex: '#D97706', nameZh: '琥珀', nameEn: 'Amber' },
-  { hex: '#E11D48', nameZh: '茜红', nameEn: 'Rose' },
+  { hex: '#002147', nameZh: '牛津蓝', nameEn: 'Navy Blue' },
+  { hex: '#8C1515', nameZh: '学院红', nameEn: 'Cardinal Red' },
   { hex: '#7C3AED', nameZh: '深紫', nameEn: 'Violet' },
 ];
 
@@ -328,7 +324,15 @@ export const AppearanceTab: React.FC = () => {
                   className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                   style={{ backgroundColor: opt.color }}
                 >
-                  {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                  {isSelected && (
+                    <Check
+                      className={`w-2.5 h-2.5 ${
+                        getAccentForegroundHex(opt.color) === '#000000'
+                          ? 'text-black'
+                          : 'text-white'
+                      }`}
+                    />
+                  )}
                 </div>
                 <span className="text-xs font-medium truncate">
                   {language === 'zh' ? opt.nameZh : opt.nameEn}
@@ -363,7 +367,15 @@ export const AppearanceTab: React.FC = () => {
                   style={{ backgroundColor: swatch.hex }}
                   title={`${language === 'zh' ? swatch.nameZh : swatch.nameEn} (${swatch.hex})`}
                 >
-                  {isMatch && <Check className="w-3 h-3 text-white drop-shadow" />}
+                  {isMatch && (
+                    <Check
+                      className={`w-3 h-3 ${
+                        getAccentForegroundHex(swatch.hex) === '#000000'
+                          ? 'text-black'
+                          : 'text-white'
+                      }`}
+                    />
+                  )}
                 </button>
               );
             })}
@@ -374,7 +386,7 @@ export const AppearanceTab: React.FC = () => {
               <input
                 type="color"
                 id="custom-accent-color-picker"
-                value={accentColor.startsWith('#') ? accentColor : '#6366f1'}
+                value={resolveAccentHex(accentColor)}
                 onChange={(e) => setAccentColor(e.target.value)}
                 className="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 bg-transparent"
               />
@@ -390,7 +402,7 @@ export const AppearanceTab: React.FC = () => {
               type="text"
               value={accentColor}
               onChange={(e) => setAccentColor(e.target.value)}
-              placeholder="#C28E0E"
+              placeholder="#8E6F3E"
               className="w-24 ml-auto text-xs font-mono uppercase bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
             />
           </div>

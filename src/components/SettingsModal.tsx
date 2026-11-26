@@ -124,8 +124,8 @@ export const SettingsModal: React.FC = () => {
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-200 flex items-center justify-between gap-2">
                 <span>
                   {language === 'zh'
-                    ? '🛡️ 您当前处于「系统管理员（学生协管）」权限：可统筹成员协作、算力调度、阶段与会议配置（高危清空与导师密码仍由导师专属管控）。'
-                    : '🛡️ System Admin (Student Manager) active: manage daily operations, members & compute. PI-only destructive controls remain locked.'}
+                    ? '🛡️ 您当前处于「系统管理员（学生协管）」权限：可统筹成员协作、共享资源调度、阶段与刊物配置（高危清空与导师密码仍由导师专属管控）。'
+                    : '🛡️ System Admin active: manage daily operations, members & shared resources. PI-only destructive controls remain locked.'}
                 </span>
               </div>
             )}

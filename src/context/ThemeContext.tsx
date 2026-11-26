@@ -54,7 +54,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
  * font scaling, and compute strip visibility independently of domain data.
  */
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [accentColor, setAccentColor] = useState<AccentColor>('indigo');
   const [bgStyle, setBgStyle] = useState<BgTheme>('default');
   const [fontSize, setFontSize] = useState<FontSize>('standard');

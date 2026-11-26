@@ -23,16 +23,16 @@ export const LOGIC_NODE_TYPE_META: Record<
     stroke: '#a855f7',
   },
   method: {
-    labelZh: '方案/推导',
+    labelZh: '方案/方法',
     labelEn: 'Method',
-    colorClass: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/35',
-    stroke: '#06b6d4',
+    colorClass: 'bg-teal-500/12 text-teal-700 dark:text-teal-300 border-teal-500/35',
+    stroke: '#0d9488',
   },
   experiment: {
-    labelZh: '实验执行',
+    labelZh: '实验/调研',
     labelEn: 'Experiment',
-    colorClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35',
-    stroke: '#f59e0b',
+    colorClass: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35',
+    stroke: '#d97706',
   },
   validation: {
     labelZh: '验证分析',
@@ -53,7 +53,7 @@ export const LOGIC_NODE_STATUS_META: Record<
   { labelZh: string; labelEn: string; dotClass: string }
 > = {
   todo: { labelZh: '待开始', labelEn: 'To Do', dotClass: 'bg-slate-400' },
-  doing: { labelZh: '推进中', labelEn: 'In Progress', dotClass: 'bg-cyan-500' },
+  doing: { labelZh: '推进中', labelEn: 'In Progress', dotClass: 'bg-indigo-500' },
   done: { labelZh: '已完成', labelEn: 'Done', dotClass: 'bg-emerald-500' },
   blocked: { labelZh: '卡点阻塞', labelEn: 'Blocked', dotClass: 'bg-rose-500' },
 };

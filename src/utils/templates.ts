@@ -14,9 +14,9 @@ const VALID_PRIORITIES = new Set<Priority>(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 export const DEFAULT_CHECKLIST_TEMPLATES: ChecklistAcceptanceTemplate[] = [
   {
     id: 'tpl-top-venue-rubric',
-    name: '顶会投稿与双盲核查模板',
+    name: '顶刊 / 顶会投稿与双盲核查模板',
     category: '投稿核查',
-    description: '适用于 NeurIPS / ICML / ICLR / CVPR / ACL 等顶会定稿与可复现性自检',
+    description: '适用于 Nature / PNAS / NeurIPS / 管理科学等国内外期刊会议定稿与可复现性自检',
     items: [
       {
         text: '【双盲匿名】清除论文及附录中所有作者姓名、致谢、机构标识与非匿名仓库链接',
@@ -24,13 +24,13 @@ export const DEFAULT_CHECKLIST_TEMPLATES: ChecklistAcceptanceTemplate[] = [
         priority: 'URGENT',
       },
       {
-        text: '【可复现性】提供随机数种子配置、超参数网格与环境依赖清单 (conda/docker)',
-        acceptanceCriteria: '新建干净环境按 README 命令可在 15 分钟内跑通 Smoke Test',
+        text: '【可复现性】提供数据字典、参数配置、分析脚本与环境依赖清单',
+        acceptanceCriteria: '新建干净环境按 README 说明可在 15 分钟内复现核心图表',
         priority: 'HIGH',
       },
       {
-        text: '【实验统计】核心主实验与消融完成至少 5 次随机种子并报告均值与标准差 (std/CI)',
-        acceptanceCriteria: '表格与正文数值完全对齐且附图含误差棒',
+        text: '【实验统计】核心主结果与稳健性检验完成多组对照并报告均值与置信区间 (std/CI)',
+        acceptanceCriteria: '表格与正文数值完全对齐且附图含误差棒或显著性标注',
         priority: 'HIGH',
       },
       {
@@ -44,18 +44,18 @@ export const DEFAULT_CHECKLIST_TEMPLATES: ChecklistAcceptanceTemplate[] = [
   },
   {
     id: 'tpl-weekly-experiment-cycle',
-    name: '模型实验与消融验证周模板',
+    name: '实验对照与稳健性验证周模板',
     category: '周实验',
-    description: '适用于实验推进周的基线对齐、消融对比及失败案例复盘',
+    description: '适用于实验/实证推进周的基线对齐、对照稳健性检验及异常案例复盘',
     items: [
       {
-        text: '复现主流基线方法并在目标数据集对齐原始论文精度',
-        acceptanceCriteria: '附上实验日志链接与对比表格（主指标误差 ≤1%）',
+        text: '复现主流基线或对照组并在目标样本对齐基准结论',
+        acceptanceCriteria: '附上实验记录链接与对比表格（误差在可接受范围）',
         priority: 'HIGH',
       },
       {
-        text: '设计并跑通核心模块消融实验（Ablation Study）',
-        acceptanceCriteria: '输出各变体精度/吞吐/显存占用完整数据表',
+        text: '设计并完成关键对照与稳健性检验（Sensitivity / Ablation）',
+        acceptanceCriteria: '输出各条件下的效应量、评价指标及统计波动完整对比表',
         priority: 'HIGH',
       },
       {
@@ -97,10 +97,10 @@ export const DEFAULT_CHECKLIST_TEMPLATES: ChecklistAcceptanceTemplate[] = [
 export const DEFAULT_CHECKLIST_TEMPLATES_EN: ChecklistAcceptanceTemplate[] = [
   {
     id: 'tpl-top-venue-rubric',
-    name: 'Top-Tier Submission & Double-Blind Audit',
+    name: 'Publication Submission & Reproducibility Audit',
     category: 'Submission Check',
     description:
-      'Final camera-ready and double-blind reproducibility checklist for NeurIPS / ICML / ICLR / CVPR / ACL',
+      'Final submission and reproducibility checklist across journals and conferences (Nature, PNAS, NeurIPS, Management Science)',
     items: [
       {
         text: '[Anonymity] Strip author names, affiliations, funding notes, and deanonymizing repo URLs',
@@ -109,13 +109,13 @@ export const DEFAULT_CHECKLIST_TEMPLATES_EN: ChecklistAcceptanceTemplate[] = [
         priority: 'URGENT',
       },
       {
-        text: '[Reproducibility] Provide random seeds, hyperparameter grids, and environment lockfile (conda/docker)',
+        text: '[Reproducibility] Provide codebook/parameters, scripts, and environment lockfile',
         acceptanceCriteria:
-          'Fresh environment runs README smoke test cleanly within 15 minutes',
+          'Fresh environment reproduces key figures cleanly within 15 minutes',
         priority: 'HIGH',
       },
       {
-        text: '[Statistics] Run core benchmarks & ablations over >= 5 seeds and report mean +/- std/CI',
+        text: '[Statistics] Run core benchmarks & robustness checks across replicates and report mean +/- std/CI',
         acceptanceCriteria:
           'Tables match prose values exactly and figures include error bars',
         priority: 'HIGH',
@@ -132,21 +132,21 @@ export const DEFAULT_CHECKLIST_TEMPLATES_EN: ChecklistAcceptanceTemplate[] = [
   },
   {
     id: 'tpl-weekly-experiment-cycle',
-    name: 'Weekly Ablation & Baseline Benchmark',
+    name: 'Weekly Robustness & Baseline Check',
     category: 'Weekly Experiments',
     description:
-      'Weekly empirical sprint covering baseline reproduction, component ablations, and failure-case review',
+      'Weekly empirical/experimental sprint covering baseline reproduction, sensitivity checks, and edge-case review',
     items: [
       {
-        text: 'Reproduce primary baselines and match published reference accuracy on target datasets',
+        text: 'Reproduce primary baselines or controls and verify reference metrics on target data',
         acceptanceCriteria:
-          'Attach run logs and comparison table (primary metric within <= 1% of reference)',
+          'Attach run logs and comparison table (primary metric aligned with reference)',
         priority: 'HIGH',
       },
       {
-        text: 'Run systematic module ablation study across key hyperparameters',
+        text: 'Run systematic robustness / sensitivity study across key parameters',
         acceptanceCriteria:
-          'Export complete accuracy / throughput / GPU memory table across variants',
+          'Export complete effect-size, metric, and resource comparison table across conditions',
         priority: 'HIGH',
       },
       {

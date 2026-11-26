@@ -36,7 +36,8 @@ export const formatCountdownBadge = (deadlineStr?: string, lang: Language = 'zh'
   if (days === null) {
     return {
       text: lang === 'zh' ? '无截稿期' : 'No DDL',
-      className: 'bg-slate-800/80 text-slate-400 border-slate-700',
+      className:
+        'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700',
       isUrgent: false,
     };
   }
@@ -44,34 +45,39 @@ export const formatCountdownBadge = (deadlineStr?: string, lang: Language = 'zh'
   if (days < 0) {
     return {
       text: lang === 'zh' ? `逾期 ${Math.abs(days)} 天` : `DDL: ${Math.abs(days)}d past`,
-      className: 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-semibold',
+      className:
+        'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/40 font-semibold',
       isUrgent: true,
     };
   }
   if (days === 0) {
     return {
       text: lang === 'zh' ? '今日截止!' : 'DDL: Today!',
-      className: 'bg-red-500/30 text-red-300 border-red-500/60 animate-pulse font-bold',
+      className:
+        'bg-red-100 dark:bg-red-500/30 text-red-700 dark:text-red-200 border-red-400 dark:border-red-500/60 animate-pulse font-bold',
       isUrgent: true,
     };
   }
   if (days <= 3) {
     return {
       text: lang === 'zh' ? `剩余 ${days} 天` : `DDL: ${days}d left`,
-      className: 'bg-red-500/20 text-red-300 border-red-500/50 font-bold animate-pulse',
+      className:
+        'bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border-red-300 dark:border-red-500/50 font-bold animate-pulse',
       isUrgent: true,
     };
   }
   if (days <= 14) {
     return {
       text: lang === 'zh' ? `剩余 ${days} 天` : `DDL: ${days}d left`,
-      className: 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium',
+      className:
+        'bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500/40 font-medium',
       isUrgent: false,
     };
   }
   return {
     text: lang === 'zh' ? `剩余 ${days} 天` : `DDL: ${days}d left`,
-    className: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
+    className:
+      'bg-slate-100 dark:bg-slate-800/75 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700',
     isUrgent: false,
   };
 };

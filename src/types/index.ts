@@ -1,12 +1,15 @@
 export type Language = 'zh' | 'en';
 
 export type AccentColor =
+  | 'indigo'
+  | 'obsidian-gold'
   | 'purdue'
+  | 'boilermaker'
+  | 'steel'
   | 'oxford'
   | 'cardinal'
   | 'cambridge'
   | 'crimson'
-  | 'indigo'
   | 'cyan'
   | 'emerald'
   | 'amber'
@@ -115,11 +118,18 @@ export interface LabMember {
   defaultView?: ViewMode;
 }
 
+export interface CustomAssetLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface AssetLinks {
   overleaf?: string;
   github?: string;
   dataset?: string;
   zotero?: string;
+  customLinks?: CustomAssetLink[];
 }
 
 export interface BlockerInfo {
@@ -184,8 +194,9 @@ export interface TaskItem {
   milestoneNode?: string;
   stage: AcademicStage;
   projectId: string;
-  projectTag: string; // e.g. "AAAI 2027", "AEPP"
+  projectTag: string; // e.g. "NeurIPS '27", "Nature Comms", "Mgt Sci"
   targetVenue: string;
+  targetVenueUrl?: string;
   startDate?: string; // ISO date string e.g. "2026-10-01"
   deadline: string; // ISO date string e.g. "2026-12-15"
   progress?: number; // 0 - 100%
@@ -228,6 +239,14 @@ export interface ProjectInheritanceLink {
   note?: string;
 }
 
+export type WorkshopTranslationStatus =
+  | 'NOT_STARTED'
+  | 'IN_PREP'
+  | 'WORKSHOP_READY'
+  | 'PRESENTED';
+
+export type OutreachStatus = WorkshopTranslationStatus;
+
 export interface ProjectItem {
   id: string;
   title: string;
@@ -239,10 +258,14 @@ export interface ProjectItem {
   workCategory?: WorkCategory;
   partnerOrg?: string;
   milestoneNode?: string;
+  workshopPrograms?: string[];
+  workshopTranslationStatus?: WorkshopTranslationStatus;
+  workshopTargetDate?: string;
   category?: string;
   categoryColor?: string;
   memberIds?: string[];
   targetVenue: string;
+  targetVenueUrl?: string;
   tag: string;
   submissionDeadline?: string;
   status: AcademicStage;
@@ -342,6 +365,7 @@ export interface VenuePreset {
   id: string;
   name: string;
   tag: string;
+  url?: string;
   defaultLeadId: string;
   milestones: MilestoneTemplate[];
 }
@@ -353,6 +377,7 @@ export interface ReverseDDLForm {
   milestoneNode?: string;
   category?: string;
   targetVenue: string;
+  targetVenueUrl?: string;
   deadlineDate: string;
   leadAuthorId: string;
   tag: string;
@@ -407,6 +432,7 @@ export interface LabWorkspaceData {
   weeklyTodos?: WeeklyTodoItem[];
   directRequests?: DirectRequest[];
   allowPeerAcceptance?: boolean;
+  outreachTracks?: string[];
   checklistTemplates?: ChecklistAcceptanceTemplate[];
   notificationSettings?: NotificationSettings;
 }

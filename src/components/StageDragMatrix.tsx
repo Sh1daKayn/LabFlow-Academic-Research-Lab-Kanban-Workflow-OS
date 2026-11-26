@@ -89,7 +89,7 @@ const StageMatrixSection: React.FC<MatrixSectionProps> = ({
       <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
           {sectionKind === 'project' ? (
-            <FolderKanban className="w-4 h-4 text-violet-500" />
+            <FolderKanban className="w-4 h-4 text-indigo-500" />
           ) : (
             <Layers className="w-4 h-4 text-indigo-500" />
           )}
@@ -228,7 +228,7 @@ const StageMatrixSection: React.FC<MatrixSectionProps> = ({
                             onDragEnd={onEndDrag}
                             className={`w-full rounded-xl p-2 border transition-all select-none ${
                               item.canDrag
-                                ? 'cursor-grab active:cursor-grabbing bg-gradient-to-br from-indigo-500/12 via-white to-cyan-500/10 dark:from-indigo-500/20 dark:via-slate-900 dark:to-cyan-500/10 border-indigo-400/60 dark:border-indigo-500/50 shadow-sm hover:shadow-md hover:border-indigo-500'
+                                ? 'cursor-grab active:cursor-grabbing bg-gradient-to-br from-indigo-500/12 via-white to-slate-50/80 dark:from-indigo-500/20 dark:via-slate-900 dark:to-indigo-950/30 border-indigo-400/60 dark:border-indigo-500/50 shadow-sm hover:shadow-md hover:border-indigo-500'
                                 : 'bg-slate-100 dark:bg-slate-800/60 border-slate-300 dark:border-slate-700 opacity-80'
                             } ${isRowDragging ? 'opacity-50 scale-[0.98]' : ''}`}
                             title={
@@ -262,7 +262,7 @@ const StageMatrixSection: React.FC<MatrixSectionProps> = ({
                             {typeof item.progressPercent === 'number' && (
                               <div className="w-full h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mb-1.5">
                                 <div
-                                  className="h-full bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full"
+                                  className="h-full bg-indigo-500 rounded-full"
                                   style={{ width: `${Math.max(0, Math.min(100, item.progressPercent))}%` }}
                                 />
                               </div>
@@ -298,7 +298,7 @@ const StageMatrixSection: React.FC<MatrixSectionProps> = ({
                                   onClick={() => canNext && onMoveStage(item.id, stages[curIdx + 1].id)}
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-0.5 transition-colors ${
                                     canNext
-                                      ? 'text-slate-600 dark:text-slate-300 hover:bg-cyan-500/15 hover:text-cyan-600 dark:hover:text-cyan-300'
+                                      ? 'text-slate-600 dark:text-slate-300 hover:bg-indigo-500/15 hover:text-indigo-600 dark:hover:text-indigo-300'
                                       : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
                                   }`}
                                   title={isZh ? '推进至下一阶段' : 'Next Stage'}
@@ -470,7 +470,7 @@ export const StageDragMatrix: React.FC<StageDragMatrixProps> = ({ filteredTasks 
           canDrag: canMoveProject,
           badgeText: catShort,
           badgeClassName:
-            'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+            'border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
         };
       });
   }, [projects, tasks, members, selectedProjectFilter, workCategoryFilter, searchQuery, canMoveProject, isZh, language]);
@@ -507,7 +507,7 @@ export const StageDragMatrix: React.FC<StageDragMatrixProps> = ({ filteredTasks 
   return (
     <div className="space-y-4 pb-8">
       {/* Scope Switcher & Instructions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-cyan-500/5 to-transparent border border-indigo-500/20">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent border border-indigo-500/20">
         <div className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-200">
           <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm shrink-0">
             <ArrowLeftRight className="w-4 h-4" />

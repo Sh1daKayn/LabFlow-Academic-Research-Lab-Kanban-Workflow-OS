@@ -41,12 +41,12 @@ export const MainApp: React.FC = () => {
   if (!isHydrated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 gap-3">
-        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-sm text-white">
+        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-indigo-600 shadow-sm text-white">
           <FlaskConical className="w-5 h-5" />
         </div>
         <div className="text-center">
           <div className="font-bold text-lg tracking-tight">
-            Lab<span className="text-cyan-500">Flow</span>
+            Lab<span className="text-indigo-600 dark:text-indigo-400">Flow</span>
           </div>
         </div>
       </div>
@@ -64,7 +64,7 @@ export const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-800 dark:selection:text-cyan-200">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-indigo-500/25 selection:text-indigo-900 dark:selection:text-indigo-200">
       {/* Top Header */}
       <Header />
 

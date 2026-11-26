@@ -8,7 +8,8 @@ import { KanbanCard } from '@/components/KanbanCard';
 import { MyFocusBanner } from '@/components/MyFocusBanner';
 import { StageDragMatrix } from '@/components/StageDragMatrix';
 import { WORK_CATEGORIES, WORK_CATEGORY_META, resolveTaskWorkCategory } from '@/utils/workCategory';
-import { Plus, FilterX, Clock, Sparkles, FolderKanban, Columns3, Table2, LayoutGrid } from 'lucide-react';
+import { matchesProjectWorkshopFilter } from '@/utils/outreachTracks';
+import { Plus, FilterX, Clock, Sparkles, FolderKanban, Columns3, Table2, LayoutGrid, Layers } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
   const {
@@ -24,6 +25,9 @@ export const KanbanBoard: React.FC = () => {
     setSelectedStageFilter,
     selectedProjectFilter,
     setSelectedProjectFilter,
+    selectedWorkshopFilter,
+    setSelectedWorkshopFilter,
+    outreachTracks,
     workCategoryFilter,
     setWorkCategoryFilter,
     sortByDDLUrgency,
@@ -78,6 +82,15 @@ export const KanbanBoard: React.FC = () => {
     if (filterOnlyBlockers && !task.isBlocked) return false;
     if (filterMemberId !== 'all' && task.leadAuthor.id !== filterMemberId) return false;
     if (selectedProjectFilter !== 'all' && task.projectId !== selectedProjectFilter) return false;
+    if (
+      selectedWorkshopFilter !== 'ALL' &&
+      !matchesProjectWorkshopFilter(
+        projects.find((p) => p.id === task.projectId),
+        selectedWorkshopFilter
+      )
+    ) {
+      return false;
+    }
     if (
       workCategoryFilter !== 'ALL' &&
       resolveTaskWorkCategory(task, projects) !== workCategoryFilter
@@ -146,7 +159,7 @@ export const KanbanBoard: React.FC = () => {
               onClick={() => setWorkCategoryFilter('ALL')}
               className={`px-3 py-1 rounded-xl text-xs font-medium transition-colors border ${
                 workCategoryFilter === 'ALL'
-                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                   : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
@@ -259,6 +272,33 @@ export const KanbanBoard: React.FC = () => {
             </div>
           )}
 
+          {(outreachTracks.length > 0 || selectedWorkshopFilter !== 'ALL') && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+              <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <select
+                value={selectedWorkshopFilter}
+                onChange={(e) => setSelectedWorkshopFilter(e.target.value)}
+                aria-label={language === 'zh' ? '转化与外联出口筛选' : 'Filter by Outreach Track'}
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[165px] truncate"
+              >
+                <option value="ALL" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                  {language === 'zh' ? '全部转化/外联' : 'All Outreach'}
+                </option>
+                <option value="__ASSIGNED__" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                  {language === 'zh' ? '所有已排期出口' : 'Any Assigned Track'}
+                </option>
+                <option value="__UNASSIGNED__" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                  {language === 'zh' ? '待分配出口' : 'Unassigned Track'}
+                </option>
+                {outreachTracks.map((track) => (
+                  <option key={track} value={track} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    {track}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button
             onClick={() => setSortByDDLUrgency(!sortByDDLUrgency)}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${
@@ -325,12 +365,13 @@ export const KanbanBoard: React.FC = () => {
       {(filterOnlyBlockers ||
         filterMemberId !== 'all' ||
         selectedProjectFilter !== 'all' ||
+        selectedWorkshopFilter !== 'ALL' ||
         searchQuery) && (
-        <div className="mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shrink-0">
+        <div className="mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 shrink-0 shadow-xs">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-cyan-400">{t.activeFilters}:</span>
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{t.activeFilters}:</span>
             {filterOnlyBlockers && (
-              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-medium">
+              <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/35 font-medium">
                 {t.onlyBlockers}
               </span>
             )}
@@ -338,28 +379,46 @@ export const KanbanBoard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedProjectFilter('all')}
-                className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-medium hover:bg-indigo-500/30"
+                className="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/35 font-medium hover:bg-indigo-500/25"
               >
                 {projects.find((p) => p.id === selectedProjectFilter)?.tag ||
                   selectedProjectFilter}{' '}
                 ✕
               </button>
             )}
+            {selectedWorkshopFilter !== 'ALL' && (
+              <button
+                type="button"
+                onClick={() => setSelectedWorkshopFilter('ALL')}
+                className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-medium hover:bg-amber-500/25"
+              >
+                {selectedWorkshopFilter === '__ASSIGNED__'
+                  ? language === 'zh'
+                    ? '已排期转化出口'
+                    : 'Any Outreach'
+                  : selectedWorkshopFilter === '__UNASSIGNED__'
+                  ? language === 'zh'
+                    ? '待分配转化出口'
+                    : 'Unassigned Outreach'
+                  : selectedWorkshopFilter}{' '}
+                ✕
+              </button>
+            )}
             {searchQuery && (
-              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-medium">
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium">
                 🔍 &quot;{searchQuery}&quot;
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-400">{t.showingTasks}</span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">{t.showingTasks}</span>
         </div>
       )}
 
       {/* Empty State Banner if no tasks */}
       {tasks.length === 0 && (
-        <div className="mb-6 p-6 rounded-2xl border border-dashed border-cyan-500/40 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div className="mb-6 p-6 rounded-2xl border border-dashed border-indigo-500/40 bg-indigo-500/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-md">
+            <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-md">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
@@ -375,7 +434,7 @@ export const KanbanBoard: React.FC = () => {
           </div>
           <button
             onClick={() => setIsAIImportOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shrink-0 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shrink-0 flex items-center gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{language === 'zh' ? '✨ 打开 AI 智能导入' : '✨ Open AI Importer'}</span>

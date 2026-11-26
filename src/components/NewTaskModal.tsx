@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AcademicStage, Priority, VisibilityLevel, WorkCategory } from '@/types';
+import { AcademicStage, AssetLinks, Priority, VisibilityLevel, WorkCategory } from '@/types';
 import { getSafeLeadAuthor, getSafePI } from '@/utils/rbac';
+import { AssetLinksEditor } from '@/components/AssetLinksEditor';
+import { resolveVenueUrl } from '@/utils/venues';
 import {
   WORK_CATEGORIES,
   WORK_CATEGORY_META,
@@ -18,6 +20,7 @@ export const NewTaskModal: React.FC = () => {
     addTask,
     addProject,
     projects,
+    venues,
     members,
     stages,
     currentUserId,
@@ -38,6 +41,7 @@ export const NewTaskModal: React.FC = () => {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [deadline, setDeadline] = useState(new Date().toISOString().split('T')[0]);
   const [leadAuthorId, setLeadAuthorId] = useState('');
+  const [assets, setAssets] = useState<AssetLinks>({});
 
   // Optional inline project creation when workspace is blank or user creates one inline
   const [creatingInlineProj, setCreatingInlineProj] = useState(false);
@@ -54,8 +58,10 @@ export const NewTaskModal: React.FC = () => {
     );
     if (defaultProj) {
       setWorkCategory(resolveProjectWorkCategory(defaultProj));
+      setAssets(defaultProj.assets ? { ...defaultProj.assets } : {});
     } else {
       setWorkCategory('PAPER');
+      setAssets({});
     }
     setPartnerOrg('');
     setMilestoneNode('');
@@ -112,6 +118,12 @@ export const NewTaskModal: React.FC = () => {
     const safeProjectId = resolvedProject?.id || 'proj-general';
     const safeProjectTag = resolvedProject?.tag || (language === 'zh' ? '常规科研' : 'General');
     const safeVenue = resolvedProject?.targetVenue || 'Internal';
+    const hasCustomAssets =
+      Boolean(assets.overleaf) ||
+      Boolean(assets.github) ||
+      Boolean(assets.dataset) ||
+      Boolean(assets.zotero) ||
+      Boolean(assets.customLinks && assets.customLinks.length > 0);
 
     addTask({
       title: title.trim(),
@@ -124,18 +136,23 @@ export const NewTaskModal: React.FC = () => {
       projectId: safeProjectId,
       projectTag: safeProjectTag,
       targetVenue: safeVenue,
+      targetVenueUrl:
+        resolvedProject?.targetVenueUrl || resolveVenueUrl(safeVenue, venues),
       startDate,
       deadline,
       progress: 0,
       leadAuthor: fallbackLead,
       pi: fallbackPI,
       visibility,
-      assets: {
-        overleaf: resolvedProject?.assets?.overleaf,
-        github: resolvedProject?.assets?.github,
-        dataset: resolvedProject?.assets?.dataset,
-        zotero: resolvedProject?.assets?.zotero,
-      },
+      assets: hasCustomAssets
+        ? assets
+        : {
+            overleaf: resolvedProject?.assets?.overleaf,
+            github: resolvedProject?.assets?.github,
+            dataset: resolvedProject?.assets?.dataset,
+            zotero: resolvedProject?.assets?.zotero,
+            customLinks: resolvedProject?.assets?.customLinks,
+          },
       isBlocked: false,
       order: 0,
       tags: [safeProjectTag],
@@ -512,6 +529,16 @@ export const NewTaskModal: React.FC = () => {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Outline specific objectives, milestones, or data protocols..."
                     className={inputClass}
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <AssetLinksEditor
+                    value={assets}
+                    onChange={setAssets}
+                    compact
+                    label={t.assets}
+                    language={language}
                   />
                 </div>
               </div>

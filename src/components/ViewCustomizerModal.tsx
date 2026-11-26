@@ -113,7 +113,7 @@ export const ViewCustomizerModal: React.FC = () => {
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <LayoutGrid className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <LayoutGrid className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               {isZh ? '自定义工作台视图与个人密码' : 'Customize Views & Personal PIN'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -144,7 +144,7 @@ export const ViewCustomizerModal: React.FC = () => {
                   setSelectedViews(DEFAULT_STUDENT_VIEWS);
                   setSelectedDefault(DEFAULT_STUDENT_VIEWS[0]);
                 }}
-                className="text-[11px] font-medium text-cyan-600 dark:text-cyan-400 hover:underline"
+                className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
               >
                 {isZh ? '恢复精简推荐 (3项)' : 'Reset to Minimal (3)'}
               </button>
@@ -161,14 +161,14 @@ export const ViewCustomizerModal: React.FC = () => {
                     onClick={() => toggleView(view)}
                     className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-colors ${
                       active
-                        ? 'border-cyan-500 bg-cyan-50/80 dark:bg-cyan-950/35 text-slate-900 dark:text-slate-100'
+                        ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/35 text-slate-900 dark:text-slate-100'
                         : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <span
                       className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
                         active
-                          ? 'bg-cyan-600 border-cyan-600 text-white'
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
                           : 'border-slate-300 dark:border-slate-600'
                       }`}
                     >

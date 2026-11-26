@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { AcademicStage, Priority, VisibilityLevel, WorkCategory } from '@/types';
+import { AcademicStage, AssetLinks, Priority, VisibilityLevel, WorkCategory } from '@/types';
 import { BLOCKER_CATEGORIES } from '@/data/mockData';
 import {
   WORK_CATEGORIES,
@@ -15,18 +15,17 @@ import {
   CheckCircle2,
   Trash2,
   Save,
-  FileText,
-  Database,
-  BookOpen,
   Lock,
   GitBranch,
   ListPlus,
   ListChecks,
+  ExternalLink,
 } from 'lucide-react';
-import { GitHubIcon } from '@/components/icons/BrandIcons';
 import { ProjectHandoffSummary } from '@/components/ProjectHandoffSummary';
 import { TaskLogicTreeEditor } from '@/components/TaskLogicTreeEditor';
 import { TaskChecklistTemplateBar } from '@/components/TaskChecklistTemplateBar';
+import { AssetLinksEditor } from '@/components/AssetLinksEditor';
+import { normalizeExternalUrl, resolveVenueUrl } from '@/utils/venues';
 
 export const TaskDetailDrawer: React.FC = () => {
   const {
@@ -40,6 +39,7 @@ export const TaskDetailDrawer: React.FC = () => {
     deleteTask,
     members,
     projects,
+    venues,
     stages,
     language,
     t,
@@ -61,13 +61,11 @@ export const TaskDetailDrawer: React.FC = () => {
   const [deadline, setDeadline] = useState('');
   const [progress, setProgress] = useState(0);
   const [targetVenue, setTargetVenue] = useState('');
+  const [targetVenueUrl, setTargetVenueUrl] = useState('');
   const [projectTag, setProjectTag] = useState('');
   const [leadAuthorId, setLeadAuthorId] = useState('');
   const [piId, setPiId] = useState('');
-  const [overleaf, setOverleaf] = useState('');
-  const [github, setGithub] = useState('');
-  const [dataset, setDataset] = useState('');
-  const [zotero, setZotero] = useState('');
+  const [assets, setAssets] = useState<AssetLinks>({});
   const [checklist, setChecklist] = useState<{ id: string; text: string; done: boolean }[]>([]);
   const [newSubtaskText, setNewSubtaskText] = useState('');
   const [drawerTab, setDrawerTab] = useState<'basic' | 'logicTree'>('basic');
@@ -86,13 +84,11 @@ export const TaskDetailDrawer: React.FC = () => {
       setDeadline(selectedTask.deadline ? selectedTask.deadline.split('T')[0] : '');
       setProgress(selectedTask.progress || 0);
       setTargetVenue(selectedTask.targetVenue);
+      setTargetVenueUrl(selectedTask.targetVenueUrl || '');
       setProjectTag(selectedTask.projectTag);
       setLeadAuthorId(selectedTask.leadAuthor?.id || members[0]?.id || '');
       setPiId(selectedTask.pi?.id || members[0]?.id || '');
-      setOverleaf(selectedTask.assets?.overleaf || '');
-      setGithub(selectedTask.assets?.github || '');
-      setDataset(selectedTask.assets?.dataset || '');
-      setZotero(selectedTask.assets?.zotero || '');
+      setAssets(selectedTask.assets || {});
       setChecklist(selectedTask.checklist || []);
     }
   }, [selectedTask, members, projects]);
@@ -125,15 +121,11 @@ export const TaskDetailDrawer: React.FC = () => {
       deadline,
       progress,
       targetVenue,
+      targetVenueUrl: normalizeExternalUrl(targetVenueUrl),
       projectTag,
       leadAuthor: lead,
       pi,
-      assets: {
-        overleaf: overleaf.trim() || undefined,
-        github: github.trim() || undefined,
-        dataset: dataset.trim() || undefined,
-        zotero: zotero.trim() || undefined,
-      },
+      assets,
       checklist,
     });
     setSelectedTask(null);
@@ -167,7 +159,7 @@ export const TaskDetailDrawer: React.FC = () => {
   };
 
   const inputClass =
-    'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-cyan-500/60 disabled:opacity-70';
+    'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500/60 disabled:opacity-70';
 
   const linkedProject = projects.find((p) => p.id === selectedTask.projectId);
 
@@ -217,7 +209,7 @@ export const TaskDetailDrawer: React.FC = () => {
             onClick={() => setDrawerTab('basic')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               drawerTab === 'basic'
-                ? 'bg-cyan-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
@@ -300,7 +292,7 @@ export const TaskDetailDrawer: React.FC = () => {
               disabled={!editable}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-cyan-500/60 disabled:opacity-70"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:border-indigo-500/60 disabled:opacity-70"
             />
           </div>
 
@@ -509,6 +501,55 @@ export const TaskDetailDrawer: React.FC = () => {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                {t.targetVenue}
+              </label>
+              <input
+                type="text"
+                disabled={!editable}
+                value={targetVenue}
+                onChange={(e) => setTargetVenue(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                {language === 'zh' ? '投稿网址 (Venue URL)' : 'Venue Website URL'}
+              </label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="url"
+                  disabled={!editable}
+                  value={targetVenueUrl}
+                  onChange={(e) => setTargetVenueUrl(e.target.value)}
+                  placeholder="https://..."
+                  className={inputClass}
+                />
+                {resolveVenueUrl(
+                  targetVenue,
+                  venues,
+                  targetVenueUrl || linkedProject?.targetVenueUrl
+                ) && (
+                  <a
+                    href={resolveVenueUrl(
+                      targetVenue,
+                      venues,
+                      targetVenueUrl || linkedProject?.targetVenueUrl
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
+                    title={language === 'zh' ? '打开目标期刊/会议官网' : 'Open Venue URL'}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
               {t.methodologyDesc}
@@ -518,7 +559,7 @@ export const TaskDetailDrawer: React.FC = () => {
               disabled={!editable}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-cyan-500/60 leading-relaxed disabled:opacity-70"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 leading-relaxed disabled:opacity-70"
             />
           </div>
 
@@ -577,7 +618,7 @@ export const TaskDetailDrawer: React.FC = () => {
                           memberId: selectedTask.leadAuthor?.id || currentUserId,
                         });
                       }}
-                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-500/12 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 flex items-center gap-0.5"
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/12 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 flex items-center gap-0.5"
                       title={language === 'zh' ? '推入本周 To-Do 清单' : 'Push to Weekly To-Do'}
                     >
                       <ListPlus className="w-3 h-3" />
@@ -610,7 +651,7 @@ export const TaskDetailDrawer: React.FC = () => {
                     }
                   }}
                   placeholder={t.addSubtask}
-                  className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+                  className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60"
                 />
                 <button
                   type="button"
@@ -623,59 +664,14 @@ export const TaskDetailDrawer: React.FC = () => {
             )}
           </div>
 
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
-              {t.assets}
-            </label>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <input
-                  type="url"
-                  disabled={!editable}
-                  value={overleaf}
-                  onChange={(e) => setOverleaf(e.target.value)}
-                  placeholder="Overleaf URL"
-                  className="bg-transparent text-slate-900 dark:text-slate-200 focus:outline-none w-full text-xs placeholder-slate-400 dark:placeholder-slate-600"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5">
-                <GitHubIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <input
-                  type="url"
-                  disabled={!editable}
-                  value={github}
-                  onChange={(e) => setGithub(e.target.value)}
-                  placeholder="GitHub URL"
-                  className="bg-transparent text-slate-900 dark:text-slate-200 focus:outline-none w-full text-xs placeholder-slate-400 dark:placeholder-slate-600"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5">
-                <Database className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <input
-                  type="url"
-                  disabled={!editable}
-                  value={dataset}
-                  onChange={(e) => setDataset(e.target.value)}
-                  placeholder="Dataset URL"
-                  className="bg-transparent text-slate-900 dark:text-slate-200 focus:outline-none w-full text-xs placeholder-slate-400 dark:placeholder-slate-600"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <input
-                  type="url"
-                  disabled={!editable}
-                  value={zotero}
-                  onChange={(e) => setZotero(e.target.value)}
-                  placeholder="Zotero URL"
-                  className="bg-transparent text-slate-900 dark:text-slate-200 focus:outline-none w-full text-xs placeholder-slate-400 dark:placeholder-slate-600"
-                />
-              </div>
-            </div>
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+            <AssetLinksEditor
+              value={assets}
+              onChange={setAssets}
+              disabled={!editable}
+              label={t.assets}
+              language={language}
+            />
           </div>
 
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">

@@ -45,8 +45,8 @@ export const ResourcesTab: React.FC = () => {
         </h3>
         <p className="text-xs text-slate-500 mt-0.5">
           {language === 'zh'
-            ? '自由增减 GPU 算力节点、计量经济服务器、高性能集群或专业实验设备。'
-            : 'Manage GPU clusters, servers, and laboratory scientific instruments.'}
+            ? '自由增减实验室共享仪器、核心数据集、会议室或计算/GPU 节点。'
+            : 'Manage shared laboratory instruments, datasets, seminar rooms, and compute servers.'}
         </p>
       </div>
 
@@ -54,13 +54,13 @@ export const ResourcesTab: React.FC = () => {
         <div>
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
             {language === 'zh'
-              ? '在主界面显示公共算力与设施栏'
-              : 'Show Compute & Facilities Strip on Main View'}
+              ? '在主界面显示共享资源与设备状态条'
+              : 'Show Shared Resources & Equipment Strip on Main View'}
           </span>
           <span className="text-[11px] text-slate-500 block">
             {language === 'zh'
-              ? '若课题组偏重纯理论或人文学科、无需算力监控，可关闭此栏'
-              : 'Hide the top compute status strip if your lab does not track GPU/HPC nodes'}
+              ? '若团队无需共享设备、数据集或节点预约监控，可随时隐藏此条'
+              : 'Hide the top resource status strip if your lab does not track shared instruments or servers'}
           </span>
         </div>
         <button
@@ -92,8 +92,8 @@ export const ResourcesTab: React.FC = () => {
                 <div
                   className={`p-2 rounded-lg border shrink-0 ${
                     res.type === 'GPU'
-                      ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30'
-                      : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+                      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+                      : 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/30'
                   }`}
                 >
                   {res.type === 'GPU' ? (
@@ -181,8 +181,8 @@ export const ResourcesTab: React.FC = () => {
             onChange={(e) => setNewResNameZh(e.target.value)}
             placeholder={
               language === 'zh'
-                ? '设施名称 (如 GPU Node-03 / 质谱仪)'
-                : 'Facility Name (e.g. GPU Node-03)'
+                ? '资源名称 (如 Confocal Microscope / GPU Node-01 / 调研平台)'
+                : 'Resource Name (e.g. Confocal Scope, GPU Node, Survey Panel)'
             }
             className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
           />
@@ -191,17 +191,17 @@ export const ResourcesTab: React.FC = () => {
             onChange={(e) => setNewResType(e.target.value as ResourceType)}
             className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200"
           >
+            <option value="EQUIPMENT">
+              {language === 'zh' ? '专业实验仪器 / 场地 / 数据台 (Equipment)' : 'Lab Instrument / Room / Dataset'}
+            </option>
             <option value="GPU">
-              {language === 'zh' ? 'GPU 深度学习加速节点' : 'GPU Compute Node'}
+              {language === 'zh' ? 'GPU 计算加速节点 (GPU Node)' : 'GPU Compute Node'}
             </option>
             <option value="SERVER">
-              {language === 'zh' ? '计算/实证服务器 (Server)' : 'Compute / Analytics Server'}
+              {language === 'zh' ? '分析服务器 / 工作站 (Server)' : 'Analytics Server / Workstation'}
             </option>
             <option value="CLUSTER">
               {language === 'zh' ? '高性能计算集群 (HPC Cluster)' : 'HPC Cluster'}
-            </option>
-            <option value="EQUIPMENT">
-              {language === 'zh' ? '专业实验仪器设备 (Equipment)' : 'Lab Equipment / Instrument'}
             </option>
           </select>
         </div>
@@ -212,8 +212,8 @@ export const ResourcesTab: React.FC = () => {
           onChange={(e) => setNewResSpecs(e.target.value)}
           placeholder={
             language === 'zh'
-              ? '硬件与系统规格描述 (如 8x RTX 4090 24GB, CUDA 12.2)'
-              : 'Hardware & software specs (e.g. 8x H100 80GB, CUDA 12.4)'
+              ? '规格或使用说明 (如 Zeiss LSM 980 / 8-Core Analytics / Room 302)'
+              : 'Specs or notes (e.g. Zeiss LSM 980 / 64GB RAM / Shared Room 302)'
           }
           className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
         />

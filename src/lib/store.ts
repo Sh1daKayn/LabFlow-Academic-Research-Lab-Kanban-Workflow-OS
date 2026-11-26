@@ -54,6 +54,15 @@ import {
   sanitizeChecklistTemplates,
 } from '@/utils/templates';
 import {
+  DEFAULT_OUTREACH_TRACKS,
+  normalizeWorkshopTargetDate,
+  normalizeWorkshopTranslationStatus,
+  sanitizeOutreachTracks,
+  sanitizeWorkshopPrograms,
+} from '@/utils/outreachTracks';
+import { sanitizeAssetLinks, sanitizeCustomAssetLinks } from '@/utils/assets';
+import { normalizeExternalUrl } from '@/utils/venues';
+import {
   DEFAULT_NOTIFICATION_SETTINGS,
   sanitizeNotificationSettings,
 } from '@/utils/notificationPayloads';
@@ -103,6 +112,7 @@ export function getDefaultWorkspaceData(): LabWorkspaceData {
     weeklyTodos: createInitialWeeklyTodos(),
     directRequests: createInitialDirectRequests(),
     allowPeerAcceptance: false,
+    outreachTracks: [...DEFAULT_OUTREACH_TRACKS],
     checklistTemplates: DEFAULT_CHECKLIST_TEMPLATES,
     notificationSettings: structuredClone(DEFAULT_NOTIFICATION_SETTINGS),
   });
@@ -122,14 +132,26 @@ export function sanitizeWorkspaceData(input: Partial<LabWorkspaceData>): LabWork
   const defaults = getDefaultWorkspaceData();
   return {
     stages: Array.isArray(input.stages) && input.stages.length > 0 ? input.stages : defaults.stages,
-    tasks: Array.isArray(input.tasks) ? input.tasks : [],
+    tasks: Array.isArray(input.tasks)
+      ? input.tasks.map((task) => ({
+          ...task,
+          targetVenueUrl: normalizeExternalUrl(task.targetVenueUrl),
+          assets: sanitizeAssetLinks(task.assets),
+        }))
+      : [],
     projects: Array.isArray(input.projects) ? sanitizeProjects(input.projects) : [],
     members: Array.isArray(input.members) ? input.members : defaults.members,
-    venues: Array.isArray(input.venues) ? input.venues : defaults.venues,
+    venues: Array.isArray(input.venues)
+      ? input.venues.map((v) => ({
+          ...v,
+          url: normalizeExternalUrl(v.url),
+        }))
+      : defaults.venues,
     resources: Array.isArray(input.resources) ? input.resources : [],
     weeklyTodos: sanitizeWeeklyTodos(input.weeklyTodos),
     directRequests: sanitizeDirectRequests(input.directRequests),
     allowPeerAcceptance: Boolean(input.allowPeerAcceptance),
+    outreachTracks: sanitizeOutreachTracks(input.outreachTracks),
     checklistTemplates: sanitizeChecklistTemplates(input.checklistTemplates),
     notificationSettings: sanitizeNotificationSettings(input.notificationSettings),
   };
@@ -250,6 +272,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         sessionSecret,
         revision,
         allowPeerAcceptance: Boolean(data.allowPeerAcceptance),
+        outreachTracks: sanitizeOutreachTracks(
+          data.outreachTracks
+        ) as unknown as Prisma.InputJsonValue,
         weeklyTodos: (data.weeklyTodos || []) as unknown as Prisma.InputJsonValue,
         directRequests: sanitizeDirectRequests(
           data.directRequests
@@ -266,6 +291,9 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
         sessionSecret,
         revision,
         allowPeerAcceptance: Boolean(data.allowPeerAcceptance),
+        outreachTracks: sanitizeOutreachTracks(
+          data.outreachTracks
+        ) as unknown as Prisma.InputJsonValue,
         weeklyTodos: (data.weeklyTodos || []) as unknown as Prisma.InputJsonValue,
         directRequests: sanitizeDirectRequests(
           data.directRequests
@@ -325,6 +353,7 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
           id: v.id,
           name: v.name,
           tag: v.tag,
+          url: normalizeExternalUrl(v.url) || null,
           defaultLeadId: v.defaultLeadId,
           milestones: v.milestones as unknown as Prisma.InputJsonValue,
           sortOrder: idx,
@@ -394,6 +423,12 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             inheritedFrom: p.inheritedFrom
               ? (sanitizeProjectInheritanceLinks(p.inheritedFrom, p.id) as unknown as Prisma.InputJsonValue)
               : Prisma.DbNull,
+            workshopPrograms: p.workshopPrograms
+              ? (sanitizeWorkshopPrograms(p.workshopPrograms) as unknown as Prisma.InputJsonValue)
+              : Prisma.DbNull,
+            workshopTranslationStatus:
+              normalizeWorkshopTranslationStatus(p.workshopTranslationStatus) || null,
+            workshopTargetDate: normalizeWorkshopTargetDate(p.workshopTargetDate) || null,
             workCategory: normalizeWorkCategory(p.workCategory),
             partnerOrg: p.partnerOrg || null,
             milestoneNode: p.milestoneNode || null,
@@ -401,6 +436,7 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             categoryColor: p.categoryColor || null,
             memberIds: (p.memberIds || []) as unknown as Prisma.InputJsonValue,
             targetVenue: p.targetVenue,
+            targetVenueUrl: normalizeExternalUrl(p.targetVenueUrl) || null,
             tag: p.tag,
             submissionDeadline: parseDateOrNull(p.submissionDeadline),
             status: p.status,
@@ -409,6 +445,10 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
             githubUrl: p.assets?.github || null,
             datasetUrl: p.assets?.dataset || null,
             zoteroUrl: p.assets?.zotero || null,
+            customAssets:
+              p.assets?.customLinks && sanitizeCustomAssetLinks(p.assets.customLinks).length > 0
+                ? (sanitizeCustomAssetLinks(p.assets.customLinks) as unknown as Prisma.InputJsonValue)
+                : Prisma.DbNull,
             labId: DEFAULT_LAB_ID,
             leadAuthorId: validUserIds.has(p.leadAuthorId) ? p.leadAuthorId : fallbackUserId,
             piId: validUserIds.has(p.piId) ? p.piId : fallbackUserId,
@@ -429,6 +469,7 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
           stage: t.stage,
           projectTag: t.projectTag,
           targetVenue: t.targetVenue,
+          targetVenueUrl: normalizeExternalUrl(t.targetVenueUrl) || null,
           priority: t.priority as Priority,
           visibility: (t.visibility || 'PUBLIC') as VisibilityLevel,
           startDate: t.startDate || null,
@@ -442,6 +483,10 @@ async function writePostgresRecord(record: PersistedWorkspaceRecord): Promise<vo
           githubUrl: t.assets?.github || null,
           datasetUrl: t.assets?.dataset || null,
           zoteroUrl: t.assets?.zotero || null,
+          customAssets:
+            t.assets?.customLinks && sanitizeCustomAssetLinks(t.assets.customLinks).length > 0
+              ? (sanitizeCustomAssetLinks(t.assets.customLinks) as unknown as Prisma.InputJsonValue)
+              : Prisma.DbNull,
           tags: (t.tags || []) as unknown as Prisma.InputJsonValue,
           checklist: (t.checklist || []) as unknown as Prisma.InputJsonValue,
           logicTree: t.logicTree
@@ -546,6 +591,7 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
     id: v.id,
     name: v.name,
     tag: v.tag,
+    url: normalizeExternalUrl((v as unknown as { url?: string | null }).url || undefined),
     defaultLeadId: v.defaultLeadId,
     milestones: (Array.isArray(v.milestones) ? v.milestones : []) as unknown as MilestoneTemplate[],
   }));
@@ -553,6 +599,12 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
   const projects: ProjectItem[] = dbProjects.map((p) => {
     const cleanHandoffs = sanitizeProjectHandoffs(p.handoffHistory);
     const cleanInherited = sanitizeProjectInheritanceLinks(p.inheritedFrom, p.id);
+    const cleanPrograms = sanitizeWorkshopPrograms(
+      (p as unknown as { workshopPrograms?: unknown }).workshopPrograms
+    );
+    const customLinks = sanitizeCustomAssetLinks(
+      (p as unknown as { customAssets?: unknown }).customAssets
+    );
     return {
       id: p.id,
       title: p.title,
@@ -561,6 +613,13 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
       sharedDataset: p.sharedDataset || undefined,
       handoffHistory: cleanHandoffs.length > 0 ? cleanHandoffs : undefined,
       inheritedFrom: cleanInherited.length > 0 ? cleanInherited : undefined,
+      workshopPrograms: cleanPrograms.length > 0 ? cleanPrograms : undefined,
+      workshopTranslationStatus: normalizeWorkshopTranslationStatus(
+        (p as unknown as { workshopTranslationStatus?: unknown }).workshopTranslationStatus
+      ),
+      workshopTargetDate: normalizeWorkshopTargetDate(
+        (p as unknown as { workshopTargetDate?: unknown }).workshopTargetDate
+      ),
       workCategory: normalizeWorkCategory(p.workCategory),
       partnerOrg: p.partnerOrg || undefined,
       milestoneNode: p.milestoneNode || undefined,
@@ -568,6 +627,9 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
       categoryColor: p.categoryColor || undefined,
       memberIds: Array.isArray(p.memberIds) ? (p.memberIds as string[]) : undefined,
       targetVenue: p.targetVenue,
+      targetVenueUrl: normalizeExternalUrl(
+        (p as unknown as { targetVenueUrl?: string | null }).targetVenueUrl || undefined
+      ),
       tag: p.tag,
       submissionDeadline: p.submissionDeadline
         ? p.submissionDeadline.toISOString().split('T')[0]
@@ -576,62 +638,72 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
       leadAuthorId: p.leadAuthorId,
       piId: p.piId,
       visibility: p.visibility as VisibilityLevel,
-      assets: {
+      assets: sanitizeAssetLinks({
         overleaf: p.overleafUrl || undefined,
         github: p.githubUrl || undefined,
         dataset: p.datasetUrl || undefined,
         zotero: p.zoteroUrl || undefined,
-      },
+        customLinks,
+      }),
     };
   });
 
-  const tasks: TaskItem[] = dbTasks.map((t) => ({
-    id: t.id,
-    title: t.title,
-    description: t.description || undefined,
-    workCategory: normalizeWorkCategory(t.workCategory),
-    partnerOrg: t.partnerOrg || undefined,
-    milestoneNode: t.milestoneNode || undefined,
-    stage: t.stage,
-    projectId: t.projectId || 'proj-general',
-    projectTag: t.projectTag,
-    targetVenue: t.targetVenue,
-    startDate: t.startDate || undefined,
-    deadline: t.deadline ? t.deadline.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    progress: t.progress,
-    leadAuthor: (t.assigneeId && memberMap.get(t.assigneeId)) || fallbackMember,
-    pi: (t.piId && memberMap.get(t.piId)) || fallbackPi,
-    priority: t.priority as Priority,
-    visibility: t.visibility as VisibilityLevel,
-    assets: {
-      overleaf: t.overleafUrl || undefined,
-      github: t.githubUrl || undefined,
-      dataset: t.datasetUrl || undefined,
-      zotero: t.zoteroUrl || undefined,
-    },
-    isBlocked: t.isBlocked,
-    blocker:
-      t.isBlocked && t.blockerCategory
-        ? {
-            category: t.blockerCategory as BlockerCategory,
-            details: t.blockerReason || '',
-            tried: t.blockerTried || '',
-            escalatedTo: t.blockerEscalatedTo || fallbackPi.nameEn,
-            escalatedToId: t.blockerEscalatedToId || undefined,
-            reportedAt: (t.blockedAt || t.updatedAt).toISOString(),
-          }
-        : undefined,
-    order: t.order,
-    tags: Array.isArray(t.tags) ? (t.tags as string[]) : undefined,
-    checklist: Array.isArray(t.checklist) ? (t.checklist as unknown as ChecklistItem[]) : undefined,
-    logicTree:
-      t.logicTree && typeof t.logicTree === 'object'
-        ? (t.logicTree as unknown as TaskLogicNode)
-        : undefined,
-    completedAt: t.completedAt ? t.completedAt.toISOString() : undefined,
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-  }));
+  const tasks: TaskItem[] = dbTasks.map((t) => {
+    const customLinks = sanitizeCustomAssetLinks(
+      (t as unknown as { customAssets?: unknown }).customAssets
+    );
+    return {
+      id: t.id,
+      title: t.title,
+      description: t.description || undefined,
+      workCategory: normalizeWorkCategory(t.workCategory),
+      partnerOrg: t.partnerOrg || undefined,
+      milestoneNode: t.milestoneNode || undefined,
+      stage: t.stage,
+      projectId: t.projectId || 'proj-general',
+      projectTag: t.projectTag,
+      targetVenue: t.targetVenue,
+      targetVenueUrl: normalizeExternalUrl(
+        (t as unknown as { targetVenueUrl?: string | null }).targetVenueUrl || undefined
+      ),
+      startDate: t.startDate || undefined,
+      deadline: t.deadline ? t.deadline.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      progress: t.progress,
+      leadAuthor: (t.assigneeId && memberMap.get(t.assigneeId)) || fallbackMember,
+      pi: (t.piId && memberMap.get(t.piId)) || fallbackPi,
+      priority: t.priority as Priority,
+      visibility: t.visibility as VisibilityLevel,
+      assets: sanitizeAssetLinks({
+        overleaf: t.overleafUrl || undefined,
+        github: t.githubUrl || undefined,
+        dataset: t.datasetUrl || undefined,
+        zotero: t.zoteroUrl || undefined,
+        customLinks,
+      }),
+      isBlocked: t.isBlocked,
+      blocker:
+        t.isBlocked && t.blockerCategory
+          ? {
+              category: t.blockerCategory as BlockerCategory,
+              details: t.blockerReason || '',
+              tried: t.blockerTried || '',
+              escalatedTo: t.blockerEscalatedTo || fallbackPi.nameEn,
+              escalatedToId: t.blockerEscalatedToId || undefined,
+              reportedAt: (t.blockedAt || t.updatedAt).toISOString(),
+            }
+          : undefined,
+      order: t.order,
+      tags: Array.isArray(t.tags) ? (t.tags as string[]) : undefined,
+      checklist: Array.isArray(t.checklist) ? (t.checklist as unknown as ChecklistItem[]) : undefined,
+      logicTree:
+        t.logicTree && typeof t.logicTree === 'object'
+          ? (t.logicTree as unknown as TaskLogicNode)
+          : undefined,
+      completedAt: t.completedAt ? t.completedAt.toISOString() : undefined,
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+    };
+  });
 
   const resources: LabResource[] = dbResources.map((r) => ({
     id: r.id,
@@ -658,6 +730,9 @@ async function readPostgresRecord(): Promise<PersistedWorkspaceRecord> {
       weeklyTodos: sanitizeWeeklyTodos(config.weeklyTodos),
       directRequests: sanitizeDirectRequests(config.directRequests),
       allowPeerAcceptance: Boolean(config.allowPeerAcceptance),
+      outreachTracks: sanitizeOutreachTracks(
+        (config as unknown as { outreachTracks?: unknown }).outreachTracks
+      ),
       checklistTemplates: sanitizeChecklistTemplates(config.checklistTemplates),
       notificationSettings: sanitizeNotificationSettings(config.notificationSettings),
     },

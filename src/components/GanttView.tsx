@@ -227,8 +227,8 @@ export const GanttView: React.FC = () => {
           id: 'other',
           tag: language === 'zh' ? '其他阶段' : 'Other Stage',
           title: language === 'zh' ? '未分类阶段任务' : 'Uncategorized Stage Tasks',
-          color: 'text-slate-400',
-          badgeBg: 'bg-slate-800 text-slate-300 border-slate-700',
+          color: 'text-slate-500 dark:text-slate-400',
+          badgeBg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
           tasks: orphans,
         });
       }
@@ -327,8 +327,8 @@ export const GanttView: React.FC = () => {
     if (stageConfig.color.includes('emerald') || stageConfig.id === 'ACCEPTED') {
       return 'bg-emerald-600/90 border-emerald-400 shadow-emerald-950/30';
     }
-    if (stageConfig.color.includes('cyan') || stageConfig.id === 'DATA_EXP') {
-      return 'bg-cyan-600/90 border-cyan-400 shadow-cyan-950/30';
+    if (stageConfig.color.includes('cyan') || stageConfig.color.includes('sky') || stageConfig.id === 'DATA_EXP') {
+      return 'bg-sky-600/90 border-sky-400 shadow-sky-950/30';
     }
     if (stageConfig.color.includes('amber') || stageConfig.id === 'DRAFTING') {
       return 'bg-amber-600/90 border-amber-400 shadow-amber-950/30';
@@ -369,37 +369,37 @@ export const GanttView: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col p-4 lg:p-6 max-w-[1720px] mx-auto w-full overflow-hidden">
       {/* Top Gantt Header & Live Sync Indicators */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
               {t.gantt}
             </span>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               {language === 'zh'
                 ? `${startDateObj.getFullYear()}年${startDateObj.getMonth() + 1}月 - ${endDateObj.getFullYear()}年${endDateObj.getMonth() + 1}月`
                 : `${startDateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${endDateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/12 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {language === 'zh' ? '看板双向实时同步' : 'Kanban 2-Way Synced'}
             </span>
           </div>
-          <h1 className="text-base font-bold text-slate-100 mt-0.5">{t.ganttTitle}</h1>
-          <p className="text-xs text-slate-400">{t.ganttDesc}</p>
+          <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">{t.ganttTitle}</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t.ganttDesc}</p>
         </div>
 
         {/* View Controls: Group By, Filters, and Scale */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Work Category Filter Pills */}
-          <div className="flex items-center p-0.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <button
               type="button"
               onClick={() => setWorkCategoryFilter('ALL')}
               className={`px-2 py-1 rounded-lg font-medium transition-all ${
                 workCategoryFilter === 'ALL'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               {language === 'zh' ? '全部' : 'All'}
@@ -412,7 +412,7 @@ export const GanttView: React.FC = () => {
                 className={`px-2 py-1 rounded-lg font-medium transition-all ${
                   workCategoryFilter === cat
                     ? 'bg-indigo-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
                 {language === 'zh'
@@ -423,13 +423,13 @@ export const GanttView: React.FC = () => {
           </div>
 
           {/* Grouping Mode Switcher */}
-          <div className="flex items-center p-0.5 rounded-xl bg-slate-950 border border-slate-800 text-xs shadow-inner">
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <button
               onClick={() => setGroupBy('project')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
                 groupBy === 'project'
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
               title={language === 'zh' ? '按课题项目分组' : 'Group by Project'}
             >
@@ -441,7 +441,7 @@ export const GanttView: React.FC = () => {
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
                 groupBy === 'category'
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
               title={language === 'zh' ? '按论文/纵向/横向三类分组' : 'Group by 3 Categories'}
             >
@@ -452,7 +452,7 @@ export const GanttView: React.FC = () => {
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
                 groupBy === 'stage'
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
               title={language === 'zh' ? '按学术流转阶段分组' : 'Group by Academic Stage'}
             >
@@ -461,19 +461,19 @@ export const GanttView: React.FC = () => {
             </button>
           </div>
 
-          {/* Project Filter Selector (when in Project mode) */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          {/* Project Filter Selector */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
             <select
               value={selectedProjectFilter}
               onChange={(e) => setSelectedProjectFilter(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer max-w-[150px] truncate"
+              className="bg-transparent text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[150px] truncate"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
                 {t.allProjects} ({projects.length})
               </option>
               {projects.map((p) => (
-                <option key={p.id} value={p.id} className="bg-slate-900 text-slate-200">
+                <option key={p.id} value={p.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
                   [{p.tag}] {p.title}
                 </option>
               ))}
@@ -481,18 +481,18 @@ export const GanttView: React.FC = () => {
           </div>
 
           {/* Stage Filter Selector */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <Layers className="w-3.5 h-3.5 text-slate-400" />
             <select
               value={selectedStageFilter}
               onChange={(e) => setSelectedStageFilter(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer max-w-[140px] truncate"
+              className="bg-transparent text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[140px] truncate"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
                 {t.allStages} ({stages.length})
               </option>
               {stages.map((s) => (
-                <option key={s.id} value={s.id} className="bg-slate-900 text-slate-200">
+                <option key={s.id} value={s.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
                   {language === 'zh' ? s.labelZh : s.labelEn}
                 </option>
               ))}
@@ -500,17 +500,17 @@ export const GanttView: React.FC = () => {
           </div>
 
           {/* Expand/Collapse All Buttons */}
-          <div className="flex items-center rounded-xl bg-slate-950 border border-slate-800 p-0.5 text-xs">
+          <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-0.5 text-xs">
             <button
               onClick={expandAll}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               title={language === 'zh' ? '全部展开' : 'Expand All'}
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={collapseAll}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               title={language === 'zh' ? '全部折叠' : 'Collapse All'}
             >
               <Minimize2 className="w-3.5 h-3.5" />
@@ -518,13 +518,13 @@ export const GanttView: React.FC = () => {
           </div>
 
           {/* View scale toggles (Weekly vs Monthly) */}
-          <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <button
               onClick={() => setTimeScale('weekly')}
               className={`px-3 py-1 rounded-lg font-medium transition-all ${
                 timeScale === 'weekly'
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               {t.weekly}
@@ -534,7 +534,7 @@ export const GanttView: React.FC = () => {
               className={`px-3 py-1 rounded-lg font-medium transition-all ${
                 timeScale === 'monthly'
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               {t.monthly}
@@ -544,11 +544,11 @@ export const GanttView: React.FC = () => {
       </div>
 
       {/* Main Gantt Canvas */}
-      <div className="flex-1 flex flex-col rounded-2xl bg-slate-950/80 border border-slate-800 overflow-hidden shadow-xl">
+      <div className="flex-1 flex flex-col rounded-2xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-xl">
         {/* Header Ticks Bar */}
-        <div className="flex border-b border-slate-800 bg-slate-900/80 select-none">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 select-none">
           {/* Left label column */}
-          <div className="w-84 shrink-0 p-3 text-xs font-bold text-slate-300 border-r border-slate-800 flex items-center justify-between">
+          <div className="w-84 shrink-0 p-3 text-xs font-bold text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <span>
               {groupBy === 'project'
                 ? language === 'zh'
@@ -568,7 +568,7 @@ export const GanttView: React.FC = () => {
             {ticks.map((tick, idx) => (
               <div
                 key={idx}
-                className="absolute top-0 bottom-0 border-l border-slate-800/80 text-[10px] text-slate-400 pl-1.5 pt-2"
+                className="absolute top-0 bottom-0 border-l border-slate-200 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400 pl-1.5 pt-2"
                 style={{ left: `${tick.leftPercent}%` }}
               >
                 {tick.label}
@@ -578,7 +578,7 @@ export const GanttView: React.FC = () => {
         </div>
 
         {/* Grouped Rows */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50">
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-200/70 dark:divide-slate-800/50">
           {groupViewItems.map((group) => {
             const isCollapsed = !!collapsedGroups[group.id];
             const avgProgress =
@@ -593,48 +593,48 @@ export const GanttView: React.FC = () => {
                 {/* Collapsible Group Header */}
                 <div
                   onClick={() => toggleGroupCollapse(group.id)}
-                  className="flex items-center border-b border-slate-800/80 bg-slate-900/90 hover:bg-slate-900 cursor-pointer select-none transition-colors"
+                  className="flex items-center border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/90 hover:bg-slate-100/80 dark:hover:bg-slate-900 cursor-pointer select-none transition-colors"
                 >
-                  <div className="w-84 shrink-0 p-2.5 px-3 border-r border-slate-800 flex items-center justify-between gap-2">
+                  <div className="w-84 shrink-0 p-2.5 px-3 border-r border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       {isCollapsed ? (
                         <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-indigo-400 shrink-0" />
+                        <ChevronDown className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                       )}
                       {groupBy === 'project' ? (
-                        <FolderKanban className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <FolderKanban className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                       ) : (
-                        <span className={`w-2.5 h-2.5 rounded-full ${group.color?.replace('text-', 'bg-') || 'bg-indigo-400'} shrink-0`} />
+                        <span className={`w-2.5 h-2.5 rounded-full ${group.color?.replace('text-', 'bg-') || 'bg-indigo-500'} shrink-0`} />
                       )}
-                      <span className="text-xs font-bold text-slate-100 truncate" title={group.title}>
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate" title={group.title}>
                         {groupBy === 'project' ? `[${group.tag}] ${group.title}` : group.title}
                       </span>
                     </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 shrink-0 font-medium">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shrink-0 font-medium">
                       {group.tasks.length}
                     </span>
                   </div>
 
                   {/* Summary bar on timeline track for this group */}
-                  <div className="flex-1 px-4 flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex-1 px-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-3">
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
                         {group.subtitle || ''}
                       </span>
                       {group.project?.submissionDeadline && (
-                        <span className="text-[10px] text-amber-400/90 font-mono">
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400/90 font-mono">
                           DDL: {formatDate(group.project.submissionDeadline, language)}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                         {avgProgress}% {language === 'zh' ? '完成' : 'Done'}
                       </span>
-                      <div className="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="w-20 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full transition-all"
+                          className="h-full bg-indigo-600 rounded-full transition-all"
                           style={{ width: `${avgProgress}%` }}
                         />
                       </div>
@@ -654,22 +654,22 @@ export const GanttView: React.FC = () => {
                     return (
                       <div
                         key={task.id}
-                        className={`flex hover:bg-slate-900/40 transition-colors border-b border-slate-800/40 ${
-                          isEditing ? 'bg-slate-900/60' : ''
+                        className={`flex hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors border-b border-slate-200/70 dark:border-slate-800/40 ${
+                          isEditing ? 'bg-slate-50 dark:bg-slate-900/60' : ''
                         }`}
                       >
                         {/* Left Task Metadata */}
-                        <div className="w-84 shrink-0 p-3 pl-7 border-r border-slate-800 flex flex-col justify-center space-y-1">
+                        <div className="w-84 shrink-0 p-3 pl-7 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center space-y-1">
                           <div className="flex items-center justify-between gap-1.5">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 truncate">
+                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 truncate">
                                 {task.projectTag}
                               </span>
                               {stageConfig && (
                                 <span
                                   className={`text-[9px] font-medium px-1.5 py-0.2 rounded-full border truncate ${
                                     stageConfig.badgeBg ||
-                                    'bg-slate-800 text-slate-300 border-slate-700'
+                                    'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                                   }`}
                                   title={language === 'zh' ? stageConfig.labelZh : stageConfig.labelEn}
                                 >
@@ -692,7 +692,7 @@ export const GanttView: React.FC = () => {
                                 setSelectedTask(task);
                               }
                             }}
-                            className="text-xs font-semibold text-slate-100 hover:text-cyan-300 cursor-pointer truncate transition-colors flex items-center gap-1.5"
+                            className="text-xs font-semibold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-300 cursor-pointer truncate transition-colors flex items-center gap-1.5"
                             title={task.title}
                           >
                             {task.isBlocked && (
@@ -701,7 +701,7 @@ export const GanttView: React.FC = () => {
                             <span className="truncate">{task.title}</span>
                           </h4>
 
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
                             <span className="inline-flex items-center gap-1.5 truncate">
                               <MemberAvatar member={task.leadAuthor} size="xs" />
                               <span className="truncate">
@@ -709,11 +709,11 @@ export const GanttView: React.FC = () => {
                               </span>
                             </span>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-cyan-400">{task.progress || 0}%</span>
+                              <span className="font-mono text-indigo-600 dark:text-indigo-400">{task.progress || 0}%</span>
                               {canEditTask(task) && (
                                 <button
                                   onClick={() => setEditingTaskId(isEditing ? null : task.id)}
-                                  className="text-slate-500 hover:text-slate-300 text-[10px] underline"
+                                  className="text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 text-[10px] underline"
                                 >
                                   {isEditing
                                     ? language === 'zh'
@@ -729,14 +729,14 @@ export const GanttView: React.FC = () => {
 
                           {/* Inline quick adjustment drawer when clicked */}
                           {isEditing && canEditTask(task) && (
-                            <div className="mt-2 p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                            <div className="mt-2 p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
                               {/* Stage Selector */}
                               <div className="flex items-center justify-between gap-1 text-[10px]">
-                                <span className="text-slate-400">{t.academicStage}:</span>
+                                <span className="text-slate-500 dark:text-slate-400">{t.academicStage}:</span>
                                 <select
                                   value={task.stage}
                                   onChange={(e) => moveTask(task.id, e.target.value as AcademicStage)}
-                                  className="bg-slate-900 border border-slate-700 text-slate-200 rounded px-1.5 py-0.5 text-[10px] focus:outline-none focus:border-indigo-500 max-w-[170px] truncate"
+                                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded px-1.5 py-0.5 text-[10px] focus:outline-none focus:border-indigo-500 max-w-[170px] truncate"
                                 >
                                   {stages.map((s) => (
                                     <option key={s.id} value={s.id}>
@@ -748,9 +748,9 @@ export const GanttView: React.FC = () => {
 
                               {/* Progress Slider */}
                               <div>
-                                <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                                <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
                                   <span>{t.progress}</span>
-                                  <span className="font-mono text-cyan-400">{task.progress || 0}%</span>
+                                  <span className="font-mono text-indigo-600 dark:text-indigo-400">{task.progress || 0}%</span>
                                 </div>
                                 <input
                                   type="range"
@@ -759,25 +759,25 @@ export const GanttView: React.FC = () => {
                                   step={5}
                                   value={task.progress || 0}
                                   onChange={(e) => updateTaskProgress(task.id, parseInt(e.target.value))}
-                                  className="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer"
+                                  className="w-full accent-indigo-600 h-1 bg-slate-200 dark:bg-slate-800 rounded cursor-pointer"
                                 />
                               </div>
 
                               {/* Shift Days */}
                               <div className="flex items-center justify-between gap-1 pt-1 text-[10px]">
-                                <span className="text-slate-400">
+                                <span className="text-slate-500 dark:text-slate-400">
                                   {language === 'zh' ? '平移工期:' : 'Shift Days:'}
                                 </span>
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => shiftTaskDays(task.id, -7)}
-                                    className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
                                   >
                                     -7d
                                   </button>
                                   <button
                                     onClick={() => shiftTaskDays(task.id, 7)}
-                                    className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
                                   >
                                     +7d
                                   </button>
@@ -793,7 +793,7 @@ export const GanttView: React.FC = () => {
                           {ticks.map((tick, idx) => (
                             <div
                               key={idx}
-                              className="absolute top-0 bottom-0 border-l border-slate-900 pointer-events-none"
+                              className="absolute top-0 bottom-0 border-l border-slate-200/70 dark:border-slate-900 pointer-events-none"
                               style={{ left: `${tick.leftPercent}%` }}
                             />
                           ))}

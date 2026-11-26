@@ -132,13 +132,13 @@ export const AIImportModal: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-sm">
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 text-white shadow-sm">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <span>{t.aiImportTitle}</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
                   {language === 'zh' ? '一键冷启动' : 'One-Click Onboarding'}
                 </span>
               </h2>
@@ -206,7 +206,7 @@ export const AIImportModal: React.FC = () => {
           <section className="space-y-3 border-t border-slate-200 dark:border-slate-800 pt-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-600 text-white font-bold text-[10px]">
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px]">
                   2
                 </span>
                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-xs tracking-wide">
@@ -219,7 +219,7 @@ export const AIImportModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleLoadSample}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-medium"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-medium"
                 >
                   <FileText className="w-3 h-3" />
                   <span>{t.loadSampleData}</span>
@@ -273,7 +273,7 @@ export const AIImportModal: React.FC = () => {
                     : 'Paste the generated markdown code block or JSON here...'
                 }
                 rows={7}
-                className="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 p-3 font-mono text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-cyan-500/70"
+                className="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 p-3 font-mono text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/70"
               />
             </div>
 
@@ -288,7 +288,7 @@ export const AIImportModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleParse}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-md transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md transition-all"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{t.parseAndPreview}</span>
@@ -332,7 +332,7 @@ export const AIImportModal: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-600 dark:text-cyan-400">
+                  <div className="p-2 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400">
                     <FolderGit2 className="w-4 h-4" />
                   </div>
                   <div>
@@ -360,7 +360,7 @@ export const AIImportModal: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                  <div className="p-2 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
                     <Server className="w-4 h-4" />
                   </div>
                   <div>
@@ -401,7 +401,7 @@ export const AIImportModal: React.FC = () => {
                     onClick={() => setActivePreviewTab('projects')}
                     className={`px-2.5 py-1 rounded-md font-semibold ${
                       activePreviewTab === 'projects'
-                        ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300'
+                        ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
                         : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
@@ -447,17 +447,17 @@ export const AIImportModal: React.FC = () => {
                     parsedResult.projects.map((proj) => (
                       <div
                         key={proj.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-cyan-50/50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-900/40 text-[11px]"
+                        className="flex items-center justify-between p-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/40 text-[11px]"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-bold text-[10px] shrink-0">
+                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-[10px] shrink-0">
                             {proj.tag}
                           </span>
                           <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {proj.title}
                           </span>
                         </div>
-                        <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono shrink-0">
+                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono shrink-0">
                           {proj.targetVenue}
                         </span>
                       </div>
@@ -524,7 +524,7 @@ export const AIImportModal: React.FC = () => {
                   <label
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                       importMode === 'append'
-                        ? 'border-cyan-500 bg-cyan-500/5 ring-1 ring-cyan-500'
+                        ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500'
                         : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
@@ -534,7 +534,7 @@ export const AIImportModal: React.FC = () => {
                       value="append"
                       checked={importMode === 'append'}
                       onChange={() => setImportMode('append')}
-                      className="mt-0.5 text-cyan-600 focus:ring-cyan-500"
+                      className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
                     />
                     <div>
                       <span className="font-bold text-slate-900 dark:text-slate-100 block">
@@ -577,7 +577,7 @@ export const AIImportModal: React.FC = () => {
               onClick={handleApply}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-md transition-all ${
                 parsedResult
-                  ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:opacity-95'
+                  ? 'bg-indigo-600 hover:bg-indigo-500'
                   : 'bg-slate-400 dark:bg-slate-800 cursor-not-allowed opacity-50'
               }`}
             >

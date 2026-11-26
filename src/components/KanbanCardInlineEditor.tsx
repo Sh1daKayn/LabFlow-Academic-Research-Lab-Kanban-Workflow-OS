@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AcademicStage, ChecklistItem, Priority, TaskItem, VisibilityLevel } from '@/types';
+import { AcademicStage, AssetLinks, ChecklistItem, Priority, TaskItem, VisibilityLevel } from '@/types';
 import { useLabFlow } from '@/context/LabFlowContext';
 import { ExternalLink, Flame, GitBranch, ListPlus, Lock, MessageSquare, Plus, Save, Trash2, X } from 'lucide-react';
 import { TaskChecklistTemplateBar } from '@/components/TaskChecklistTemplateBar';
+import { AssetLinksEditor } from '@/components/AssetLinksEditor';
+import { normalizeExternalUrl, resolveVenueUrl } from '@/utils/venues';
 
 interface KanbanCardInlineEditorProps {
   task: TaskItem;
@@ -27,6 +29,7 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
     deleteTask,
     members,
     stages,
+    venues,
     language,
     t,
     addToast,
@@ -47,10 +50,9 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
   const [progress, setProgress] = useState(task.progress || 0);
   const [leadAuthorId, setLeadAuthorId] = useState(task.leadAuthor?.id || members[0]?.id || '');
   const [piId, setPiId] = useState(task.pi?.id || members[0]?.id || '');
-  const [overleaf, setOverleaf] = useState(task.assets?.overleaf || '');
-  const [github, setGithub] = useState(task.assets?.github || '');
-  const [dataset, setDataset] = useState(task.assets?.dataset || '');
-  const [zotero, setZotero] = useState(task.assets?.zotero || '');
+  const [targetVenue, setTargetVenue] = useState(task.targetVenue || '');
+  const [targetVenueUrl, setTargetVenueUrl] = useState(task.targetVenueUrl || '');
+  const [assets, setAssets] = useState<AssetLinks>(task.assets || {});
   const [checklist, setChecklist] = useState<ChecklistItem[]>(task.checklist || []);
   const [newSubtaskText, setNewSubtaskText] = useState('');
 
@@ -65,10 +67,9 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
     setProgress(task.progress || 0);
     setLeadAuthorId(task.leadAuthor?.id || members[0]?.id || '');
     setPiId(task.pi?.id || members[0]?.id || '');
-    setOverleaf(task.assets?.overleaf || '');
-    setGithub(task.assets?.github || '');
-    setDataset(task.assets?.dataset || '');
-    setZotero(task.assets?.zotero || '');
+    setTargetVenue(task.targetVenue || '');
+    setTargetVenueUrl(task.targetVenueUrl || '');
+    setAssets(task.assets || {});
     setChecklist(task.checklist || []);
   }, [task, members]);
 
@@ -93,12 +94,9 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
       progress,
       leadAuthor: lead,
       pi,
-      assets: {
-        overleaf: overleaf.trim() || undefined,
-        github: github.trim() || undefined,
-        dataset: dataset.trim() || undefined,
-        zotero: zotero.trim() || undefined,
-      },
+      targetVenue: targetVenue.trim() || task.targetVenue,
+      targetVenueUrl: normalizeExternalUrl(targetVenueUrl),
+      assets,
       checklist,
     });
 
@@ -279,7 +277,7 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
         <div>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
             <span>{t.progress}</span>
-            <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
               {progress}%
             </span>
           </div>
@@ -291,7 +289,7 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
             disabled={!hasEditPermission}
             value={progress}
             onChange={(e) => setProgress(parseInt(e.target.value, 10))}
-            className="w-full accent-cyan-500 h-1.5 bg-slate-200 dark:bg-slate-800 rounded cursor-pointer"
+            className="w-full accent-indigo-600 h-1.5 bg-slate-200 dark:bg-slate-800 rounded cursor-pointer"
           />
         </div>
 
@@ -405,7 +403,7 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
                         memberId: task.leadAuthor?.id || currentUserId,
                       });
                     }}
-                    className="p-0.5 rounded text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400"
+                    className="p-0.5 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                     title={language === 'zh' ? '推入本周 To-Do' : 'Push to Weekly To-Do'}
                   >
                     <ListPlus className="w-3.5 h-3.5" />
@@ -450,40 +448,56 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
           )}
         </div>
 
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-2.5 space-y-1.5">
-          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block">
-            {t.assets}
-          </span>
-          <div className="grid grid-cols-2 gap-1.5">
-            {[
-              { label: 'Overleaf', value: overleaf, setter: setOverleaf, ph: 'Overleaf URL' },
-              { label: 'GitHub', value: github, setter: setGithub, ph: 'GitHub URL' },
-              { label: 'Dataset', value: dataset, setter: setDataset, ph: 'Dataset URL' },
-              { label: 'Zotero', value: zotero, setter: setZotero, ph: 'Zotero URL' },
-            ].map((asset) => (
-              <div key={asset.label} className="flex items-center gap-1">
-                <input
-                  type="url"
-                  disabled={!hasEditPermission}
-                  value={asset.value}
-                  onChange={(e) => asset.setter(e.target.value)}
-                  placeholder={asset.ph}
-                  className="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200 disabled:opacity-70"
-                />
-                {asset.value.trim() && (
-                  <a
-                    href={asset.value.trim()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`Open ${asset.label}`}
-                    className="p-1 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 shrink-0"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              {t.targetVenue}
+            </label>
+            <input
+              type="text"
+              disabled={!hasEditPermission}
+              value={targetVenue}
+              onChange={(e) => setTargetVenue(e.target.value)}
+              className={fieldClass}
+            />
           </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              {language === 'zh' ? '投稿网址 (Venue URL)' : 'Venue Website URL'}
+            </label>
+            <div className="flex items-center gap-1">
+              <input
+                type="url"
+                disabled={!hasEditPermission}
+                value={targetVenueUrl}
+                onChange={(e) => setTargetVenueUrl(e.target.value)}
+                placeholder="https://..."
+                className={fieldClass}
+              />
+              {resolveVenueUrl(targetVenue, venues, targetVenueUrl) && (
+                <a
+                  href={resolveVenueUrl(targetVenue, venues, targetVenueUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={language === 'zh' ? '打开投稿官网' : 'Open Venue URL'}
+                  className="p-1 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-2.5">
+          <AssetLinksEditor
+            value={assets}
+            onChange={setAssets}
+            disabled={!hasEditPermission}
+            compact
+            label={t.assets}
+            language={language}
+          />
         </div>
 
         <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-slate-200 dark:border-slate-800">
@@ -517,7 +531,7 @@ export const KanbanCardInlineEditor: React.FC<KanbanCardInlineEditorProps> = ({ 
                       : `Sync on "${task.title}"`,
                 });
               }}
-              className="px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-medium transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 text-xs font-medium transition-colors flex items-center gap-1"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>{language === 'zh' ? '1对1' : '1-on-1'}</span>

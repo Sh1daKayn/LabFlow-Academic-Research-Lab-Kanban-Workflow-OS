@@ -2,12 +2,10 @@
 
 import React, { useRef, useState } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
-import { buildCabLabImportPackJson } from '@/data/cabLabPreset';
 import {
   AlertTriangle,
   Database,
   Download,
-  FolderGit2,
   KeyRound,
   RefreshCw,
   RotateCcw,
@@ -77,30 +75,6 @@ export const BackupTab: React.FC = () => {
     }
   };
 
-  const handleLoadCabLabPreset = () => {
-    const confirmed = confirm(
-      language === 'zh'
-        ? '确定导入 CAB Lab (Spring -> Fall 2026) 真实团队与跨期接力预设数据包吗？当前工作区示例数据将被替换。'
-        : 'Load the CAB Lab (Spring -> Fall 2026) team, clusters, and cross-term handoff preset? This replaces current workspace items.'
-    );
-    if (!confirmed) return;
-    const ok = importDataBackup(buildCabLabImportPackJson());
-    if (ok) {
-      setIsSettingsOpen(false);
-    }
-  };
-
-  const handleDownloadCabLabPreset = () => {
-    const jsonStr = buildCabLabImportPackJson();
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'CABLab_2026_Import_Pack.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="space-y-5 animate-in fade-in duration-150">
       <div>
@@ -109,7 +83,7 @@ export const BackupTab: React.FC = () => {
         </h3>
         <p className="text-xs text-slate-500 mt-0.5">
           {language === 'zh'
-            ? '完整导出或恢复您的课题组全量数据（包含全部任务、课题、成员、算力与自定义阶段）。'
+            ? '完整导出或恢复您的课题组全量数据（包含全部任务、课题、成员、共享设备与自定义阶段）。'
             : 'Export and restore complete JSON snapshot of all lab data and state.'}
         </p>
       </div>
@@ -193,15 +167,15 @@ export const BackupTab: React.FC = () => {
         )}
 
         {storageMode === 'local-file' && (
-          <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/25 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+          <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
             {language === 'zh' ? (
               <>
-                <strong className="text-cyan-700 dark:text-cyan-300">关于服务器保存说明：</strong>
+                <strong className="text-indigo-700 dark:text-indigo-300">关于服务器保存说明：</strong>
                 当前未检测到 <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">DATABASE_URL</code>，数据保存在运行 Next.js 的本机文件 <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">.data/labflow-state.json</code>（不会推送到 GitHub）。如需部署到云端或跨电脑协作，请在 <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">.env</code> 中配置 PostgreSQL（如 Neon/Supabase 或运行 <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">docker compose up -d</code>）；同局域网共享本机数据可使用 <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">npm run dev:lan</code>。
               </>
             ) : (
               <>
-                <strong className="text-cyan-700 dark:text-cyan-300">Host vs Remote Server Note:</strong>{' '}
+                <strong className="text-indigo-700 dark:text-indigo-300">Host vs Remote Server Note:</strong>{' '}
                 <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">DATABASE_URL</code> is not set, so edits persist to <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">.data/labflow-state.json</code> on this host machine (not synced to GitHub). Set PostgreSQL <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">DATABASE_URL</code> in <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">.env</code> (or run <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">docker compose up -d</code>) for cloud/remote server persistence, or use <code className="font-mono bg-slate-200/70 dark:bg-slate-800 px-1 rounded">npm run dev:lan</code> for LAN sharing.
               </>
             )}
@@ -210,9 +184,9 @@ export const BackupTab: React.FC = () => {
       </div>
 
       {/* AI Smart Document Importer Fast Track */}
-      <div className="p-4 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent flex items-center justify-between gap-3">
+      <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/8 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-sm">
+          <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-sm">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
@@ -229,7 +203,7 @@ export const BackupTab: React.FC = () => {
             setIsSettingsOpen(false);
             setIsAIImportOpen(true);
           }}
-          className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm shrink-0"
+          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm shrink-0"
         >
           {language === 'zh' ? '打开 AI 导入' : 'Open AI Importer'}
         </button>
@@ -257,7 +231,7 @@ export const BackupTab: React.FC = () => {
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-3 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-500 text-left transition-all group"
         >
-          <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 group-hover:bg-cyan-500/20">
+          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 group-hover:bg-indigo-500/20">
             <Upload className="w-5 h-5" />
           </div>
           <div>
@@ -274,45 +248,6 @@ export const BackupTab: React.FC = () => {
           accept=".json"
           className="hidden"
         />
-      </div>
-
-      {/* CAB Lab 2026 Cross-Term Coordination Import Pack */}
-      <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-sm shrink-0">
-            <FolderGit2 className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
-              {language === 'zh'
-                ? 'CAB Lab (Spring → Fall 2026) 统筹数据包'
-                : 'CAB Lab (Spring -> Fall 2026) Import Pack'}
-            </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-              {language === 'zh'
-                ? '内置 Trey、Masie、Iris、Martin、3 大 Cluster 与全部跨学期接力项目（含 Emma→Daniel、Kyra→Cassidy&Kyra）。'
-                : 'Includes Trey, Masie, Iris, Martin, 3 Research Clusters, shared datasets, and cross-term project handoffs.'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleDownloadCabLabPreset}
-            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-indigo-500 text-xs font-semibold flex items-center gap-1"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{language === 'zh' ? '下载 JSON' : 'Download JSON'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleLoadCabLabPreset}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm"
-          >
-            {language === 'zh' ? '一键载入工作区' : 'Load Into Workspace'}
-          </button>
-        </div>
       </div>
 
       {/* Admin Password Setting (PI Exclusive) */}
@@ -396,8 +331,8 @@ export const BackupTab: React.FC = () => {
             </span>
             <span className="text-[10px] text-slate-500">
               {language === 'zh'
-                ? '清空全部任务、项目、算力与预设人员（仅导师最高权限解锁后可执行）'
-                : 'Wipe all tasks, projects, resources, and members (PI exclusive)'}
+                ? '清空全部任务、项目、共享设备与预设人员（仅导师最高权限解锁后可执行）'
+                : 'Wipe all tasks, projects, shared resources, and members (PI exclusive)'}
             </span>
           </div>
           <button

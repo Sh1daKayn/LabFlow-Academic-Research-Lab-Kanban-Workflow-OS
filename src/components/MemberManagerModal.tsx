@@ -22,7 +22,7 @@ export const MemberManagerModal: React.FC = () => {
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+          <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
             <Users className="w-6 h-6" />
           </div>
           <div>

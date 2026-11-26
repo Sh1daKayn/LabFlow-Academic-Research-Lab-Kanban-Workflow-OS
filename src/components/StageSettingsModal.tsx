@@ -14,14 +14,14 @@ import {
 } from 'lucide-react';
 
 const COLOR_PRESETS = [
-  { name: 'Purple', color: 'text-purple-400', badgeBg: 'bg-purple-500/10 text-purple-400 border-purple-500/30', border: 'border-purple-500/30' },
-  { name: 'Cyan', color: 'text-cyan-400', badgeBg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30', border: 'border-cyan-500/30' },
-  { name: 'Amber', color: 'text-amber-400', badgeBg: 'bg-amber-500/10 text-amber-400 border-amber-500/30', border: 'border-amber-500/30' },
-  { name: 'Blue', color: 'text-blue-400', badgeBg: 'bg-blue-500/10 text-blue-400 border-blue-500/30', border: 'border-blue-500/30' },
-  { name: 'Rose', color: 'text-rose-400', badgeBg: 'bg-rose-500/10 text-rose-400 border-rose-500/30', border: 'border-rose-500/30' },
-  { name: 'Emerald', color: 'text-emerald-400', badgeBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', border: 'border-emerald-500/30' },
-  { name: 'Indigo', color: 'text-indigo-400', badgeBg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30', border: 'border-indigo-500/30' },
-  { name: 'Orange', color: 'text-orange-400', badgeBg: 'bg-orange-500/10 text-orange-400 border-orange-500/30', border: 'border-orange-500/30' },
+  { name: 'Indigo', color: 'text-indigo-600', badgeBg: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/35', border: 'border-indigo-500/35' },
+  { name: 'Sky', color: 'text-sky-600', badgeBg: 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-500/35', border: 'border-sky-500/35' },
+  { name: 'Amber', color: 'text-amber-600', badgeBg: 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500/35', border: 'border-amber-500/35' },
+  { name: 'Blue', color: 'text-blue-600', badgeBg: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-500/35', border: 'border-blue-500/35' },
+  { name: 'Rose', color: 'text-rose-600', badgeBg: 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/35', border: 'border-rose-500/35' },
+  { name: 'Emerald', color: 'text-emerald-600', badgeBg: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/35', border: 'border-emerald-500/35' },
+  { name: 'Purple', color: 'text-purple-600', badgeBg: 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-500/35', border: 'border-purple-500/35' },
+  { name: 'Slate', color: 'text-slate-600', badgeBg: 'bg-slate-100 dark:bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-500/35', border: 'border-slate-500/35' },
 ];
 
 export const StageSettingsModal: React.FC = () => {
@@ -78,20 +78,20 @@ export const StageSettingsModal: React.FC = () => {
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+          <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
             <Settings className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-100 leading-snug">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">
               {t.settingsTitle}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">{t.settingsDesc}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t.settingsDesc}</p>
           </div>
         </div>
 
         {/* Current Stages List */}
         <div className="space-y-2.5 mb-6">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
             <span>{language === 'zh' ? '当前已启用的学术阶段' : 'Active Pipeline Stages'}</span>
             <span className="text-[11px] text-slate-500">
               {stages.length} {language === 'zh' ? '个阶段' : 'stages'}
@@ -103,7 +103,7 @@ export const StageSettingsModal: React.FC = () => {
               return (
                 <div
                   key={stage.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs"
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
                 >
                   <div className="flex items-center gap-2.5 flex-1 min-w-0">
                     <div className={`w-3 h-3 rounded-full shrink-0 ${stage.color.replace('text-', 'bg-')}`} />
@@ -119,7 +119,7 @@ export const StageSettingsModal: React.FC = () => {
                             updateStage(stage.id, { labelEn: e.target.value });
                           }
                         }}
-                        className="bg-transparent font-semibold text-slate-200 focus:outline-none border-b border-transparent focus:border-cyan-500/60 pb-0.5 text-xs"
+                        className="bg-transparent font-semibold text-slate-800 dark:text-slate-200 focus:outline-none border-b border-transparent focus:border-indigo-500/60 pb-0.5 text-xs"
                       />
                       <span className="text-[10px] text-slate-500 truncate">
                         ID: {stage.id}
@@ -136,7 +136,7 @@ export const StageSettingsModal: React.FC = () => {
                           deleteStage(stage.id);
                         }
                       }}
-                      className="p-1.5 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
                       title={language === 'zh' ? '删除阶段' : 'Delete Stage'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -149,10 +149,10 @@ export const StageSettingsModal: React.FC = () => {
         </div>
 
         {/* Add New Stage Form */}
-        <form onSubmit={handleAdd} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3 mb-4">
+        <form onSubmit={handleAdd} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3 mb-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-              <Plus className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               {t.addNewStage}
             </h3>
             <span className="text-[10px] text-slate-500">
@@ -162,7 +162,7 @@ export const StageSettingsModal: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                 {language === 'zh' ? '中文名称 *' : 'Name (Chinese)'}
               </label>
               <input
@@ -171,12 +171,12 @@ export const StageSettingsModal: React.FC = () => {
                 value={newLabelZh}
                 onChange={(e) => setNewLabelZh(e.target.value)}
                 placeholder={language === 'zh' ? '例如：IRB 伦理审批、专利撰写' : 'e.g. IRB Review'}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                 {language === 'zh' ? '英文名称' : 'Name (English) *'}
               </label>
               <input
@@ -184,14 +184,14 @@ export const StageSettingsModal: React.FC = () => {
                 value={newLabelEn}
                 onChange={(e) => setNewLabelEn(e.target.value)}
                 placeholder="e.g. Ethics & IRB Approval"
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/60"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500/60"
               />
             </div>
           </div>
 
           {/* Color preset picker */}
           <div>
-            <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1">
               <Palette className="w-3 h-3" />
               {language === 'zh' ? '选择阶段主题色' : 'Select Stage Color'}
             </label>
@@ -202,7 +202,7 @@ export const StageSettingsModal: React.FC = () => {
                   type="button"
                   onClick={() => setSelectedColorIdx(idx)}
                   className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${p.color.replace('text-', 'bg-')} ${
-                    selectedColorIdx === idx ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'
+                    selectedColorIdx === idx ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110' : 'opacity-75 hover:opacity-100'
                   }`}
                 >
                   {selectedColorIdx === idx && <Check className="w-3.5 h-3.5 text-white" />}
@@ -222,11 +222,11 @@ export const StageSettingsModal: React.FC = () => {
         </form>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={restoreDefaultStages}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{t.restoreDefaults}</span>
@@ -235,7 +235,7 @@ export const StageSettingsModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsStageSettingsOpen(false)}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
           >
             {t.save}
           </button>

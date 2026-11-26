@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useLabFlow } from '@/context/LabFlowContext';
+import { computeMemberWorkloadMap } from '@/utils/memberWorkload';
 import {
   Presentation,
   Copy,
@@ -24,6 +25,7 @@ export const GroupMeetingView: React.FC = () => {
     projects,
     members,
     resources,
+    directRequests,
     stages,
     filterMemberId,
     setFilterMemberId,
@@ -77,6 +79,10 @@ export const GroupMeetingView: React.FC = () => {
   );
 
   const blockedTasks = filteredTasks.filter((t) => t.isBlocked);
+  const workloadMap = useMemo(
+    () => computeMemberWorkloadMap(members, projects, tasks, directRequests),
+    [members, projects, tasks, directRequests]
+  );
 
   const piMember = members.find((m) => m.role === 'PI') || members[0];
   const dynamicPiName = piMember
@@ -139,12 +145,12 @@ export const GroupMeetingView: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Left info */}
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+            <div className="p-3 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
               <Presentation className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
                   {t.meeting}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -163,12 +169,12 @@ export const GroupMeetingView: React.FC = () => {
           <div className="flex items-center gap-3 shrink-0 flex-wrap">
             {/* Live Standup Timer */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs">
-              <Timer className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-spin-slow" />
+              <Timer className="w-4 h-4 text-indigo-600 dark:text-indigo-400 animate-spin-slow" />
               <div className="flex flex-col">
                 <span className="text-[9px] uppercase font-semibold text-slate-500">
                   {t.timerLabel}
                 </span>
-                <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-300">
+                <span className="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-300">
                   {formatTimer(meetingSeconds)}
                 </span>
               </div>
@@ -183,17 +189,17 @@ export const GroupMeetingView: React.FC = () => {
             {/* Personal Weekly Digest */}
             <button
               onClick={() => generateMyWeeklyDigest(selectedMember !== 'all' ? selectedMember : undefined)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-cyan-500/50 text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white font-medium text-xs transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-indigo-500/50 text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white font-medium text-xs transition-all shadow-sm"
               title={t.myWeeklyDigest}
             >
-              <FileText className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+              <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>{t.myWeeklyDigest}</span>
             </button>
 
             {/* Export Markdown Minutes Button */}
             <button
               onClick={handleExportMinutes}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/20 transition-all"
             >
               <Copy className="w-4 h-4" />
               <span>{t.exportMinutes}</span>
@@ -224,7 +230,7 @@ export const GroupMeetingView: React.FC = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border shrink-0 transition-all ${
               selectedMember === 'all'
-                ? 'bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/50 dark:border-cyan-500/60 font-bold shadow-sm'
+                ? 'bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/50 dark:border-indigo-500/60 font-bold shadow-sm'
                 : 'bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -239,6 +245,7 @@ export const GroupMeetingView: React.FC = () => {
             const hasBlockers = tasks.some((t) => t.leadAuthor.id === m.id && t.isBlocked);
             const isSelected = selectedMember === m.id;
             const mName = language === 'zh' ? m.nameZh : m.nameEn;
+            const load = workloadMap[m.id];
 
             return (
               <button
@@ -247,6 +254,13 @@ export const GroupMeetingView: React.FC = () => {
                   setSelectedMember(m.id);
                   setFilterMemberId(m.id);
                 }}
+                title={
+                  load
+                    ? language === 'zh'
+                      ? `${load.projectCount} 个课题 · ${load.taskCount} 个活跃任务 · ${load.blockedCount} 卡点 · ${load.openRequestsToMeCount} 待审请求`
+                      : `${load.projectCount} projects · ${load.taskCount} active · ${load.blockedCount} blocked · ${load.openRequestsToMeCount} open requests`
+                    : undefined
+                }
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium border shrink-0 transition-all ${
                   isSelected
                     ? 'bg-indigo-500/15 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/50 dark:border-indigo-500/60 font-bold shadow-sm'
@@ -259,9 +273,14 @@ export const GroupMeetingView: React.FC = () => {
                 {hasBlockers && (
                   <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
                 )}
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                  {memberTaskCount}
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {memberTaskCount} · {load?.projectCount ?? 0}P
                 </span>
+                {load && load.openRequestsToMeCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold">
+                    {load.openRequestsToMeCount}R
+                  </span>
+                )}
               </button>
             );
           })}
@@ -328,19 +347,19 @@ export const GroupMeetingView: React.FC = () => {
         <div className="flex flex-col rounded-2xl bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 p-4 shadow-sm transition-colors">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+              <div className="p-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
                 <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                   {t.colActive}
                 </h2>
-                <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
+                <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
                   {t.colActiveSub}
                 </span>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/30">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/30">
               {activeTasks.length}
             </span>
           </div>
@@ -352,7 +371,7 @@ export const GroupMeetingView: React.FC = () => {
                 <div
                   key={t.id}
                   onClick={() => setSelectedTask(t)}
-                  className="cursor-pointer p-3.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 shadow-sm transition-all space-y-2 group"
+                  className="cursor-pointer p-3.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 shadow-sm transition-all space-y-2 group"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
@@ -362,12 +381,12 @@ export const GroupMeetingView: React.FC = () => {
                       {ddl.text}
                     </span>
                   </div>
-                  <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors leading-snug">
+                  <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors leading-snug">
                     {t.title}
                   </h3>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/80 dark:border-slate-800/60">
                     <span>{language === 'zh' ? t.leadAuthor.nameZh : t.leadAuthor.nameEn}</span>
-                    <span className="text-cyan-600 dark:text-cyan-400 font-mono">{t.progress || 0}%</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-mono">{t.progress || 0}%</span>
                   </div>
                 </div>
               );
@@ -441,7 +460,7 @@ export const GroupMeetingView: React.FC = () => {
                   <div className="pt-1 flex items-center justify-between gap-2">
                     <div className="text-[11px] text-slate-600 dark:text-slate-300">
                       <span className="text-slate-500">{language === 'zh' ? '决断对象: ' : 'Escalated to: '}</span>
-                      <span className="font-bold text-cyan-700 dark:text-cyan-300">
+                      <span className="font-bold text-indigo-700 dark:text-indigo-300">
                         {t.blocker?.escalatedTo || (language === 'zh' ? t.pi.nameZh : t.pi.nameEn)}
                       </span>
                     </div>

@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBilingualFontFamily,
   CHINESE_FONT_PRESETS,
+  computeThemeCssVariables,
   ENGLISH_FONT_PRESETS,
+  getAccentForegroundHex,
+  resolveAccentHex,
   sanitizeCustomFontFamily,
 } from '@/utils/theme';
 
-describe('Bilingual Font Customization Utilities', () => {
+describe('Bilingual Font & Theme Accent Utilities', () => {
   it('places English preset first and Chinese preset second in CSS stack', () => {
     const css = buildBilingualFontFamily('times', 'songti');
     expect(css.startsWith("'Times New Roman'")).toBe(true);
@@ -37,5 +40,17 @@ describe('Bilingual Font Customization Utilities', () => {
     expect(customZhOnly.startsWith('Georgia')).toBe(true);
     expect(customZhOnly).toContain("'霞鹜文楷', 'PingFang SC', 'Microsoft YaHei'");
     expect(customZhOnly.endsWith('serif')).toBe(true);
+  });
+
+  it('resolves classic indigo and Obsidian & Gold accents with readable contrast variables', () => {
+    const indigoVars = computeThemeCssVariables('indigo');
+    expect(indigoVars['--lab-accent'].toLowerCase()).toBe(resolveAccentHex('indigo').toLowerCase());
+    expect(indigoVars['--lab-accent-fg'].toLowerCase()).toBe('#ffffff');
+    expect(indigoVars['--lab-accent-hover']).toBeTruthy();
+
+    const goldVars = computeThemeCssVariables('obsidian-gold');
+    expect(goldVars['--lab-bg-canvas']).toBe('#050505');
+    expect(goldVars['--lab-bg-canvas-light']).toBe('#FAF8F4');
+    expect(getAccentForegroundHex('#CFB991')).not.toBe('#ffffff');
   });
 });

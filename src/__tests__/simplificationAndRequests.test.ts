@@ -75,9 +75,9 @@ describe('Three-category work classification (论文 / 纵向科研项目 / 横�
       'HORIZONTAL_PROJECT',
     ]);
     expect(WORK_CATEGORY_META.PAPER.labelZh).toBe('学术论文');
-    expect(WORK_CATEGORY_META.VERTICAL_PROJECT.labelZh).toBe('纵向科研项目');
-    expect(WORK_CATEGORY_META.HORIZONTAL_PROJECT.labelZh).toBe('横向企业项目');
-    expect(getWorkCategoryLabel('HORIZONTAL_PROJECT', 'zh', true)).toBe('横向项目');
+    expect(WORK_CATEGORY_META.VERTICAL_PROJECT.labelZh).toBe('纵向科研基金');
+    expect(WORK_CATEGORY_META.HORIZONTAL_PROJECT.labelZh).toBe('合作与转化课题');
+    expect(getWorkCategoryLabel('HORIZONTAL_PROJECT', 'zh', true)).toBe('合作转化');
   });
 
   it('normalizes unknown categories safely and inherits from parent project', () => {

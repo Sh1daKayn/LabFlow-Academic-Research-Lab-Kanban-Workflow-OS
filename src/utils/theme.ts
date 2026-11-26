@@ -298,42 +298,85 @@ export function buildBilingualFontFamily(
 }
 
 export const ACCENT_MAP: Record<string, string> = {
-  purdue: '#C28E0E',
+  indigo: '#6366f1',
+  'obsidian-gold': '#8E6F3E',
+  purdue: '#8E6F3E',
+  boilermaker: '#CFB991',
+  steel: '#555960',
   oxford: '#1e40af',
   cardinal: '#8c1515',
   cambridge: '#0f766e',
   crimson: '#991b1b',
-  indigo: '#6366f1',
   cyan: '#06b6d4',
   emerald: '#10b981',
-  amber: '#f59e0b',
+  amber: '#DAAA00',
   rose: '#f43f5e',
   violet: '#8b5cf6',
 };
+
+const OBSIDIAN_GOLD_PALETTE_HEXES = new Set([
+  '#8E6F3E',
+  '#CFB991',
+  '#DAAA00',
+  '#DDB945',
+  '#EBD99F',
+  '#000000',
+  '#555960',
+  '#6F727B',
+]);
 
 export function resolveAccentHex(accentColor: AccentColor): string {
   return ACCENT_MAP[accentColor] || (accentColor.startsWith('#') ? accentColor : '#6366f1');
 }
 
-export function hexToRgba(hex: string, alpha: number): string {
-  let c = hex.replace('#', '');
+function parseHexRgb(hex: string): [number, number, number] | null {
+  let c = hex.replace('#', '').trim();
   if (c.length === 3) c = c.split('').map((x) => x + x).join('');
+  if (c.length !== 6) return null;
   const num = parseInt(c, 16);
-  if (isNaN(num)) return `rgba(99, 102, 241, ${alpha})`;
-  const r = (num >> 16) & 255;
-  const g = (num >> 8) & 255;
-  const b = num & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  if (isNaN(num)) return null;
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
+function darkenHex(hex: string, factor = 0.16): string {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return hexToRgba(hex, 0.88);
+  if (rgb[0] === 0 && rgb[1] === 0 && rgb[2] === 0) {
+    return '#26282A';
+  }
+  const toHex = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  const r = toHex(rgb[0] * (1 - factor));
+  const g = toHex(rgb[1] * (1 - factor));
+  const b = toHex(rgb[2] * (1 - factor));
+  return `#${r}${g}${b}`;
+}
+
+/**
+ * Returns black or white foreground hex to maintain crisp contrast against an accent swatch.
+ */
+export function getAccentForegroundHex(hex: string): string {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return '#ffffff';
+  const [r, g, b] = rgb.map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.38 ? '#000000' : '#ffffff';
+}
+
+export function hexToRgba(hex: string, alpha: number): string {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return `rgba(99, 102, 241, ${alpha})`;
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
 export function hexToHsl(hex: string): [number, number, number] {
-  let c = hex.replace('#', '');
-  if (c.length === 3) c = c.split('').map((x) => x + x).join('');
-  const num = parseInt(c, 16);
-  if (isNaN(num)) return [240, 70, 60];
-  const r = ((num >> 16) & 255) / 255;
-  const g = ((num >> 8) & 255) / 255;
-  const b = (num & 255) / 255;
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return [240, 70, 60];
+  const r = rgb[0] / 255;
+  const g = rgb[1] / 255;
+  const b = rgb[2] / 255;
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -362,30 +405,66 @@ export function hexToHsl(hex: string): [number, number, number] {
 
 export function computeThemeCssVariables(accentColor: AccentColor): Record<string, string> {
   const hex = resolveAccentHex(accentColor);
+  const normalizedHex = hex.toUpperCase();
+  const isObsidianGold =
+    accentColor === 'obsidian-gold' ||
+    accentColor === 'purdue' ||
+    accentColor === 'boilermaker' ||
+    accentColor === 'steel' ||
+    OBSIDIAN_GOLD_PALETTE_HEXES.has(normalizedHex);
+
   const [hue, sat] = hexToHsl(hex);
   const darkSat = Math.min(Math.max(Math.round(sat * 0.38), 16), 30);
   const lightSat = Math.min(Math.max(Math.round(sat * 0.32), 14), 28);
+  const accentFg = getAccentForegroundHex(hex);
+  const accentHover = darkenHex(hex, 0.16);
+
+  const surfaceVars = isObsidianGold
+    ? {
+        '--lab-bg-canvas': '#050505',
+        '--lab-bg-surface': '#11100E',
+        '--lab-bg-card': '#181613',
+        '--lab-bg-elevated': '#23201B',
+        '--lab-bg-hover': '#2E2B25',
+        '--lab-border-subtle': '#322F2A',
+        '--lab-border-strong': '#555960',
+        '--lab-bg-backdrop': 'rgba(0, 0, 0, 0.78)',
+        '--lab-bg-canvas-light': '#FAF8F4',
+        '--lab-bg-surface-light': '#F4EFE6',
+        '--lab-bg-card-light': '#EDE5D6',
+        '--lab-bg-elevated-light': '#E6DDD0',
+        '--lab-border-subtle-light': '#DDD5C7',
+        '--lab-border-strong-light': '#C4BFC0',
+      }
+    : {
+        '--lab-bg-canvas': `hsl(${hue}, ${darkSat}%, 4%)`,
+        '--lab-bg-surface': `hsl(${hue}, ${darkSat}%, 7.5%)`,
+        '--lab-bg-card': `hsl(${hue}, ${Math.max(10, darkSat - 3)}%, 11%)`,
+        '--lab-bg-elevated': `hsl(${hue}, ${Math.max(8, darkSat - 5)}%, 15.5%)`,
+        '--lab-bg-hover': `hsl(${hue}, ${Math.min(darkSat + 4, 32)}%, 19%)`,
+        '--lab-border-subtle': `hsl(${hue}, ${darkSat}%, 18%)`,
+        '--lab-border-strong': `hsl(${hue}, ${Math.min(sat, 36)}%, 26%)`,
+        '--lab-bg-backdrop': `hsla(${hue}, ${darkSat}%, 4%, 0.78)`,
+        '--lab-bg-canvas-light': `hsl(${hue}, ${lightSat}%, 98.2%)`,
+        '--lab-bg-surface-light': `hsl(${hue}, ${Math.max(10, lightSat - 3)}%, 95.5%)`,
+        '--lab-bg-card-light': `hsl(${hue}, ${Math.max(8, lightSat - 5)}%, 93%)`,
+        '--lab-bg-elevated-light': `hsl(${hue}, ${Math.max(6, lightSat - 7)}%, 89%)`,
+        '--lab-border-subtle-light': `hsl(${hue}, ${lightSat}%, 86%)`,
+        '--lab-border-strong-light': `hsl(${hue}, ${Math.min(sat, 35)}%, 76%)`,
+      };
 
   return {
     '--lab-accent': hex,
-    '--lab-accent-light': hexToRgba(hex, 0.15),
-    '--lab-accent-border': hexToRgba(hex, 0.35),
-    '--lab-accent-hover': hexToRgba(hex, 0.88),
+    '--lab-accent-fg': accentFg,
+    '--lab-accent-light': isObsidianGold
+      ? 'rgba(207, 185, 145, 0.24)'
+      : hexToRgba(hex, 0.15),
+    '--lab-accent-border': isObsidianGold
+      ? 'rgba(142, 111, 62, 0.42)'
+      : hexToRgba(hex, 0.35),
+    '--lab-accent-hover': accentHover,
     '--lab-hue': String(hue),
     '--lab-sat': `${sat}%`,
-    '--lab-bg-canvas': `hsl(${hue}, ${darkSat}%, 4%)`,
-    '--lab-bg-surface': `hsl(${hue}, ${darkSat}%, 7.5%)`,
-    '--lab-bg-card': `hsl(${hue}, ${Math.max(10, darkSat - 3)}%, 11%)`,
-    '--lab-bg-elevated': `hsl(${hue}, ${Math.max(8, darkSat - 5)}%, 15.5%)`,
-    '--lab-bg-hover': `hsl(${hue}, ${Math.min(darkSat + 4, 32)}%, 19%)`,
-    '--lab-border-subtle': `hsl(${hue}, ${darkSat}%, 18%)`,
-    '--lab-border-strong': `hsl(${hue}, ${Math.min(sat, 36)}%, 26%)`,
-    '--lab-bg-backdrop': `hsla(${hue}, ${darkSat}%, 4%, 0.78)`,
-    '--lab-bg-canvas-light': `hsl(${hue}, ${lightSat}%, 98.2%)`,
-    '--lab-bg-surface-light': `hsl(${hue}, ${Math.max(10, lightSat - 3)}%, 95.5%)`,
-    '--lab-bg-card-light': `hsl(${hue}, ${Math.max(8, lightSat - 5)}%, 93%)`,
-    '--lab-bg-elevated-light': `hsl(${hue}, ${Math.max(6, lightSat - 7)}%, 89%)`,
-    '--lab-border-subtle-light': `hsl(${hue}, ${lightSat}%, 86%)`,
-    '--lab-border-strong-light': `hsl(${hue}, ${Math.min(sat, 35)}%, 76%)`,
+    ...surfaceVars,
   };
 }
